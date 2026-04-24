@@ -9,7 +9,14 @@
       "Skill(claude-api)",
       "Skill(claude-api:*)",
       "Bash(npm audit *)",
-      "Bash(npm uninstall *)"
+      "Bash(npm uninstall *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git remote *)",
+      "Bash(git branch *)",
+      "Bash(git push *)",
+      "Bash(npx vercel *)",
+      "WebSearch"
     ]
   }
 }
