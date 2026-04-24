@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(npx tsc *)",
+      "Bash(npm run *)",
+      "Bash(curl -s -X POST http://localhost:3000/api/validate)",
+      "Bash(npm test *)",
+      "Skill(claude-api)",
+      "Skill(claude-api:*)",
+      "Bash(npm audit *)",
+      "Bash(npm uninstall *)"
+    ]
+  }
+}
