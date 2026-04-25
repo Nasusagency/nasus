@@ -5,6 +5,8 @@ export interface RfcFields {
   nombre: string | null;
   tipo_persona: "fisica" | "moral" | null;
   fecha: string | null;
+  domicilio_fiscal: string | null;
+  regimen_fiscal: string | null;
 }
 
 export interface ValidationResult {
@@ -14,7 +16,6 @@ export interface ValidationResult {
 }
 
 // Persona física: 4 chars nombre + 6 dígitos fecha + 3 alfanuméricos homoclave = 13
-// Los primeros 4 chars pueden incluir Ñ y & (iniciales de apellidos y nombre)
 const RFC_FISICA_REGEX = /^[A-ZÑ&]{4}\d{6}[A-Z\d]{3}$/;
 
 // Persona moral: 3 chars razón social + 6 dígitos + 3 alfanuméricos = 12
@@ -31,6 +32,8 @@ export function validateRfc(raw: RfcFields): ValidationResult {
     nombre: raw.nombre ? normalizeText(raw.nombre) : null,
     tipo_persona: raw.tipo_persona ?? null,
     fecha: raw.fecha?.trim() ?? null,
+    domicilio_fiscal: raw.domicilio_fiscal ? raw.domicilio_fiscal.trim() : null,
+    regimen_fiscal: raw.regimen_fiscal ? raw.regimen_fiscal.trim() : null,
   };
 
   if (!fields.rfc) {
@@ -41,9 +44,7 @@ export function validateRfc(raw: RfcFields): ValidationResult {
   const len = fields.rfc.length;
 
   if (len !== 12 && len !== 13) {
-    issues.push(
-      `RFC debe tener 12 o 13 caracteres, se encontraron ${len}`
-    );
+    issues.push(`RFC debe tener 12 o 13 caracteres, se encontraron ${len}`);
     return { valid: false, issues, fields };
   }
 
@@ -52,9 +53,7 @@ export function validateRfc(raw: RfcFields): ValidationResult {
 
   if (!pattern.test(fields.rfc)) {
     issues.push(
-      `RFC '${fields.rfc}' no cumple el formato oficial para persona ${
-        esFisica ? "física" : "moral"
-      }`
+      `RFC '${fields.rfc}' no cumple el formato oficial para persona ${esFisica ? "física" : "moral"}`
     );
   }
 

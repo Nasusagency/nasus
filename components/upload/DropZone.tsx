@@ -8,7 +8,9 @@ interface Props {
   disabled?: boolean;
 }
 
-const ACCEPTED = ["image/jpeg", "image/png", "image/webp"];
+const ACCEPTED_IMAGES = ["image/jpeg", "image/png", "image/webp"];
+const ACCEPTED_ALL = [...ACCEPTED_IMAGES, "application/pdf"];
+const ACCEPT_ATTR = [...ACCEPTED_IMAGES, ".pdf", "application/pdf"].join(",");
 
 const DOC_TYPE_LABELS: Record<DocumentType, string> = {
   ine: "INE / IFE",
@@ -19,6 +21,8 @@ const DOC_TYPE_LABELS: Record<DocumentType, string> = {
   dni: "DNI / Cédula",
 };
 
+// CURP y RFC suelen venir como PDF oficial
+const PDF_COMMON: DocumentType[] = ["curp", "rfc", "acta"];
 const MX_TYPES: DocumentType[] = ["ine", "curp", "rfc", "pasaporte", "acta"];
 
 export default function DropZone({ onFile, disabled }: Props) {
@@ -29,8 +33,8 @@ export default function DropZone({ onFile, disabled }: Props) {
   const handleFile = useCallback(
     (file: File) => {
       setError(null);
-      if (!ACCEPTED.includes(file.type)) {
-        setError("Solo se admiten imágenes JPG, PNG o WEBP.");
+      if (!ACCEPTED_ALL.includes(file.type)) {
+        setError("Solo se admiten imágenes JPG, PNG, WEBP o archivos PDF.");
         return;
       }
       if (file.size > 5 * 1024 * 1024) {
@@ -60,6 +64,8 @@ export default function DropZone({ onFile, disabled }: Props) {
     },
     [handleFile]
   );
+
+  const acceptsPdf = PDF_COMMON.includes(docType);
 
   return (
     <div className="flex flex-col gap-4 w-full">
@@ -95,7 +101,7 @@ export default function DropZone({ onFile, disabled }: Props) {
       >
         <input
           type="file"
-          accept={ACCEPTED.join(",")}
+          accept={ACCEPT_ATTR}
           className="sr-only"
           onChange={onInputChange}
           disabled={disabled}
@@ -117,9 +123,14 @@ export default function DropZone({ onFile, disabled }: Props) {
           <span className="font-medium text-zinc-700 dark:text-zinc-200">
             Haz clic para seleccionar
           </span>{" "}
-          o arrastra la imagen aquí
+          o arrastra el archivo aquí
         </p>
-        <p className="text-xs text-zinc-400">JPG, PNG, WEBP · máx. 5 MB</p>
+        <p className="text-xs text-zinc-400">
+          JPG, PNG, WEBP{acceptsPdf ? ", PDF" : ""} · máx. 5 MB
+          {acceptsPdf && (
+            <span className="ml-1 text-zinc-400">· PDF recomendado para {DOC_TYPE_LABELS[docType]}</span>
+          )}
+        </p>
       </label>
 
       {error && (

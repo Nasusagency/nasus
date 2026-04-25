@@ -1,4 +1,4 @@
-import { normalizeDocNumber, normalizeText } from "@/lib/normalizer";
+import { normalizeDocNumber, normalizeText, parseDate } from "@/lib/normalizer";
 
 export interface CurpFields {
   curp: string | null;
@@ -24,16 +24,46 @@ const ESTADOS_CURP = new Set([
   "YN", "ZS", "NE",
 ]);
 
-// Formato oficial CURP de 18 caracteres:
-//   posiciones 0-3:   4 letras (iniciales de nombre y apellidos)
-//   posiciones 4-9:   6 dígitos AAMMDD fecha de nacimiento
-//   posición 10:      H o M (sexo)
-//   posiciones 11-12: 2 letras clave de entidad federativa
-//   posiciones 13-15: 3 consonantes internas
-//   posición 16:      1 alfanumérico (homoclave)
-//   posición 17:      1 dígito verificador
+// Formato oficial CURP de 18 caracteres
 const CURP_REGEX =
   /^[A-Z]{4}\d{6}[HM][A-Z]{2}[B-DF-HJ-NP-TV-Z]{3}[A-Z\d]\d$/;
+
+/**
+ * Extrae los datos codificados en la cadena CURP.
+ * Requiere que la CURP ya haya pasado la validación de formato (CURP_REGEX).
+ */
+export function decodeCurp(curp: string): {
+  fechaNacimiento: string;
+  sexo: "H" | "M";
+  estadoClave: string;
+} | null {
+  if (!CURP_REGEX.test(curp)) return null;
+  const aa = curp.substring(4, 6);
+  const mm = curp.substring(6, 8);
+  const dd = curp.substring(8, 10);
+  const aaNum = parseInt(aa, 10);
+  const currentYY = new Date().getFullYear() % 100;
+  const year = aaNum <= currentYY ? `20${aa}` : `19${aa}`;
+  return {
+    fechaNacimiento: `${year}-${mm}-${dd}`,
+    sexo: curp.charAt(10) as "H" | "M",
+    estadoClave: curp.substring(11, 13),
+  };
+}
+
+/** Compara los AAMMDD codificados en la CURP contra una fecha YYYY-MM-DD. */
+function curpDateMatchesBirthDate(curp: string, fecha: string): boolean {
+  const nacMatch = fecha.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!nacMatch) return true; // fecha inválida — no bloquear aquí
+  const yy = nacMatch[1].substring(2);
+  const mm = nacMatch[2];
+  const dd = nacMatch[3];
+  return (
+    curp.substring(4, 6) === yy &&
+    curp.substring(6, 8) === mm &&
+    curp.substring(8, 10) === dd
+  );
+}
 
 export function validateCurp(raw: CurpFields): ValidationResult {
   const issues: string[] = [];
@@ -83,6 +113,16 @@ export function validateCurp(raw: CurpFields): ValidationResult {
       issues.push(
         `Sexo en CURP (${sexoEnCurp}) difiere del campo sexo (${fields.sexo})`
       );
+    }
+
+    // Validación cruzada: fecha codificada en CURP vs fecha_nacimiento del documento
+    if (fields.fecha_nacimiento) {
+      const fechaParsed = parseDate(fields.fecha_nacimiento);
+      if (fechaParsed && !curpDateMatchesBirthDate(fields.curp, fields.fecha_nacimiento)) {
+        issues.push(
+          "La fecha codificada en la CURP no coincide con la fecha de nacimiento del documento"
+        );
+      }
     }
   }
 

@@ -15,7 +15,7 @@ import {
 } from "@/lib/didit/database-validation";
 import { createClient } from "@/lib/supabase/server";
 
-const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
 const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
 const ALLOWED_DOC_TYPES = new Set<DocumentType>([
   "dni", "acta", "ine", "curp", "rfc", "pasaporte",
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
 
   if (!ALLOWED_MIME_TYPES.includes(file.type)) {
     return NextResponse.json(
-      { error: `Tipo de archivo no permitido. Usa: ${ALLOWED_MIME_TYPES.join(", ")}` },
+      { error: "Tipo de archivo no permitido. Usa: JPG, PNG, WEBP o PDF" },
       { status: 415 }
     );
   }
