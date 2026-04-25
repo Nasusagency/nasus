@@ -1,6 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import ValidatorForm from "@/components/ValidatorForm";
 
+// Fuerza render en cada request y deshabilita el Full Route Cache de Next.js.
+// Sin esto, el fetch de Supabase se cachea en el build y la página sirve HTML viejo.
+export const dynamic = "force-dynamic";
+
 interface Validation {
   id: string;
   doc_type: string;

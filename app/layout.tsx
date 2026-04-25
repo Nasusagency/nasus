@@ -4,12 +4,14 @@ import "./globals.css";
 import { createClient } from "@/lib/supabase/server";
 import LogoutButton from "@/components/auth/LogoutButton";
 
+export const dynamic = "force-dynamic";
+
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Validador de documentos",
-  description: "Valida DNI y actas oficiales con IA",
+  title: "Validador de documentos — Nasus Agency",
+  description: "Valida documentos mexicanos (INE, CURP, RFC, pasaporte, actas) con IA y base de datos oficial.",
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
