@@ -9,12 +9,32 @@ function formatValue(value: unknown): string {
 }
 
 const LABELS: Record<string, string> = {
+  // Campos comunes
   nombres: "Nombres",
   apellidos: "Apellidos",
-  numero_documento: "N.º documento",
+  apellido_paterno: "Apellido paterno",
+  apellido_materno: "Apellido materno",
   fecha_nacimiento: "Fecha de nacimiento",
   fecha_vencimiento: "Fecha de vencimiento",
   pais: "País",
+  nacionalidad: "Nacionalidad",
+  // INE
+  clave_elector: "Clave de elector",
+  seccion: "Sección electoral",
+  // CURP
+  curp: "CURP",
+  sexo: "Sexo",
+  entidad_nacimiento: "Entidad de nacimiento",
+  // RFC
+  rfc: "RFC",
+  nombre: "Nombre / Razón social",
+  tipo_persona: "Tipo de persona",
+  fecha: "Fecha",
+  // Pasaporte
+  numero_pasaporte: "N.º de pasaporte",
+  // DNI genérico
+  numero_documento: "N.º documento",
+  // Acta
   tipo_acta: "Tipo de acta",
   numero_acta: "N.º acta",
   fecha_emision: "Fecha de emisión",
@@ -33,7 +53,11 @@ export default function FieldsTable({ fields }: Props) {
           {rows.map(([key, value], i) => (
             <tr
               key={key}
-              className={i % 2 === 0 ? "bg-white dark:bg-zinc-900" : "bg-zinc-50 dark:bg-zinc-800"}
+              className={
+                i % 2 === 0
+                  ? "bg-white dark:bg-zinc-900"
+                  : "bg-zinc-50 dark:bg-zinc-800"
+              }
             >
               <td className="px-4 py-2.5 font-medium text-zinc-500 dark:text-zinc-400 w-48 whitespace-nowrap">
                 {LABELS[key] ?? key}

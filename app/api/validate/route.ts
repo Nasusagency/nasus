@@ -4,10 +4,17 @@ import { anthropic } from "@/lib/anthropic/client";
 import { buildSystemPrompt, buildMessages, type DocumentType } from "@/lib/anthropic/prompts";
 import { validateDni, type DniFields } from "@/lib/validators/dni";
 import { validateActa, type ActaFields } from "@/lib/validators/acta";
+import { validateIne, type IneFields } from "@/lib/validators/ine";
+import { validateCurp, type CurpFields } from "@/lib/validators/curp";
+import { validateRfc, type RfcFields } from "@/lib/validators/rfc";
+import { validatePasaporte, type PasaporteFields } from "@/lib/validators/pasaporte";
 import { createClient } from "@/lib/supabase/server";
 
-const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
+const ALLOWED_DOC_TYPES = new Set<DocumentType>([
+  "dni", "acta", "ine", "curp", "rfc", "pasaporte",
+]);
 
 export async function POST(req: NextRequest) {
   let formData: FormData;
@@ -18,7 +25,7 @@ export async function POST(req: NextRequest) {
   }
 
   const file = formData.get("document");
-  const docType = (formData.get("type") ?? "dni") as DocumentType;
+  const docType = (formData.get("type") ?? "ine") as DocumentType;
 
   if (!(file instanceof File)) {
     return NextResponse.json(
@@ -27,9 +34,9 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  if (!ALLOWED_TYPES.includes(file.type)) {
+  if (!ALLOWED_MIME_TYPES.includes(file.type)) {
     return NextResponse.json(
-      { error: `Tipo de archivo no permitido. Usa: ${ALLOWED_TYPES.join(", ")}` },
+      { error: `Tipo de archivo no permitido. Usa: ${ALLOWED_MIME_TYPES.join(", ")}` },
       { status: 415 }
     );
   }
@@ -41,9 +48,9 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  if (!["dni", "acta"].includes(docType)) {
+  if (!ALLOWED_DOC_TYPES.has(docType)) {
     return NextResponse.json(
-      { error: "El campo 'type' debe ser 'dni' o 'acta'" },
+      { error: `Tipo de documento no soportado. Valores válidos: ${[...ALLOWED_DOC_TYPES].join(", ")}` },
       { status: 400 }
     );
   }
@@ -83,7 +90,7 @@ export async function POST(req: NextRequest) {
     }
     if (err instanceof Anthropic.AuthenticationError) {
       return NextResponse.json(
-        { error: "ANTHROPIC_API_KEY inválida o sin permisos." },
+        { error: "Error de autenticación con el servicio de IA." },
         { status: 502 }
       );
     }
@@ -98,23 +105,31 @@ export async function POST(req: NextRequest) {
     const cleaned = raw.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "").trim();
     parsed = JSON.parse(cleaned);
   } catch {
-    console.error("[validate] JSON parse error. Raw response:", raw);
+    console.error("[validate] JSON parse error: respuesta del modelo no era JSON válido");
     return NextResponse.json(
       { error: "La respuesta del modelo no pudo ser interpretada" },
       { status: 502 }
     );
   }
 
-  // Validación estructural post-OCR
-  const claudePayload = parsed as { fields: DniFields | ActaFields; issues?: string[] };
+  const claudePayload = parsed as {
+    fields: DniFields | ActaFields | IneFields | CurpFields | RfcFields | PasaporteFields;
+    issues?: string[];
+  };
   const claudeIssues: string[] = Array.isArray(claudePayload.issues)
     ? claudePayload.issues
     : [];
 
-  const validation =
-    docType === "dni"
-      ? validateDni(claudePayload.fields as DniFields)
-      : validateActa(claudePayload.fields as ActaFields);
+  const validation = (() => {
+    switch (docType) {
+      case "ine":       return validateIne(claudePayload.fields as IneFields);
+      case "curp":      return validateCurp(claudePayload.fields as CurpFields);
+      case "rfc":       return validateRfc(claudePayload.fields as RfcFields);
+      case "pasaporte": return validatePasaporte(claudePayload.fields as PasaporteFields);
+      case "acta":      return validateActa(claudePayload.fields as ActaFields);
+      default:          return validateDni(claudePayload.fields as DniFields);
+    }
+  })();
 
   const mergedIssues = [...claudeIssues, ...validation.issues];
 
@@ -130,12 +145,12 @@ export async function POST(req: NextRequest) {
       doc_type: docType,
       valid: validation.valid,
       issues: mergedIssues,
-      fields: claudePayload.fields,
+      fields: validation.fields,
     });
   }
 
   return NextResponse.json(
-    { ...validation, issues: mergedIssues },
+    { ...validation, issues: mergedIssues, docType },
     { status: 200 }
   );
 }

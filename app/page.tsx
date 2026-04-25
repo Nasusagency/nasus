@@ -8,6 +8,15 @@ interface Validation {
   created_at: string;
 }
 
+const DOC_TYPE_SHORT: Record<string, string> = {
+  ine: "INE / IFE",
+  curp: "CURP",
+  rfc: "RFC",
+  pasaporte: "Pasaporte",
+  acta: "Acta oficial",
+  dni: "DNI / Cédula",
+};
+
 export default async function Home() {
   const supabase = await createClient();
   const { data: validations } = await supabase
@@ -21,10 +30,11 @@ export default async function Home() {
       <div className="w-full max-w-xl flex flex-col gap-8">
         <div>
           <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50 tracking-tight">
-            Validador de documentos
+            Validador de documentos mexicanos
           </h1>
           <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-            Sube una imagen de un DNI o acta oficial para verificar su integridad.
+            Sube una imagen de tu INE, CURP, RFC, pasaporte o acta oficial
+            para verificar su integridad.
           </p>
         </div>
 
@@ -48,7 +58,7 @@ export default async function Home() {
                       }`}
                     />
                     <span className="text-sm text-zinc-700 dark:text-zinc-300">
-                      {v.doc_type === "dni" ? "DNI / Cédula" : "Acta oficial"}
+                      {DOC_TYPE_SHORT[v.doc_type] ?? v.doc_type.toUpperCase()}
                     </span>
                   </div>
                   <span className="text-xs text-zinc-400 dark:text-zinc-500">

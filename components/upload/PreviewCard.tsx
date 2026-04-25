@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Image from "next/image";
 
 interface Props {
@@ -8,7 +9,17 @@ interface Props {
 }
 
 export default function PreviewCard({ file, onClear }: Props) {
-  const url = URL.createObjectURL(file);
+  const [url, setUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const objectUrl = URL.createObjectURL(file);
+    setUrl(objectUrl);
+    return () => {
+      URL.revokeObjectURL(objectUrl);
+    };
+  }, [file]);
+
+  if (!url) return null;
 
   return (
     <div className="relative w-full rounded-2xl border border-zinc-200 dark:border-zinc-700 overflow-hidden bg-white dark:bg-zinc-900">
@@ -22,7 +33,9 @@ export default function PreviewCard({ file, onClear }: Props) {
         />
       </div>
       <div className="flex items-center justify-between px-4 py-2 border-t border-zinc-100 dark:border-zinc-800">
-        <span className="text-xs text-zinc-500 truncate max-w-[80%]">{file.name}</span>
+        <span className="text-xs text-zinc-500 truncate max-w-[80%]">
+          {file.name}
+        </span>
         <button
           onClick={onClear}
           type="button"

@@ -13,11 +13,12 @@ interface Result {
   valid: boolean;
   issues: string[];
   fields: Record<string, unknown>;
+  docType?: string;
 }
 
 export default function ValidatorForm() {
   const [file, setFile] = useState<File | null>(null);
-  const [docType, setDocType] = useState<DocumentType>("dni");
+  const [docType, setDocType] = useState<DocumentType>("ine");
   const [status, setStatus] = useState<Status>("idle");
   const [result, setResult] = useState<Result | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
@@ -60,7 +61,7 @@ export default function ValidatorForm() {
 
       setResult(data as Result);
       setStatus("done");
-      router.refresh(); // actualiza el historial del servidor
+      router.refresh();
     } catch {
       setApiError("No se pudo conectar con el servidor. Verifica tu conexión.");
       setStatus("error");
@@ -79,7 +80,32 @@ export default function ValidatorForm() {
             disabled={status === "loading"}
             className="w-full h-11 rounded-xl bg-zinc-900 text-white text-sm font-medium transition-colors hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
           >
-            {status === "loading" ? "Analizando…" : "Validar documento"}
+            {status === "loading" ? (
+              <span className="flex items-center justify-center gap-2">
+                <svg
+                  className="animate-spin h-4 w-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.84 3 7.938l3-2.647z"
+                  />
+                </svg>
+                Analizando…
+              </span>
+            ) : (
+              "Validar documento"
+            )}
           </button>
         </div>
       )}
@@ -95,6 +121,7 @@ export default function ValidatorForm() {
           valid={result.valid}
           issues={result.issues}
           fields={result.fields}
+          docType={result.docType}
         />
       )}
     </div>
