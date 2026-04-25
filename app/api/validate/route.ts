@@ -163,9 +163,15 @@ export async function POST(req: NextRequest) {
         : { status: "unavailable" };
     } else {
       const f = validation.fields as IneFields;
-      // Si el OCR no extrajo la clave de elector, el check no puede ejecutarse
-      diditCheck = f.clave_elector
-        ? await validateIneWithDidit({ clave_elector: f.clave_elector })
+      // Didit para MEX valida por CURP (no por clave de elector)
+      diditCheck = f.curp
+        ? await validateIneWithDidit({
+            curp: f.curp,
+            nombres: f.nombres,
+            apellido_paterno: f.apellido_paterno,
+            apellido_materno: f.apellido_materno,
+            fecha_nacimiento: f.fecha_nacimiento,
+          })
         : { status: "unavailable" };
     }
 

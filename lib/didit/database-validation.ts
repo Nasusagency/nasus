@@ -78,15 +78,33 @@ export async function validateCurpWithDidit(params: {
 }
 
 /**
- * Verifica la clave de elector (INE) contra la base de datos del INE vía Didit.
+ * Verifica la CURP embebida en la INE contra la base de datos de RENAPO vía Didit.
+ * Didit para MEX valida por CURP (no por clave de elector).
  */
 export async function validateIneWithDidit(params: {
-  clave_elector: string;
+  curp: string;
+  nombres?: string | null;
+  apellido_paterno?: string | null;
+  apellido_materno?: string | null;
+  fecha_nacimiento?: string | null;
 }): Promise<DiditCheck> {
   const body = new FormData();
   body.append("issuing_state", "MEX");
-  body.append("identification_number", params.clave_elector);
-  body.append("validation_type", "one_by_one");
+  body.append("identification_number", params.curp);
+
+  const tieneExtra = !!(params.nombres || params.apellido_paterno);
+  body.append("validation_type", tieneExtra ? "two_by_two" : "one_by_one");
+
+  if (params.nombres) body.append("first_name", params.nombres);
+
+  if (params.apellido_paterno) {
+    const apellidos = [params.apellido_paterno, params.apellido_materno]
+      .filter(Boolean)
+      .join(" ");
+    body.append("last_name", apellidos);
+  }
+
+  if (params.fecha_nacimiento) body.append("date_of_birth", params.fecha_nacimiento);
 
   return callDatabaseValidation(body);
 }
