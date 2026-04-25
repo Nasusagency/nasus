@@ -138,27 +138,35 @@ export async function POST(req: NextRequest) {
 
   const mergedIssues = [...claudeIssues, ...validation.issues];
 
-  // Verificación contra base de datos oficial vía Didit (CURP e INE)
-  // Solo se ejecuta si DIDIT_API_KEY está configurada; degrada graciosamente si no.
+  // Verificación contra base de datos oficial vía Didit (CURP e INE).
+  // Para tipos soportados: siempre devuelve un estado (nunca "skipped"),
+  // así el badge siempre aparece y el usuario sabe qué pasó.
+  // "skipped" se reserva para tipos que no tienen soporte Didit (rfc, pasaporte, acta, dni).
+  const DIDIT_SUPPORTED = docType === "curp" || docType === "ine";
   let diditCheck: DiditCheck = { status: "skipped" };
 
-  if (process.env.DIDIT_API_KEY) {
-    if (docType === "curp") {
+  if (DIDIT_SUPPORTED) {
+    if (!process.env.DIDIT_API_KEY) {
+      // API key no configurada — tipo soportado, pero check no disponible
+      diditCheck = { status: "unavailable" };
+    } else if (docType === "curp") {
       const f = validation.fields as CurpFields;
-      if (f.curp) {
-        diditCheck = await validateCurpWithDidit({
-          curp: f.curp,
-          nombres: f.nombres,
-          apellido_paterno: f.apellido_paterno,
-          apellido_materno: f.apellido_materno,
-          fecha_nacimiento: f.fecha_nacimiento,
-        });
-      }
-    } else if (docType === "ine") {
+      // Si el OCR no extrajo la CURP, el check no puede ejecutarse
+      diditCheck = f.curp
+        ? await validateCurpWithDidit({
+            curp: f.curp,
+            nombres: f.nombres,
+            apellido_paterno: f.apellido_paterno,
+            apellido_materno: f.apellido_materno,
+            fecha_nacimiento: f.fecha_nacimiento,
+          })
+        : { status: "unavailable" };
+    } else {
       const f = validation.fields as IneFields;
-      if (f.clave_elector) {
-        diditCheck = await validateIneWithDidit({ clave_elector: f.clave_elector });
-      }
+      // Si el OCR no extrajo la clave de elector, el check no puede ejecutarse
+      diditCheck = f.clave_elector
+        ? await validateIneWithDidit({ clave_elector: f.clave_elector })
+        : { status: "unavailable" };
     }
 
     if (diditCheck.status === "no_match" || diditCheck.status === "not_found") {

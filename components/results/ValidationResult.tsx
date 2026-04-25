@@ -89,9 +89,7 @@ function DiditBadge({ diditCheck }: { diditCheck: DiditCheck }) {
         <path strokeLinecap="round" strokeLinejoin="round" d={iconPath} />
       </svg>
       <span className="font-medium">{cfg.label}</span>
-      {diditCheck.status === "full_match" && (
-        <span className="ml-auto text-xs opacity-60">Didit</span>
-      )}
+      <span className="ml-auto text-xs opacity-50 shrink-0">Didit</span>
     </div>
   );
 }
