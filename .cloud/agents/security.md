@@ -72,6 +72,35 @@ npm audit --audit-level=high
 
 Bloquea el release si existen vulnerabilidades **altas** o **críticas** con fix disponible.
 
+### Paso 6 — Verificar alcance del envío de PII a proveedores externos
+
+Leer `lib/didit/database-validation.ts` y `app/api/validate/route.ts` y confirmar:
+
+1. **Solo se envían los campos mínimos necesarios** a Didit:
+   - CURP: `identification_number` (la CURP), y opcionalmente nombre, apellidos, fecha de nacimiento para `two_by_two`
+   - INE: `identification_number` (la `clave_elector`) con `one_by_one`
+2. **La llamada a Didit solo ocurre si `DIDIT_API_KEY` está configurada** — si la var no existe, `diditCheck.status = "skipped"` y no se envían datos
+3. **No se registran los datos enviados a Didit en logs de consola** — solo errores de conexión sin PII
+4. **Los `validation_details` devueltos por Didit** (metadatos del registro en base de datos) se devuelven al cliente pero no se persisten en Supabase por defecto
+
+---
+
+## Política de privacidad de proveedores externos
+
+### Didit (didit.me)
+
+| Atributo | Valor |
+|----------|-------|
+| Endpoint | `POST https://verification.didit.me/v3/database-validation/` |
+| Autenticación | Header `x-api-key` — clave almacenada en `process.env.DIDIT_API_KEY` |
+| Datos enviados | `identification_number` (CURP o clave elector), opcionalmente nombre y fecha de nacimiento |
+| Tipos de documento | CURP (`docType === "curp"`) e INE (`docType === "ine"`) — Fase 1 |
+| Marco de cumplimiento | GDPR, CNBV México |
+| Retención de datos | Configurable; por defecto según su política en https://didit.me/privacy-policy |
+| Nota legal | **Los datos enviados a Didit están sujetos a su propia política de privacidad, no a la de Nasus Agency.** El cliente debe ser informado de este flujo antes de procesar su primer documento contra la base de datos real. |
+
+**⚠ Obligación con el cliente**: Obtener autorización explícita por escrito antes de activar `DIDIT_API_KEY` en producción. El sistema degrada graciosamente (`diditCheck.status = "skipped"`) mientras no se tenga esa autorización.
+
 ---
 
 ## Criterios de aprobación
@@ -83,8 +112,10 @@ Bloquea el release si existen vulnerabilidades **altas** o **críticas** con fix
 | Nombre de env var en mensajes de error al cliente | 🔴 Bloqueante |
 | Datos binarios o base64 en Supabase | 🔴 Bloqueante |
 | Vulnerabilidades altas/críticas en `npm audit` | 🔴 Bloqueante |
+| `DIDIT_API_KEY` activa sin autorización escrita del cliente | 🔴 Bloqueante en producción |
 | Vulnerabilidades moderadas en deps transitivas | 🟡 Documentar, no bloquea |
 | `fields` PII en Supabase sin autorización del cliente | 🟡 Advertencia — requiere confirmación escrita |
+| Nuevos tipos de documento en scope Didit (RFC, Pasaporte) | 🟡 Requiere evaluación antes de activar |
 
 ---
 
@@ -101,8 +132,9 @@ Bloquea el release si existen vulnerabilidades **altas** o **críticas** con fix
 
 ## Estado del último ciclo
 
-- **Fecha**: 2026-04-24
+- **Fecha**: 2026-04-25
 - **Auditor**: Claude (invocación automática pre-tarea)
-- **Resultado**: APROBADO — todos los hallazgos activos resueltos o documentados
+- **Resultado**: APROBADO con advertencia de autorización pendiente
 - **Cobertura**: 42/42 tests en verde (normalizer, dni, acta, curp, rfc, ine, pasaporte)
+- **Nuevo**: Integración Didit documentada. `DIDIT_API_KEY` aún no activa en producción — falta autorización escrita del cliente
 - **Próxima auditoría**: antes del siguiente PR a `main`

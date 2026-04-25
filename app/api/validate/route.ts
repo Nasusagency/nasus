@@ -8,6 +8,11 @@ import { validateIne, type IneFields } from "@/lib/validators/ine";
 import { validateCurp, type CurpFields } from "@/lib/validators/curp";
 import { validateRfc, type RfcFields } from "@/lib/validators/rfc";
 import { validatePasaporte, type PasaporteFields } from "@/lib/validators/pasaporte";
+import {
+  validateCurpWithDidit,
+  validateIneWithDidit,
+  type DiditCheck,
+} from "@/lib/didit/database-validation";
 import { createClient } from "@/lib/supabase/server";
 
 const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -133,6 +138,36 @@ export async function POST(req: NextRequest) {
 
   const mergedIssues = [...claudeIssues, ...validation.issues];
 
+  // Verificación contra base de datos oficial vía Didit (CURP e INE)
+  // Solo se ejecuta si DIDIT_API_KEY está configurada; degrada graciosamente si no.
+  let diditCheck: DiditCheck = { status: "skipped" };
+
+  if (process.env.DIDIT_API_KEY) {
+    if (docType === "curp") {
+      const f = validation.fields as CurpFields;
+      if (f.curp) {
+        diditCheck = await validateCurpWithDidit({
+          curp: f.curp,
+          nombres: f.nombres,
+          apellido_paterno: f.apellido_paterno,
+          apellido_materno: f.apellido_materno,
+          fecha_nacimiento: f.fecha_nacimiento,
+        });
+      }
+    } else if (docType === "ine") {
+      const f = validation.fields as IneFields;
+      if (f.clave_elector) {
+        diditCheck = await validateIneWithDidit({ clave_elector: f.clave_elector });
+      }
+    }
+
+    if (diditCheck.status === "no_match" || diditCheck.status === "not_found") {
+      mergedIssues.push(
+        "El documento no fue encontrado en la base de datos oficial (verificación Didit)"
+      );
+    }
+  }
+
   // Persiste el resultado (no el documento) si hay sesión activa
   const supabase = await createClient();
   const {
@@ -150,7 +185,7 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json(
-    { ...validation, issues: mergedIssues, docType },
+    { ...validation, issues: mergedIssues, docType, diditCheck },
     { status: 200 }
   );
 }

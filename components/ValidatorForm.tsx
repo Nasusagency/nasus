@@ -9,11 +9,23 @@ import type { DocumentType } from "@/lib/anthropic/prompts";
 
 type Status = "idle" | "loading" | "done" | "error";
 
+interface DiditCheck {
+  status:
+    | "full_match"
+    | "partial_match"
+    | "no_match"
+    | "not_found"
+    | "unavailable"
+    | "skipped";
+  details?: Record<string, unknown>;
+}
+
 interface Result {
   valid: boolean;
   issues: string[];
   fields: Record<string, unknown>;
   docType?: string;
+  diditCheck?: DiditCheck;
 }
 
 export default function ValidatorForm() {
@@ -122,6 +134,7 @@ export default function ValidatorForm() {
           issues={result.issues}
           fields={result.fields}
           docType={result.docType}
+          diditCheck={result.diditCheck}
         />
       )}
     </div>
