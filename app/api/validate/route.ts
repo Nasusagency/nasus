@@ -16,12 +16,41 @@ import {
 import { createClient } from "@/lib/supabase/server";
 
 const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
-const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
+const MAX_BYTES = 5 * 1024 * 1024;
 const ALLOWED_DOC_TYPES = new Set<DocumentType>([
   "dni", "acta", "ine", "curp", "rfc", "pasaporte",
 ]);
 
+// Rate limiting: 10 requests / 60 s por IP (best-effort en serverless)
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_MAX = 10;
+const RATE_LIMIT_WINDOW_MS = 60_000;
+
+function checkRateLimit(key: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(key);
+  if (!entry || now >= entry.resetAt) {
+    rateLimitMap.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return true;
+  }
+  if (entry.count >= RATE_LIMIT_MAX) return false;
+  entry.count++;
+  return true;
+}
+
 export async function POST(req: NextRequest) {
+  // Rate limit por IP antes de cualquier procesamiento costoso
+  const ip =
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    req.headers.get("x-real-ip") ??
+    "unknown";
+  if (!checkRateLimit(ip)) {
+    return NextResponse.json(
+      { error: "Demasiadas solicitudes. Espera un momento e intenta de nuevo." },
+      { status: 429 }
+    );
+  }
+
   let formData: FormData;
   try {
     formData = await req.formData();
@@ -73,7 +102,6 @@ export async function POST(req: NextRequest) {
         {
           type: "text",
           text: buildSystemPrompt(docType),
-          // El system prompt es estático por tipo: se cachea para ahorrar tokens
           cache_control: { type: "ephemeral" },
         },
       ],
@@ -85,7 +113,8 @@ export async function POST(req: NextRequest) {
     );
     raw = textBlock?.text ?? "";
   } catch (err) {
-    console.error("[validate] Claude error:", err);
+    // Log solo el mensaje del error, nunca el objeto completo (puede contener PII)
+    console.error("[validate] Claude error:", err instanceof Error ? err.message : String(err));
 
     if (err instanceof Anthropic.RateLimitError) {
       return NextResponse.json(
@@ -110,7 +139,7 @@ export async function POST(req: NextRequest) {
     const cleaned = raw.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "").trim();
     parsed = JSON.parse(cleaned);
   } catch {
-    console.error("[validate] JSON parse error: respuesta del modelo no era JSON válido");
+    console.error("[validate] JSON parse error: la respuesta del modelo no era JSON válido");
     return NextResponse.json(
       { error: "La respuesta del modelo no pudo ser interpretada" },
       { status: 502 }
@@ -125,6 +154,27 @@ export async function POST(req: NextRequest) {
     ? claudePayload.issues
     : [];
 
+  // Detección de baja calidad: si Claude reporta ilegibilidad y la mayoría de campos son null
+  const fieldValues = Object.values(claudePayload.fields ?? {});
+  const nullCount = fieldValues.filter((v) => v === null).length;
+  const lowQualityKeywords = ["ilegible", "borroso", "desenfocad", "baja calidad", "poor quality", "blurry"];
+  const hasLowQualityReport = claudeIssues.some((issue) =>
+    lowQualityKeywords.some((kw) => issue.toLowerCase().includes(kw))
+  );
+  if (
+    hasLowQualityReport ||
+    (fieldValues.length > 0 && nullCount / fieldValues.length > 0.7)
+  ) {
+    const alreadyReported = claudeIssues.some((i) =>
+      i.toLowerCase().includes("calidad")
+    );
+    if (!alreadyReported) {
+      claudeIssues.unshift(
+        "Calidad de imagen insuficiente — sube una foto con mejor iluminación y enfoque."
+      );
+    }
+  }
+
   const validation = (() => {
     switch (docType) {
       case "ine":       return validateIne(claudePayload.fields as IneFields);
@@ -138,20 +188,14 @@ export async function POST(req: NextRequest) {
 
   const mergedIssues = [...claudeIssues, ...validation.issues];
 
-  // Verificación contra base de datos oficial vía Didit (CURP e INE).
-  // Para tipos soportados: siempre devuelve un estado (nunca "skipped"),
-  // así el badge siempre aparece y el usuario sabe qué pasó.
-  // "skipped" se reserva para tipos que no tienen soporte Didit (rfc, pasaporte, acta, dni).
   const DIDIT_SUPPORTED = docType === "curp" || docType === "ine";
   let diditCheck: DiditCheck = { status: "skipped" };
 
   if (DIDIT_SUPPORTED) {
     if (!process.env.DIDIT_API_KEY) {
-      // API key no configurada — tipo soportado, pero check no disponible
       diditCheck = { status: "unavailable" };
     } else if (docType === "curp") {
       const f = validation.fields as CurpFields;
-      // Si el OCR no extrajo la CURP, el check no puede ejecutarse
       diditCheck = f.curp
         ? await validateCurpWithDidit({
             curp: f.curp,
@@ -163,7 +207,6 @@ export async function POST(req: NextRequest) {
         : { status: "unavailable" };
     } else {
       const f = validation.fields as IneFields;
-      // Didit para MEX valida por CURP (no por clave de elector)
       diditCheck = f.curp
         ? await validateIneWithDidit({
             curp: f.curp,
@@ -182,7 +225,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Persiste el resultado (no el documento) si hay sesión activa
+  // Persiste solo metadatos de resultado — sin campos PII (ver security.md hallazgo #3)
   const supabase = await createClient();
   const {
     data: { user },
@@ -194,7 +237,8 @@ export async function POST(req: NextRequest) {
       doc_type: docType,
       valid: validation.valid,
       issues: mergedIssues,
-      fields: validation.fields,
+      // fields omitidos: contienen PII (nombres, CURP, etc.)
+      // Persistencia de fields requiere autorización explícita del cliente
     });
   }
 

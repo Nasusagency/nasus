@@ -67,7 +67,7 @@ export function validateIne(raw: IneFields): ValidationResult {
       !CLAVE_ELECTOR_REGEX.test(fields.clave_elector)
     ) {
       issues.push(
-        `Clave de elector '${fields.clave_elector}' no cumple el formato (18 caracteres alfanuméricos, primeros 6 letras)`
+        "Clave de elector no cumple el formato (18 caracteres alfanuméricos, primeros 6 letras)"
       );
     }
   }

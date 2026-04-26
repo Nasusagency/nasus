@@ -90,7 +90,7 @@ export default function ValidatorForm() {
           <button
             onClick={handleValidate}
             disabled={status === "loading"}
-            className="w-full h-11 rounded-xl bg-zinc-900 text-white text-sm font-medium transition-colors hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+            className="w-full h-11 rounded-xl bg-[#c4a882] text-[#050508] text-sm font-mono font-bold transition-colors hover:bg-[#d4b892] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {status === "loading" ? (
               <span className="flex items-center justify-center gap-2">
@@ -123,7 +123,7 @@ export default function ValidatorForm() {
       )}
 
       {status === "error" && apiError && (
-        <div className="rounded-xl border border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950 px-4 py-3 text-sm text-red-700 dark:text-red-400">
+        <div className="rounded-xl border border-red-800 bg-red-950/50 px-4 py-3 text-sm text-red-400">
           {apiError}
         </div>
       )}

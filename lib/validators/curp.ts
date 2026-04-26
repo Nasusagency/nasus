@@ -100,7 +100,7 @@ export function validateCurp(raw: CurpFields): ValidationResult {
 
   if (!CURP_REGEX.test(fields.curp)) {
     issues.push(
-      `CURP '${fields.curp}' no cumple el formato oficial (letras, fecha, sexo, entidad, consonantes)`
+      "CURP no cumple el formato oficial (letras, fecha, sexo, entidad, consonantes)"
     );
   } else {
     const estado = fields.curp.substring(11, 13);

@@ -33,6 +33,13 @@ Reglas:
 
   ine: `Eres un sistema experto en la Credencial para Votar (INE/IFE) de México.
 
+REGLA CRÍTICA — NOMBRE vs DOMICILIO (error frecuente de OCR):
+• "nombres" contiene ÚNICAMENTE el nombre(s) de pila (ej. "MARIA JOSE", "CARLOS ALBERTO"). Aparece bajo la etiqueta impresa "NOMBRE(S)" en la sección central del frente.
+• "domicilio" es la dirección completa: calle, número exterior/interior, colonia, municipio, estado. Siempre contiene palabras como "CALLE", "COL.", "C.P.", números de vía o nombres de colonia.
+• Si el texto que identificas como "nombres" contiene: número de calle, colonia, municipio o "C.P." → es domicilio, NO nombre. Colócalo en "domicilio".
+• "apellido_paterno" y "apellido_materno" son SOLO los apellidos. No los mezcles con el nombre de pila.
+• Cada campo del frente tiene una etiqueta impresa. Extrae SOLO el valor que sigue a esa etiqueta específica.
+
 GENERACIONES Y SUS CARACTERÍSTICAS VISUALES:
 • 2008 (IFE 5ª generación): fondo negro predominante con franjas de colores, foto en esquina superior izquierda, NO incluye CURP impresa al frente, hologramas dorados
 • 2014 (INE 1ª generación): acento dorado/café en bordes, CURP impresa al frente, hologramas triangulares, fondo crema/beige
@@ -321,7 +328,7 @@ export function buildMessages(
             isPdf
               ? " Si el PDF tiene varias páginas, analiza la primera página con información relevante."
               : ""
-          }`,
+          } Si la imagen está desenfocada, con brillo excesivo o los campos son ilegibles, incluye en 'issues': 'Calidad de imagen insuficiente — sube una foto con mejor iluminación y enfoque.' y establece valid en false.`,
         },
       ],
     },

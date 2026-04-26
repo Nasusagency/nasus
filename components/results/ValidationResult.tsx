@@ -36,28 +36,23 @@ const DIDIT_CONFIG: Record<
 > = {
   full_match: {
     label: "Verificado en base de datos oficial",
-    classes:
-      "bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-950 dark:border-emerald-800 dark:text-emerald-300",
+    classes: "bg-emerald-950/50 border-emerald-800 text-emerald-400",
   },
   partial_match: {
     label: "Coincidencia parcial en base de datos oficial",
-    classes:
-      "bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950 dark:border-amber-800 dark:text-amber-300",
+    classes: "bg-amber-950/50 border-amber-800 text-amber-400",
   },
   no_match: {
     label: "No coincide con la base de datos oficial",
-    classes:
-      "bg-red-50 border-red-200 text-red-700 dark:bg-red-950 dark:border-red-800 dark:text-red-300",
+    classes: "bg-red-950/50 border-red-800 text-red-400",
   },
   not_found: {
     label: "Documento no encontrado en base de datos oficial",
-    classes:
-      "bg-red-50 border-red-200 text-red-700 dark:bg-red-950 dark:border-red-800 dark:text-red-300",
+    classes: "bg-red-950/50 border-red-800 text-red-400",
   },
   unavailable: {
     label: "Verificación en base de datos no disponible",
-    classes:
-      "bg-zinc-50 border-zinc-200 text-zinc-500 dark:bg-zinc-900 dark:border-zinc-700 dark:text-zinc-400",
+    classes: "bg-zinc-900 border-zinc-700 text-zinc-500",
   },
 };
 
@@ -77,7 +72,7 @@ function DiditBadge({ diditCheck }: { diditCheck: DiditCheck }) {
 
   return (
     <div
-      className={`flex items-center gap-2.5 rounded-xl border px-4 py-3 text-sm ${cfg.classes}`}
+      className={`flex items-center gap-2.5 rounded-xl border px-4 py-3 text-sm font-mono ${cfg.classes}`}
     >
       <svg
         className="w-4 h-4 shrink-0"
@@ -89,7 +84,7 @@ function DiditBadge({ diditCheck }: { diditCheck: DiditCheck }) {
         <path strokeLinecap="round" strokeLinejoin="round" d={iconPath} />
       </svg>
       <span className="font-medium">{cfg.label}</span>
-      <span className="ml-auto text-xs opacity-50 shrink-0">Didit</span>
+      <span className="ml-auto text-xs opacity-40 shrink-0">Didit</span>
     </div>
   );
 }
@@ -103,24 +98,22 @@ export default function ValidationResult({
 }: Props) {
   return (
     <div className="flex flex-col gap-4 w-full">
-      {/* Tipo de documento */}
       {docType && (
-        <p className="text-xs font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wide">
+        <p className="text-xs font-mono text-[#00f2ff] uppercase tracking-[0.2em]">
           {DOC_TYPE_LABELS[docType] ?? docType.toUpperCase()}
         </p>
       )}
 
-      {/* Badge de resultado offline */}
       <div
-        className={`flex items-center gap-3 rounded-2xl px-5 py-4 ${
+        className={`flex items-center gap-3 rounded-2xl px-5 py-4 border ${
           valid
-            ? "bg-emerald-50 border border-emerald-200 dark:bg-emerald-950 dark:border-emerald-800"
-            : "bg-red-50 border border-red-200 dark:bg-red-950 dark:border-red-800"
+            ? "bg-emerald-950/40 border-emerald-800"
+            : "bg-red-950/40 border-red-800"
         }`}
       >
         {valid ? (
           <svg
-            className="w-6 h-6 shrink-0 text-emerald-600 dark:text-emerald-400"
+            className="w-6 h-6 shrink-0 text-emerald-400"
             fill="none"
             stroke="currentColor"
             strokeWidth={2}
@@ -134,7 +127,7 @@ export default function ValidationResult({
           </svg>
         ) : (
           <svg
-            className="w-6 h-6 shrink-0 text-red-600 dark:text-red-400"
+            className="w-6 h-6 shrink-0 text-red-400"
             fill="none"
             stroke="currentColor"
             strokeWidth={2}
@@ -149,44 +142,39 @@ export default function ValidationResult({
         )}
         <div>
           <p
-            className={`font-semibold ${
-              valid
-                ? "text-emerald-700 dark:text-emerald-300"
-                : "text-red-700 dark:text-red-300"
+            className={`font-semibold font-display text-lg ${
+              valid ? "text-emerald-300" : "text-red-300"
             }`}
           >
             {valid ? "Documento válido" : "Documento con problemas"}
           </p>
           {!valid && (
-            <p className="text-xs text-red-600 dark:text-red-400 mt-0.5">
-              Se encontraron {issues.length} problema
+            <p className="text-xs text-red-500 font-mono mt-0.5">
+              {issues.length} problema{issues.length !== 1 ? "s" : ""} encontrado
               {issues.length !== 1 ? "s" : ""}
             </p>
           )}
         </div>
       </div>
 
-      {/* Badge de verificación Didit */}
       {diditCheck && <DiditBadge diditCheck={diditCheck} />}
 
-      {/* Lista de problemas */}
       {issues.length > 0 && (
         <ul className="flex flex-col gap-1.5">
           {issues.map((issue, i) => (
             <li
               key={i}
-              className="flex items-start gap-2 text-sm text-red-700 dark:text-red-400"
+              className="flex items-start gap-2 text-sm text-red-400 font-mono"
             >
-              <span className="mt-0.5 shrink-0">•</span>
+              <span className="mt-0.5 shrink-0 text-red-600">•</span>
               {issue}
             </li>
           ))}
         </ul>
       )}
 
-      {/* Campos extraídos */}
       <div>
-        <p className="text-xs font-medium uppercase tracking-wide text-zinc-400 mb-2">
+        <p className="text-xs font-mono uppercase tracking-[0.2em] text-[#c4a882] mb-2">
           Campos extraídos
         </p>
         <FieldsTable fields={fields} />

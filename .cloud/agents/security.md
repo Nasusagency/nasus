@@ -125,16 +125,19 @@ Leer `lib/didit/database-validation.ts` y `app/api/validate/route.ts` y confirma
 |---|---------|-------|----------|-----------|--------|
 | 1 | `app/api/validate/route.ts` | 101 | `console.error` incluía `raw` (texto OCR con PII: nombres, números de documento, fechas) | 🔴 Alto | ✅ Corregido 2026-04-24 |
 | 2 | `app/api/validate/route.ts` | 89 | Mensaje de error exponía `ANTHROPIC_API_KEY` como texto literal al cliente | 🟡 Medio | ✅ Corregido 2026-04-24 |
-| 3 | `app/api/validate/route.ts` | 133 | `fields` con PII se persiste en Supabase; no hay autorización explícita del cliente documentada | 🟡 Advertencia | 🔄 Pendiente confirmación del cliente |
+| 3 | `app/api/validate/route.ts` | 197 | `fields` con PII se persistía en Supabase sin autorización explícita del cliente | 🟡 Advertencia | ✅ Corregido 2026-04-26 — `fields` eliminado del insert |
 | 4 | — | — | 2 vulnerabilidades moderadas en `postcss` (dep. transitiva de Next.js). Sin fix no-breaking disponible | 🟡 Moderada | 🔄 Monitorear en cada release |
+| 5 | `app/api/validate/route.ts` | — | Sin rate limiting en el endpoint — cualquier IP podía hacer peticiones ilimitadas | 🟡 Medio | ✅ Corregido 2026-04-26 — rate limit 10 req/min por IP |
+| 6 | `lib/validators/curp.ts`, `lib/validators/ine.ts` | 103, 69 | Mensajes de issue reflejaban valores de CURP y clave de elector hacia el cliente | 🟡 Bajo | ✅ Corregido 2026-04-26 — PII removido de mensajes de error |
+| 7 | `app/api/validate/route.ts` | 88 | `console.error("[validate] Claude error:", err)` — objeto de error completo podía contener metadatos PII | 🟡 Bajo | ✅ Corregido 2026-04-26 — solo se loguea `err.message` |
 
 ---
 
 ## Estado del último ciclo
 
-- **Fecha**: 2026-04-25
+- **Fecha**: 2026-04-26
 - **Auditor**: Claude (invocación automática pre-tarea)
-- **Resultado**: APROBADO con advertencia de autorización pendiente
-- **Cobertura**: 42/42 tests en verde (normalizer, dni, acta, curp, rfc, ine, pasaporte)
-- **Nuevo**: Integración Didit documentada. `DIDIT_API_KEY` aún no activa en producción — falta autorización escrita del cliente
+- **Resultado**: APROBADO — todos los hallazgos bloqueantes y advertencias corregidos
+- **Cobertura**: tests en verde (normalizer, dni, acta, curp, rfc, ine, pasaporte)
+- **Cambios en este ciclo**: fields PII removidos de Supabase, rate limiting añadido, PII eliminado de mensajes de error, logging de errores sanitizado
 - **Próxima auditoría**: antes del siguiente PR a `main`

@@ -69,17 +69,16 @@ export default function DropZone({ onFile, disabled }: Props) {
 
   return (
     <div className="flex flex-col gap-4 w-full">
-      {/* Selector de tipo de documento */}
       <div className="flex flex-wrap gap-2">
         {MX_TYPES.map((t) => (
           <button
             key={t}
             type="button"
             onClick={() => setDocType(t)}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+            className={`px-3 py-1.5 rounded-full text-sm font-mono border transition-colors ${
               docType === t
-                ? "bg-zinc-900 text-white border-zinc-900 dark:bg-white dark:text-zinc-900 dark:border-white"
-                : "border-zinc-300 text-zinc-600 hover:border-zinc-500 dark:border-zinc-600 dark:text-zinc-400"
+                ? "bg-[#c4a882] text-[#050508] border-[#c4a882] font-bold"
+                : "border-zinc-700 text-zinc-500 hover:border-[#c4a882] hover:text-[#c4a882]"
             }`}
           >
             {DOC_TYPE_LABELS[t]}
@@ -87,15 +86,19 @@ export default function DropZone({ onFile, disabled }: Props) {
         ))}
       </div>
 
-      {/* Zona de arrastre */}
       <label
-        onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragging(true);
+        }}
         onDragLeave={() => setDragging(false)}
         onDrop={onDrop}
         className={`relative flex flex-col items-center justify-center gap-3 w-full rounded-2xl border-2 border-dashed p-10 cursor-pointer transition-colors
-          ${dragging
-            ? "border-zinc-900 bg-zinc-100 dark:border-white dark:bg-zinc-800"
-            : "border-zinc-300 bg-zinc-50 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"}
+          ${
+            dragging
+              ? "border-[#c4a882] bg-zinc-900"
+              : "border-zinc-800 bg-zinc-900/30 hover:bg-zinc-900/60 hover:border-zinc-700"
+          }
           ${disabled ? "pointer-events-none opacity-50" : ""}
         `}
       >
@@ -107,7 +110,7 @@ export default function DropZone({ onFile, disabled }: Props) {
           disabled={disabled}
         />
         <svg
-          className="w-10 h-10 text-zinc-400"
+          className="w-10 h-10 text-zinc-600"
           fill="none"
           stroke="currentColor"
           strokeWidth={1.5}
@@ -119,22 +122,22 @@ export default function DropZone({ onFile, disabled }: Props) {
             d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"
           />
         </svg>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400 text-center">
-          <span className="font-medium text-zinc-700 dark:text-zinc-200">
-            Haz clic para seleccionar
-          </span>{" "}
+        <p className="text-sm text-zinc-500 text-center">
+          <span className="font-medium text-zinc-300">Haz clic para seleccionar</span>{" "}
           o arrastra el archivo aquí
         </p>
-        <p className="text-xs text-zinc-400">
+        <p className="text-xs text-zinc-600 font-mono">
           JPG, PNG, WEBP{acceptsPdf ? ", PDF" : ""} · máx. 5 MB
           {acceptsPdf && (
-            <span className="ml-1 text-zinc-400">· PDF recomendado para {DOC_TYPE_LABELS[docType]}</span>
+            <span className="ml-1 text-[#c4a882]/70">
+              · PDF recomendado para {DOC_TYPE_LABELS[docType]}
+            </span>
           )}
         </p>
       </label>
 
       {error && (
-        <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+        <p className="text-sm text-red-400 font-mono">{error}</p>
       )}
     </div>
   );
