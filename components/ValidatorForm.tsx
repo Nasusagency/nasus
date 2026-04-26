@@ -26,6 +26,7 @@ interface Result {
   fields: Record<string, unknown>;
   docType?: string;
   diditCheck?: DiditCheck;
+  humanOverriddenFields?: string[];
 }
 
 export default function ValidatorForm() {
@@ -34,6 +35,7 @@ export default function ValidatorForm() {
   const [status, setStatus] = useState<Status>("idle");
   const [result, setResult] = useState<Result | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [revalidating, setRevalidating] = useState(false);
   const router = useRouter();
 
   const handleFile = useCallback((f: File, type: DocumentType) => {
@@ -79,6 +81,36 @@ export default function ValidatorForm() {
       setStatus("error");
     }
   }, [file, docType, router]);
+
+  const handleRevalidate = useCallback(
+    async (overrides: Record<string, string>) => {
+      if (!file) return;
+      setRevalidating(true);
+      setApiError(null);
+
+      try {
+        const form = new FormData();
+        form.append("document", file);
+        form.append("type", docType);
+        form.append("overrides", JSON.stringify(overrides));
+
+        const res = await fetch("/api/validate", { method: "POST", body: form });
+        const data = await res.json();
+
+        if (res.ok) {
+          setResult(data as Result);
+          router.refresh();
+        } else {
+          setApiError(data?.error ?? "Error en la re-validación");
+        }
+      } catch {
+        setApiError("No se pudo conectar con el servidor.");
+      } finally {
+        setRevalidating(false);
+      }
+    },
+    [file, docType, router]
+  );
 
   return (
     <div className="flex flex-col gap-4">
@@ -128,6 +160,12 @@ export default function ValidatorForm() {
         </div>
       )}
 
+      {!revalidating && apiError && status === "done" && (
+        <div className="rounded-xl border border-red-800 bg-red-950/50 px-4 py-3 text-sm text-red-400">
+          {apiError}
+        </div>
+      )}
+
       {status === "done" && result && (
         <ValidationResult
           valid={result.valid}
@@ -135,6 +173,9 @@ export default function ValidatorForm() {
           fields={result.fields}
           docType={result.docType}
           diditCheck={result.diditCheck}
+          onRevalidate={handleRevalidate}
+          revalidating={revalidating}
+          humanOverriddenFields={result.humanOverriddenFields}
         />
       )}
     </div>

@@ -154,6 +154,21 @@ export async function POST(req: NextRequest) {
     ? claudePayload.issues
     : [];
 
+  // Apply human overrides before validation (only field names are logged — no PII values)
+  let humanOverriddenFields: string[] = [];
+  const overridesStr = formData.get("overrides");
+  if (typeof overridesStr === "string" && overridesStr.trim()) {
+    try {
+      const overrides = JSON.parse(overridesStr) as Record<string, unknown>;
+      if (overrides && typeof overrides === "object" && !Array.isArray(overrides)) {
+        humanOverriddenFields = Object.keys(overrides);
+        Object.assign(claudePayload.fields, overrides);
+      }
+    } catch {
+      // invalid JSON — skip overrides silently
+    }
+  }
+
   // Detección de baja calidad: si Claude reporta ilegibilidad y la mayoría de campos son null
   const fieldValues = Object.values(claudePayload.fields ?? {});
   const nullCount = fieldValues.filter((v) => v === null).length;
@@ -239,11 +254,13 @@ export async function POST(req: NextRequest) {
       issues: mergedIssues,
       // fields omitidos: contienen PII (nombres, CURP, etc.)
       // Persistencia de fields requiere autorización explícita del cliente
+      // human_reviewed: requiere migración → ALTER TABLE validations ADD COLUMN human_reviewed boolean DEFAULT false
+      ...(humanOverriddenFields.length > 0 ? { human_reviewed: true } : {}),
     });
   }
 
   return NextResponse.json(
-    { ...validation, issues: mergedIssues, docType, diditCheck },
+    { ...validation, issues: mergedIssues, docType, diditCheck, humanOverriddenFields },
     { status: 200 }
   );
 }

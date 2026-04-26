@@ -130,14 +130,15 @@ Leer `lib/didit/database-validation.ts` y `app/api/validate/route.ts` y confirma
 | 5 | `app/api/validate/route.ts` | — | Sin rate limiting en el endpoint — cualquier IP podía hacer peticiones ilimitadas | 🟡 Medio | ✅ Corregido 2026-04-26 — rate limit 10 req/min por IP |
 | 6 | `lib/validators/curp.ts`, `lib/validators/ine.ts` | 103, 69 | Mensajes de issue reflejaban valores de CURP y clave de elector hacia el cliente | 🟡 Bajo | ✅ Corregido 2026-04-26 — PII removido de mensajes de error |
 | 7 | `app/api/validate/route.ts` | 88 | `console.error("[validate] Claude error:", err)` — objeto de error completo podía contener metadatos PII | 🟡 Bajo | ✅ Corregido 2026-04-26 — solo se loguea `err.message` |
+| 8 | `app/api/validate/route.ts` | — | Override flow nuevo: se registra `humanOverriddenFields` (nombres de campos) en log de auditoría. **No se loguean los valores** — solo las claves. Auditado y aprobado | 🟢 Info | ✅ Aprobado 2026-04-25 |
 
 ---
 
 ## Estado del último ciclo
 
-- **Fecha**: 2026-04-26
+- **Fecha**: 2026-04-25
 - **Auditor**: Claude (invocación automática pre-tarea)
-- **Resultado**: APROBADO — todos los hallazgos bloqueantes y advertencias corregidos
-- **Cobertura**: tests en verde (normalizer, dni, acta, curp, rfc, ine, pasaporte)
-- **Cambios en este ciclo**: fields PII removidos de Supabase, rate limiting añadido, PII eliminado de mensajes de error, logging de errores sanitizado
+- **Resultado**: APROBADO — feature de campos editables auditada
+- **Cobertura**: tests en verde (normalizer, dni, acta, curp, rfc, ine, pasaporte, override flow)
+- **Cambios en este ciclo**: campos editables + re-validación humana. Audit log registra solo nombres de campos (no valores PII). `human_reviewed` en Supabase requiere migración manual: `ALTER TABLE validations ADD COLUMN human_reviewed boolean DEFAULT false`
 - **Próxima auditoría**: antes del siguiente PR a `main`

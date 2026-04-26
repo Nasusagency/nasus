@@ -712,3 +712,62 @@ describe("validatePasaporte", () => {
     assert.equal(r.valid, true);
   });
 });
+
+// ---------------------------------------------------------------------------
+// override flow (simula el merge que hace route.ts antes de validar)
+// ---------------------------------------------------------------------------
+describe("override flow", () => {
+  test("CURP con formato incorrecto corregida por override → valid: true", () => {
+    const merged: CurpFields = {
+      ...CURP_FIXTURES.badFormat,
+      curp: "HEGG560427MVZRRL04",
+      fecha_nacimiento: "1956-04-27",
+      sexo: "M",
+    };
+    const r = validateCurp(merged);
+    assert.equal(r.valid, true);
+    assert.deepEqual(r.issues, []);
+  });
+
+  test("CURP override con valor todavía inválido → sigue fallando", () => {
+    const merged: CurpFields = {
+      ...CURP_FIXTURES.badFormat,
+      curp: "NO_ES_VALIDA_XXXXX",
+    };
+    const r = validateCurp(merged);
+    assert.equal(r.valid, false);
+  });
+
+  test("INE sin clave de elector: override la resuelve", () => {
+    const merged: IneFields = {
+      ...INE_FIXTURES.missingClave,
+      clave_elector: "MRTNJO560427HDFNRS",
+      fecha_nacimiento: "1956-04-27",
+    };
+    const r = validateIne(merged);
+    assert.ok(!r.issues.some((i) => i.includes("Clave de elector ausente")));
+  });
+
+  test("INE con CURP/fecha en mismatch: override de ambos campos resuelve los issues", () => {
+    // curpFechaMismatch: CURP codifica 1956-04-27, fecha 1990-01-15, clave con 900115
+    // Override fecha y clave para que coincidan con la CURP
+    const merged: IneFields = {
+      ...INE_FIXTURES.curpFechaMismatch,
+      fecha_nacimiento: "1956-04-27",
+      clave_elector: "MRTNJO560427HDFNRS",
+    };
+    const r = validateIne(merged);
+    assert.ok(!r.issues.some((i) => i.includes("fecha codificada en la CURP")));
+    assert.ok(!r.issues.some((i) => i.includes("fecha codificada en la clave")));
+  });
+
+  test("CURP con mismatch de sexo: override del campo sexo resuelve el issue", () => {
+    const merged: CurpFields = {
+      ...CURP_FIXTURES.sexMismatch,
+      sexo: "M",
+    };
+    const r = validateCurp(merged);
+    assert.ok(!r.issues.some((i) => i.includes("difiere")));
+    assert.equal(r.valid, true);
+  });
+});

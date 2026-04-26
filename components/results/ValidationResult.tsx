@@ -1,4 +1,6 @@
-import FieldsTable from "./FieldsTable";
+"use client";
+
+import FieldsTable, { LABELS } from "./FieldsTable";
 
 const DOC_TYPE_LABELS: Record<string, string> = {
   ine: "INE / IFE — Credencial para Votar",
@@ -28,6 +30,9 @@ interface Props {
   fields: Record<string, unknown>;
   docType?: string;
   diditCheck?: DiditCheck;
+  onRevalidate?: (overrides: Record<string, string>) => void;
+  revalidating?: boolean;
+  humanOverriddenFields?: string[];
 }
 
 const DIDIT_CONFIG: Record<
@@ -95,6 +100,9 @@ export default function ValidationResult({
   fields,
   docType,
   diditCheck,
+  onRevalidate,
+  revalidating,
+  humanOverriddenFields,
 }: Props) {
   return (
     <div className="flex flex-col gap-4 w-full">
@@ -159,6 +167,28 @@ export default function ValidationResult({
 
       {diditCheck && <DiditBadge diditCheck={diditCheck} />}
 
+      {humanOverriddenFields && humanOverriddenFields.length > 0 && (
+        <div className="flex items-center gap-2.5 rounded-xl border border-[#c4a882]/40 bg-[#c4a882]/5 px-4 py-3 text-sm font-mono text-[#c4a882]">
+          <svg
+            className="w-4 h-4 shrink-0"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
+            />
+          </svg>
+          <span className="font-medium">Revisado manualmente</span>
+          <span className="ml-auto text-xs opacity-60 truncate max-w-[200px]">
+            {humanOverriddenFields.map((k) => LABELS[k] ?? k).join(", ")}
+          </span>
+        </div>
+      )}
+
       {issues.length > 0 && (
         <ul className="flex flex-col gap-1.5">
           {issues.map((issue, i) => (
@@ -177,7 +207,13 @@ export default function ValidationResult({
         <p className="text-xs font-mono uppercase tracking-[0.2em] text-[#c4a882] mb-2">
           Campos extraídos
         </p>
-        <FieldsTable fields={fields} />
+        <FieldsTable
+          key={humanOverriddenFields ? JSON.stringify(humanOverriddenFields) : "initial"}
+          fields={fields}
+          onRevalidate={onRevalidate}
+          revalidating={revalidating}
+          humanOverriddenFields={humanOverriddenFields}
+        />
       </div>
     </div>
   );
