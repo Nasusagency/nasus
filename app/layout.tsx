@@ -49,9 +49,23 @@ export default async function RootLayout({
               Nasus Agency
             </a>
             <div className="flex items-center gap-4">
+              <nav className="hidden sm:flex items-center gap-1">
+                <a
+                  href="/"
+                  className="px-3 py-1.5 text-xs font-mono text-zinc-400 hover:text-[#c4a882] transition-colors rounded-lg hover:bg-zinc-900"
+                >
+                  Documentos
+                </a>
+                <a
+                  href="/fotos"
+                  className="px-3 py-1.5 text-xs font-mono text-zinc-400 hover:text-[#c4a882] transition-colors rounded-lg hover:bg-zinc-900"
+                >
+                  Fotografías
+                </a>
+              </nav>
               {user ? (
                 <>
-                  <span className="text-xs text-zinc-500 truncate max-w-[200px] hidden sm:block">
+                  <span className="text-xs text-zinc-500 truncate max-w-[160px] hidden sm:block">
                     {user.email}
                   </span>
                   <LogoutButton />
