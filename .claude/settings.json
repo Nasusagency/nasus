@@ -3,7 +3,9 @@
     "allow": [
       "Bash(git rm *)",
       "Bash(curl -s -X POST https://verification.didit.me/v3/database-validation/ -H 'x-api-key: W4DmNoY_OmxtCRrCBTlQxERPUx_hj6JmVs2ClUFQQXo' -F issuing_state=MEX -F identification_number=ALELSL000621HB800 -F validation_type=one_by_one -w '\\\\n\\\\nHTTP Status: %{http_code}')",
-      "Bash(node --import tsx/esm --test tests/validators.test.ts)"
+      "Bash(node --import tsx/esm --test tests/validators.test.ts)",
+      "Bash(git config *)",
+      "Bash(vercel --version)"
     ]
   }
 }
