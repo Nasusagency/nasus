@@ -99,7 +99,8 @@ export async function POST(req: NextRequest) {
   }
 
   const buffer = await file.arrayBuffer();
-  const base64 = Buffer.from(buffer).toString("base64");
+  const { autoRotateImage } = await import("@/lib/utils/image");
+  const base64 = await autoRotateImage(buffer, file.type);
 
   let result: Awaited<ReturnType<typeof analyzeDocument>>;
   try {

@@ -1,5 +1,6 @@
 import { validateIne, type IneFields } from "@/lib/validators/ine";
 import { adaptResult, type DocumentConfig, type FieldDef } from "../types";
+import { deriveDateFromCurp } from "@/lib/utils/curp";
 
 const fieldDefs: FieldDef[] = [
   { key: "nombres", label: "Nombres", required: true, editable: true },
@@ -23,6 +24,14 @@ export const INE_CONFIG: DocumentConfig = {
   countries: ["MX"],
   fieldDefs,
   validate: (raw) => adaptResult(validateIne(raw as IneFields)),
+  deriveFields: (fields) => {
+    const derived: Record<string, unknown> = {};
+    if (!fields.fecha_nacimiento) {
+      const derived_date = deriveDateFromCurp(fields.curp);
+      if (derived_date) derived.fecha_nacimiento = derived_date;
+    }
+    return derived;
+  },
   diditSupported: true,
   getDiditArgs: (fields) => {
     const f = fields as IneFields;

@@ -76,7 +76,14 @@ export async function analyzeDocument(
 
   const claudeIssues: string[] = Array.isArray(parsed.issues) ? parsed.issues : [];
   const humanOverriddenFields: string[] = overrides ? Object.keys(overrides) : [];
-  const mergedFields = overrides ? { ...parsed.fields, ...overrides } : (parsed.fields ?? {});
+  const claudeFields = parsed.fields ?? {};
+  // deriveFields fills only null/missing values; claude + human overrides take priority
+  const derivedFields = config.deriveFields ? config.deriveFields(claudeFields) : {};
+  const withDerived = { ...claudeFields };
+  for (const [k, v] of Object.entries(derivedFields)) {
+    if (withDerived[k] == null) withDerived[k] = v;
+  }
+  const mergedFields = overrides ? { ...withDerived, ...overrides } : withDerived;
 
   // Low-quality detection
   const fieldValues = Object.values(mergedFields);

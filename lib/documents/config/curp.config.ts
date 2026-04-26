@@ -1,5 +1,6 @@
 import { validateCurp, type CurpFields } from "@/lib/validators/curp";
 import { adaptResult, type DocumentConfig, type FieldDef } from "../types";
+import { deriveDateFromCurp, deriveSexFromCurp } from "@/lib/utils/curp";
 
 const fieldDefs: FieldDef[] = [
   { key: "curp", label: "CURP", required: true, editable: true },
@@ -18,6 +19,18 @@ export const CURP_CONFIG: DocumentConfig = {
   countries: ["MX"],
   fieldDefs,
   validate: (raw) => adaptResult(validateCurp(raw as CurpFields)),
+  deriveFields: (fields) => {
+    const derived: Record<string, unknown> = {};
+    if (!fields.fecha_nacimiento) {
+      const d = deriveDateFromCurp(fields.curp);
+      if (d) derived.fecha_nacimiento = d;
+    }
+    if (!fields.sexo) {
+      const s = deriveSexFromCurp(fields.curp);
+      if (s) derived.sexo = s;
+    }
+    return derived;
+  },
   diditSupported: true,
   getDiditArgs: (fields) => {
     const f = fields as CurpFields;

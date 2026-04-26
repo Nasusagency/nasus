@@ -31,6 +31,7 @@ export interface DocumentConfig {
   systemPrompt: string;
   diditSupported: boolean;
   getDiditArgs?: (fields: Record<string, unknown>) => DiditArgs | null;
+  deriveFields?: (fields: Record<string, unknown>) => Record<string, unknown>;
 }
 
 export function adaptResult(r: {

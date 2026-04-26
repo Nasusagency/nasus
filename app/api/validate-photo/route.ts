@@ -76,7 +76,8 @@ export async function POST(req: NextRequest) {
 
   const config = PHOTO_REGISTRY[photoType];
   const buffer = await file.arrayBuffer();
-  const base64 = Buffer.from(buffer).toString("base64");
+  const { autoRotateImage } = await import("@/lib/utils/image");
+  const base64 = await autoRotateImage(buffer, file.type);
 
   try {
     const result = await analyzePhoto(config, base64, file.type);
