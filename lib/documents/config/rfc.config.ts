@@ -16,7 +16,7 @@ export const RFC_CONFIG: DocumentConfig = {
   description: "Constancia emitida por el SAT",
   countries: ["MX"],
   fieldDefs,
-  validate: (raw) => adaptResult(validateRfc(raw as RfcFields)),
+  validate: (raw) => adaptResult(validateRfc(raw as unknown as RfcFields)),
   diditSupported: false,
   systemPrompt: `Eres un sistema experto en la Constancia de Situación Fiscal (RFC) del SAT de México.
 

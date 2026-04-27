@@ -23,7 +23,7 @@ export const INE_CONFIG: DocumentConfig = {
   description: "Credencial emitida por el Instituto Nacional Electoral",
   countries: ["MX"],
   fieldDefs,
-  validate: (raw) => adaptResult(validateIne(raw as IneFields)),
+  validate: (raw) => adaptResult(validateIne(raw as unknown as IneFields)),
   deriveFields: (fields) => {
     const derived: Record<string, unknown> = {};
     if (!fields.fecha_nacimiento) {
@@ -34,7 +34,7 @@ export const INE_CONFIG: DocumentConfig = {
   },
   diditSupported: true,
   getDiditArgs: (fields) => {
-    const f = fields as IneFields;
+    const f = fields as unknown as IneFields;
     if (!f.curp) return null;
     return {
       curp: f.curp,

@@ -22,7 +22,7 @@ export const ACTA_CONFIG: DocumentConfig = {
   description: "Acta oficial emitida por el Registro Civil mexicano",
   countries: ["MX"],
   fieldDefs,
-  validate: (raw) => adaptResult(validateActa(raw as ActaFields)),
+  validate: (raw) => adaptResult(validateActa(raw as unknown as ActaFields)),
   diditSupported: false,
   systemPrompt: `Eres un sistema experto en Actas del Registro Civil mexicano.
 

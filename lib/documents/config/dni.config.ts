@@ -16,7 +16,7 @@ export const DNI_CONFIG: DocumentConfig = {
   description: "Documento de identidad genérico (Perú, Argentina, Colombia, España, México y otros)",
   countries: ["PE", "AR", "CO", "ES", "MX"],
   fieldDefs,
-  validate: (raw) => adaptResult(validateDni(raw as DniFields)),
+  validate: (raw) => adaptResult(validateDni(raw as unknown as DniFields)),
   diditSupported: false,
   systemPrompt: `Eres un sistema experto en extracción y validación de documentos de identidad oficiales.
 

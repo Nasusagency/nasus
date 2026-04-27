@@ -18,7 +18,7 @@ export const CURP_CONFIG: DocumentConfig = {
   description: "Documento emitido por RENAPO",
   countries: ["MX"],
   fieldDefs,
-  validate: (raw) => adaptResult(validateCurp(raw as CurpFields)),
+  validate: (raw) => adaptResult(validateCurp(raw as unknown as CurpFields)),
   deriveFields: (fields) => {
     const derived: Record<string, unknown> = {};
     if (!fields.fecha_nacimiento) {
@@ -33,7 +33,7 @@ export const CURP_CONFIG: DocumentConfig = {
   },
   diditSupported: true,
   getDiditArgs: (fields) => {
-    const f = fields as CurpFields;
+    const f = fields as unknown as CurpFields;
     if (!f.curp) return null;
     return {
       curp: f.curp,

@@ -20,7 +20,7 @@ export const PASAPORTE_CONFIG: DocumentConfig = {
   description: "Pasaporte emitido por la Secretaría de Relaciones Exteriores (SRE)",
   countries: ["MX"],
   fieldDefs,
-  validate: (raw) => adaptResult(validatePasaporte(raw as PasaporteFields)),
+  validate: (raw) => adaptResult(validatePasaporte(raw as unknown as PasaporteFields)),
   diditSupported: false,
   systemPrompt: `Eres un sistema experto en Pasaportes Mexicanos emitidos por la Secretaría de Relaciones Exteriores (SRE).
 
