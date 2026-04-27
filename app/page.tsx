@@ -121,17 +121,17 @@ export default function LandingPage() {
       </nav>
 
       {/* ── 1. HERO ────────────────────────────────────────────────── */}
-      <section className="min-h-[calc(100vh-56px)] flex flex-col items-center justify-center px-6 text-center py-20">
+      <section className="min-h-[calc(100vh-56px)] flex flex-col items-center justify-center px-6 text-center py-8">
         <div className="max-w-3xl mx-auto">
-          <p className={`${CYAN} text-xs font-mono tracking-[0.3em] uppercase mb-8`}>
+          <p className={`${CYAN} text-xs font-mono tracking-[0.3em] uppercase mb-5`}>
             Nasus Agency
           </p>
-          <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-[1.1]">
+          <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-5 leading-[1.1]">
             Soluciones tecnológicas{" "}
             <span className={GOLD}>artesanales</span>
             <br className="hidden md:block" /> para empresas en escala
           </h1>
-          <p className="text-zinc-400 text-xl mb-12 max-w-xl mx-auto leading-relaxed">
+          <p className="text-zinc-400 text-xl mb-8 max-w-xl mx-auto leading-relaxed">
             Implementamos IA directamente en tus sistemas. Sin intermediarios,
             sin reuniones innecesarias.
           </p>
