@@ -25,7 +25,8 @@ export default function LoginPage() {
       if (error) {
         setMessage({ type: "error", text: error.message });
       } else {
-        router.push("/");
+        const next = new URLSearchParams(window.location.search).get("next") ?? "/validador";
+        router.push(next);
         router.refresh();
       }
     } else {
