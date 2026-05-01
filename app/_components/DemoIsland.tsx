@@ -172,10 +172,10 @@ export default function DemoIsland() {
               </table>
             </div>
             <a
-              href="/validador"
+              href="mailto:nasusagency@gmail.com"
               className="flex items-center justify-center gap-2 w-full h-10 rounded-xl bg-[#c4a882] text-[#050508] text-xs font-mono font-bold hover:bg-[#d4b892] transition-colors"
             >
-              Probar con tu documento real →
+              Pedir acceso →
             </a>
           </div>
         )}

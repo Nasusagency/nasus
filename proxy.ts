@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 const PROTECTED = ["/fotos"];
+const BLOCKED = ["/validador", "/fotos", "/facturas"];
 
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -30,6 +31,15 @@ export async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const path = request.nextUrl.pathname;
+
+  // Block product pages for everyone — demos only on landing
+  const isBlocked = BLOCKED.some((p) => path === p || path.startsWith(p + "/"));
+  if (isBlocked) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/";
+    return NextResponse.redirect(url);
+  }
+
   const isProtected = PROTECTED.some((p) => path === p || path.startsWith(p + "/"));
 
   if (!user && isProtected) {

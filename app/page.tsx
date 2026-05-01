@@ -1,15 +1,17 @@
 import type { Metadata } from "next";
 import ContactForm from "./_components/ContactForm";
 import DemoIsland from "./_components/DemoIsland";
+import FacturasDemo from "./_components/FacturasDemo";
+import FotosDemo from "./_components/FotosDemo";
 
 export const metadata: Metadata = {
   title: "Nasus Agency — Soluciones tecnológicas artesanales",
   description:
-    "Implementamos IA directamente en tus sistemas. Validador de documentos oficiales mexicanos, automatización de procesos y desarrollo a medida para startups en escala.",
+    "Implementamos IA directamente en tus sistemas. Validador de documentos oficiales mexicanos, extractor de facturas a Excel, validación de fotografías y automatización de procesos.",
   openGraph: {
     title: "Nasus Agency — Soluciones tecnológicas artesanales",
     description:
-      "Implementamos IA directamente en tus sistemas. Validador de documentos oficiales mexicanos, automatización de procesos y desarrollo a medida para startups en escala.",
+      "Implementamos IA directamente en tus sistemas. Validador de documentos oficiales mexicanos, extractor de facturas a Excel, validación de fotografías y automatización de procesos.",
     type: "website",
     siteName: "Nasus Agency",
     url: "https://nasus.lat",
@@ -84,23 +86,82 @@ const differentiators = [
 const portfolio = [
   {
     title: "CV AI Analyzer",
-    desc: "Analizador de CVs con IA para reclutadores. Procesa hasta 10 PDFs simultáneos, genera resumen y puntaje por perfil. Incluye modo para candidatos con recomendaciones de mejora.",
+    desc: "Analizador de CVs con IA para reclutadores. Procesa hasta 10 PDFs simultáneos, genera resumen y puntaje por perfil.",
     stack: ["Python", "Streamlit"],
     href: "https://recruitai.gumroad.com/l/analyzer",
   },
   {
     title: "Soccer Sticker App",
-    desc: "Web app para el Mundial — registra tu álbum, gestiona duplicados, intercambia cartas con otros coleccionistas por ubicación con chat integrado.",
+    desc: "Web app para el Mundial — registra tu álbum, gestiona duplicados, intercambia cartas con otros coleccionistas por ubicación.",
     stack: ["Next.js", "Supabase", "Vercel"],
     href: "https://soccersticker.app",
   },
   {
     title: "Theia.lat",
-    desc: "Tienda de moda femenina con dropshipping integrado. Logística y envío gestionados por el proveedor, catálogo actualizado automáticamente.",
+    desc: "Tienda de moda femenina con dropshipping integrado. Logística y envío gestionados por el proveedor.",
     stack: ["Next.js", "Supabase", "Vercel"],
     href: "https://theia.lat",
   },
 ];
+
+const TOOLS = [
+  {
+    id: "validador",
+    badge: "MVP activo",
+    badgeClass: "bg-[#c4a882] text-[#050508]",
+    cardClass: "border-[#c4a882] bg-[#c4a882]/[0.03]",
+    title: "Validador de Documentos",
+    tagline: "Elimina 25+ horas semanales de revisión manual",
+    desc: "Valida INE, CURP, RFC, Pasaporte y Acta de Nacimiento con IA. Extrae todos los campos, cruza datos contra bases de datos oficiales y genera un reporte de integridad en segundos.",
+    features: [
+      "INE / IFE — Credencial para Votar",
+      "CURP — Registro de Población",
+      "RFC — SAT",
+      "Pasaporte mexicano (SRE)",
+      "Acta de Nacimiento oficial",
+      "DNI / Cédula extranjera",
+      "Título universitario / Cédula profesional",
+      "Certificado de Bachillerato",
+    ],
+    Demo: DemoIsland,
+  },
+  {
+    id: "facturas",
+    badge: "Nuevo",
+    badgeClass: "bg-emerald-500 text-[#050508]",
+    cardClass: "border-zinc-800",
+    title: "Nasus Facturas",
+    tagline: "Tu factura de Google o Meta en Excel en segundos",
+    desc: "Extrae facturas de Google Ads y Meta Ads a Excel automáticamente. Desglose por campaña, cuenta y período con tres hojas listas para contabilidad.",
+    features: [
+      "Google Ads — todas las cuentas y campañas",
+      "Meta Ads — ad accounts y conjuntos",
+      "Hoja Resumen con RFC emisor y receptor",
+      "Hoja Detalle con todas las campañas",
+      "Hoja Para Contabilidad lista para entregar",
+      "Detecta actividad no válida (importes negativos)",
+    ],
+    Demo: FacturasDemo,
+  },
+  {
+    id: "fotos",
+    badge: "Activo",
+    badgeClass: "bg-zinc-700 text-zinc-300",
+    cardClass: "border-zinc-800",
+    title: "Validador de Fotografías",
+    tagline: "Foto rechazada cero: valida antes de imprimir",
+    desc: "Verifica que las fotografías cumplan los requisitos oficiales para pasaportes, visas y documentos escolares. Configura tus propios criterios institucionales.",
+    features: [
+      "Pasaporte mexicano — requisitos SRE",
+      "Visa USA — estándar USCIS",
+      "Foto escolar / infantil",
+      "Configuración institucional personalizada",
+      "Detecta lentes, accesorios, fondo incorrecto",
+      "Presets guardables por institución",
+    ],
+    Demo: FotosDemo,
+  },
+] as const;
 
 export default function LandingPage() {
   return (
@@ -194,95 +255,57 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── 4. PRODUCTO ESTRELLA ───────────────────────────────────── */}
+      {/* ── 4. HERRAMIENTAS ACTIVAS ────────────────────────────────── */}
       <section className="py-24 px-6 border-t border-zinc-900">
         <div className="max-w-5xl mx-auto">
           <p className={`${CYAN} text-xs font-mono tracking-[0.3em] uppercase mb-4`}>
-            Producto activo
+            Herramientas activas
           </p>
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-16">
-            Solución lista para producción
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+            Automatización lista para conectar a tus sistemas
           </h2>
+          <p className="text-zinc-500 mb-16">
+            Tres productos en producción. Pide acceso y los integramos en tu flujo esta semana.
+          </p>
 
-          {/* Validador — card protagonista */}
-          <div className="border border-[#c4a882] rounded-2xl p-8 md:p-10 relative bg-[#c4a882]/[0.03]">
-            <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 border-2 border-[#c4a882] rounded-lg flex items-center justify-center flex-shrink-0">
-                  <div className="w-4 h-4 bg-[#c4a882] rounded-sm" />
+          <div className="flex flex-col gap-8">
+            {TOOLS.map(({ id, badge, badgeClass, cardClass, title, tagline, desc, features, Demo }) => (
+              <div key={id} className={`border rounded-2xl p-8 md:p-10 ${cardClass}`}>
+                <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
+                  <h3 className="text-white font-bold text-2xl">{title}</h3>
+                  <span className={`text-xs font-bold px-3 py-1 rounded-full font-mono tracking-wide flex-shrink-0 ${badgeClass}`}>
+                    {badge}
+                  </span>
                 </div>
-                <h3 className="text-white font-bold text-2xl">
-                  Validador de Documentos Oficiales
-                </h3>
-              </div>
-              <span className="bg-[#c4a882] text-[#050508] text-xs font-bold px-3 py-1 rounded-full font-mono tracking-wide flex-shrink-0">
-                MVP activo
-              </span>
-            </div>
 
-            <div className="grid md:grid-cols-2 gap-8">
-              <div>
-                <p className="text-zinc-300 leading-relaxed mb-4">
-                  Valida INE, CURP, RFC, Pasaporte y Acta de Nacimiento
-                  automáticamente con IA. Extrae todos los campos, cruza datos
-                  contra bases de datos oficiales y genera un reporte de
-                  integridad en segundos. Sin intervención humana.
-                </p>
-                <p className={`${CYAN} text-sm font-mono mb-6`}>
-                  Elimina 25+ horas semanales de revisión manual
-                </p>
-                <DemoIsland />
-              </div>
-              <div className="flex flex-col gap-3">
-                {[
-                  "INE / IFE — Credencial para Votar",
-                  "CURP — Registro de Población",
-                  "RFC — Servicio de Administración Tributaria",
-                  "Pasaporte mexicano (SRE)",
-                  "Acta de Nacimiento oficial",
-                  "DNI / Cédula extranjera",
-                ].map((doc) => (
-                  <div key={doc} className="flex items-center gap-2.5 text-sm text-zinc-400">
-                    <span className={`${GOLD} text-xs font-mono`}>✓</span>
-                    {doc}
+                <div className="grid md:grid-cols-2 gap-8">
+                  <div>
+                    <p className={`${CYAN} text-sm font-mono mb-3`}>{tagline}</p>
+                    <p className="text-zinc-300 leading-relaxed mb-5">{desc}</p>
+                    <div className="flex flex-col gap-2 mb-6">
+                      {features.map((f) => (
+                        <div key={f} className="flex items-center gap-2 text-sm text-zinc-400">
+                          <span className={`${GOLD} text-xs font-mono flex-shrink-0`}>✓</span>
+                          {f}
+                        </div>
+                      ))}
+                    </div>
+                    <a
+                      href="mailto:nasusagency@gmail.com"
+                      className="inline-flex items-center gap-2 text-sm font-mono font-bold text-[#050508] bg-[#c4a882] hover:bg-[#d4b892] px-5 py-2.5 rounded-lg transition-colors"
+                    >
+                      Pedir acceso →
+                    </a>
                   </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── 4b. NASUS FACTURAS ─────────────────────────────────────── */}
-      <section className="pb-24 px-6">
-        <div className="max-w-5xl mx-auto">
-          <div className="border border-zinc-800 hover:border-zinc-700 rounded-2xl p-8 md:p-10 relative transition-colors bg-zinc-900/20">
-            <div className="flex flex-wrap items-start justify-between gap-4 mb-5">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 border border-zinc-700 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <svg className="w-5 h-5 text-zinc-400" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-                  </svg>
+                  <div className="flex flex-col">
+                    <p className="text-xs font-mono text-zinc-600 uppercase tracking-widest mb-3">
+                      Demo interactivo
+                    </p>
+                    <Demo />
+                  </div>
                 </div>
-                <h3 className="text-white font-bold text-xl">Nasus Facturas</h3>
               </div>
-              <span className="bg-emerald-500 text-[#050508] text-xs font-bold px-3 py-1 rounded-full font-mono tracking-wide flex-shrink-0">
-                Nuevo
-              </span>
-            </div>
-            <p className="text-zinc-400 leading-relaxed mb-2">
-              Convierte facturas de Google Ads y Meta Ads a Excel automáticamente.
-              Desglose por campaña, cuenta y período listo para contabilidad.
-            </p>
-            <p className={`${CYAN} text-sm font-mono mb-6`}>
-              Tu factura de Google o Meta en Excel en segundos
-            </p>
-            <a
-              href="/facturas"
-              className="inline-flex items-center gap-2 text-sm font-mono font-bold text-[#050508] bg-[#c4a882] hover:bg-[#d4b892] px-5 py-2.5 rounded-lg transition-colors"
-            >
-              Probar gratis →
-            </a>
+            ))}
           </div>
         </div>
       </section>
