@@ -1,9 +1,6 @@
-import { anthropic } from "@/lib/anthropic/client";
 import type { FacturaExtraccion } from "./types";
-import { GOOGLE_ADS_PROMPT, META_ADS_PROMPT } from "./prompts";
 
-function extractJSON(raw: string): string {
-  // Strip markdown fences first
+export function extractJSON(raw: string): string {
   const stripped = raw
     .replace(/^```(?:json)?\s*/i, "")
     .replace(/\s*```\s*$/, "")
@@ -11,7 +8,6 @@ function extractJSON(raw: string): string {
 
   if (stripped.startsWith("{")) return stripped;
 
-  // Find outermost JSON object by braces
   const start = raw.indexOf("{");
   const end = raw.lastIndexOf("}");
   if (start !== -1 && end > start) return raw.slice(start, end + 1);
@@ -19,64 +15,19 @@ function extractJSON(raw: string): string {
   return stripped;
 }
 
-export async function extractFactura(
-  pdfBase64: string,
+export function normalizeFactura(
+  raw: unknown,
   tipo: "google" | "meta"
-): Promise<FacturaExtraccion> {
-  const systemPrompt = tipo === "google" ? GOOGLE_ADS_PROMPT : META_ADS_PROMPT;
-
-  const response = await anthropic.messages.create({
-    model: "claude-sonnet-4-5",
-    max_tokens: 16000,
-    system: [
-      {
-        type: "text",
-        text: systemPrompt,
-        cache_control: { type: "ephemeral" },
-      },
-    ],
-    messages: [
-      {
-        role: "user",
-        content: [
-          {
-            type: "document",
-            source: {
-              type: "base64",
-              media_type: "application/pdf",
-              data: pdfBase64,
-            },
-          } as never,
-          {
-            type: "text",
-            text: `Extrae todos los datos de esta factura de ${tipo === "google" ? "Google Ads" : "Meta Ads"} y responde ÚNICAMENTE con el JSON válido especificado.`,
-          },
-        ],
-      },
-    ],
-  });
-
-  const rawText =
-    response.content.find((b) => b.type === "text") as { type: "text"; text: string } | undefined;
-  const rawString = rawText?.text ?? "";
-
-  let parsed: FacturaExtraccion;
-  try {
-    parsed = JSON.parse(extractJSON(rawString)) as FacturaExtraccion;
-  } catch {
-    console.error("[facturas/engine] JSON parse failed. stop_reason:", response.stop_reason);
-    console.error("[facturas/engine] Raw response (first 500 chars):", rawString.slice(0, 500));
-    throw new SyntaxError("La respuesta del modelo no pudo ser interpretada como JSON");
-  }
-
+): FacturaExtraccion {
+  const p = raw as FacturaExtraccion;
   return {
     tipo,
-    numero_documento: parsed.numero_documento ?? null,
-    fecha: parsed.fecha ?? null,
-    periodo: parsed.periodo ?? null,
-    rfc_emisor: parsed.rfc_emisor ?? null,
-    rfc_receptor: parsed.rfc_receptor ?? null,
-    cuentas: (parsed.cuentas ?? []).map((c) => ({
+    numero_documento: p.numero_documento ?? null,
+    fecha: p.fecha ?? null,
+    periodo: p.periodo ?? null,
+    rfc_emisor: p.rfc_emisor ?? null,
+    rfc_receptor: p.rfc_receptor ?? null,
+    cuentas: (p.cuentas ?? []).map((c) => ({
       nombre: c.nombre ?? "Cuenta sin nombre",
       id_cuenta: c.id_cuenta ?? null,
       campanas: (c.campanas ?? []).map((camp) => ({
@@ -89,8 +40,20 @@ export async function extractFactura(
       iva: c.iva != null ? Number(c.iva) : null,
       total: Number(c.total) || 0,
     })),
-    subtotal: Number(parsed.subtotal) || 0,
-    iva: Number(parsed.iva) || 0,
-    total: Number(parsed.total) || 0,
+    subtotal: Number(p.subtotal) || 0,
+    iva: Number(p.iva) || 0,
+    total: Number(p.total) || 0,
   };
+}
+
+export function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  const chunkSize = 8192;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(
+      ...bytes.subarray(i, Math.min(i + chunkSize, bytes.length))
+    );
+  }
+  return btoa(binary);
 }

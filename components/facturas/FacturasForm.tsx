@@ -81,10 +81,41 @@ export default function FacturasForm() {
       form.append("tipo", tipo);
 
       const res = await fetch("/api/facturas/extract", { method: "POST", body: form });
-      const data = await res.json();
 
-      if (!res.ok) {
-        setError(data?.error ?? "Error desconocido del servidor");
+      if (!res.body) {
+        setError("El servidor no devolvió respuesta.");
+        setPhase("error");
+        return;
+      }
+
+      // Read streaming response — server sends '\n' keepalives then final JSON
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let fullText = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        fullText += decoder.decode(value, { stream: true });
+      }
+
+      const lines = fullText.split("\n").filter((l) => l.trim());
+      if (!lines.length) {
+        setError("El servidor no devolvió datos.");
+        setPhase("error");
+        return;
+      }
+
+      let data: unknown;
+      try {
+        data = JSON.parse(lines[lines.length - 1]);
+      } catch {
+        setError("Respuesta inesperada del servidor.");
+        setPhase("error");
+        return;
+      }
+
+      if (data && typeof data === "object" && "error" in data) {
+        setError((data as { error: string }).error);
         setPhase("error");
         return;
       }
