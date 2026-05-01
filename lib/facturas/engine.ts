@@ -2,6 +2,23 @@ import { anthropic } from "@/lib/anthropic/client";
 import type { FacturaExtraccion } from "./types";
 import { GOOGLE_ADS_PROMPT, META_ADS_PROMPT } from "./prompts";
 
+function extractJSON(raw: string): string {
+  // Strip markdown fences first
+  const stripped = raw
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```\s*$/, "")
+    .trim();
+
+  if (stripped.startsWith("{")) return stripped;
+
+  // Find outermost JSON object by braces
+  const start = raw.indexOf("{");
+  const end = raw.lastIndexOf("}");
+  if (start !== -1 && end > start) return raw.slice(start, end + 1);
+
+  return stripped;
+}
+
 export async function extractFactura(
   pdfBase64: string,
   tipo: "google" | "meta"
@@ -9,8 +26,8 @@ export async function extractFactura(
   const systemPrompt = tipo === "google" ? GOOGLE_ADS_PROMPT : META_ADS_PROMPT;
 
   const response = await anthropic.messages.create({
-    model: "claude-opus-4-5",
-    max_tokens: 4096,
+    model: "claude-sonnet-4-5",
+    max_tokens: 16000,
     system: [
       {
         type: "text",
@@ -43,12 +60,14 @@ export async function extractFactura(
     response.content.find((b) => b.type === "text") as { type: "text"; text: string } | undefined;
   const rawString = rawText?.text ?? "";
 
-  const cleaned = rawString
-    .replace(/^```(?:json)?\n?/, "")
-    .replace(/\n?```$/, "")
-    .trim();
-
-  const parsed = JSON.parse(cleaned) as FacturaExtraccion;
+  let parsed: FacturaExtraccion;
+  try {
+    parsed = JSON.parse(extractJSON(rawString)) as FacturaExtraccion;
+  } catch {
+    console.error("[facturas/engine] JSON parse failed. stop_reason:", response.stop_reason);
+    console.error("[facturas/engine] Raw response (first 500 chars):", rawString.slice(0, 500));
+    throw new SyntaxError("La respuesta del modelo no pudo ser interpretada como JSON");
+  }
 
   return {
     tipo,
