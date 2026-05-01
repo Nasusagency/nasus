@@ -3,8 +3,14 @@
 import { useState, useCallback, useRef } from "react";
 import type { PhotoType } from "@/lib/photos/types";
 import type { PhotoAnalysisResult } from "@/lib/photos/types";
+import type { PhotoConfig } from "@/lib/photos/types";
 import { PHOTO_REGISTRY } from "@/lib/photos/config/index";
+import type { PhotoPanelOptions } from "@/lib/photos/config/custom.photo";
+import { buildCustomPhotoConfig, EDUCATIONAL_DEFAULT } from "@/lib/photos/config/custom.photo";
 import PhotoResult from "./PhotoResult";
+import PhotoConfigPanel from "./PhotoConfigPanel";
+
+type Mode = PhotoType | "custom";
 
 const PHOTO_TYPES: { id: PhotoType; label: string; hint: string }[] = [
   { id: "pasaporte-mx", label: "Pasaporte MX", hint: "Requisitos SRE oficiales" },
@@ -15,7 +21,9 @@ const PHOTO_TYPES: { id: PhotoType; label: string; hint: string }[] = [
 const ACCEPTED_MIME = "image/jpeg,image/png,image/webp";
 
 export default function PhotoValidatorForm() {
-  const [photoType, setPhotoType] = useState<PhotoType>("pasaporte-mx");
+  const [mode, setMode] = useState<Mode>("pasaporte-mx");
+  const [customOpts, setCustomOpts] = useState<PhotoPanelOptions>(EDUCATIONAL_DEFAULT);
+  const [panelOpen, setPanelOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -23,6 +31,11 @@ export default function PhotoValidatorForm() {
   const [error, setError] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const activeConfig: PhotoConfig | null =
+    mode === "custom"
+      ? buildCustomPhotoConfig(customOpts)
+      : PHOTO_REGISTRY[mode as PhotoType];
 
   const handleFile = useCallback((f: File) => {
     if (!f.type.startsWith("image/")) {
@@ -51,14 +64,17 @@ export default function PhotoValidatorForm() {
   );
 
   const handleValidate = useCallback(async () => {
-    if (!file) return;
+    if (!file || !activeConfig) return;
     setLoading(true);
     setError(null);
     setResult(null);
     try {
       const form = new FormData();
       form.append("photo", file);
-      form.append("type", photoType);
+      form.append("type", mode === "custom" ? "escolar" : mode);
+      if (mode === "custom") {
+        form.append("customConfig", JSON.stringify(activeConfig));
+      }
       const res = await fetch("/api/validate-photo", { method: "POST", body: form });
       const data = await res.json();
       if (!res.ok) {
@@ -71,26 +87,27 @@ export default function PhotoValidatorForm() {
     } finally {
       setLoading(false);
     }
-  }, [file, photoType]);
+  }, [file, mode, activeConfig]);
 
   const handleClear = useCallback(() => {
     setFile(null);
+    if (preview) URL.revokeObjectURL(preview);
     setPreview(null);
     setResult(null);
     setError(null);
-    if (preview) URL.revokeObjectURL(preview);
   }, [preview]);
 
   return (
     <div className="flex flex-col gap-4">
+      {/* Mode selector */}
       <div className="flex flex-wrap gap-2">
         {PHOTO_TYPES.map((t) => (
           <button
             key={t.id}
             type="button"
-            onClick={() => { setPhotoType(t.id); setResult(null); }}
+            onClick={() => { setMode(t.id); setResult(null); }}
             className={`px-3 py-1.5 rounded-full text-sm font-mono border transition-colors ${
-              photoType === t.id
+              mode === t.id
                 ? "bg-[#c4a882] text-[#050508] border-[#c4a882] font-bold"
                 : "border-zinc-700 text-zinc-500 hover:border-[#c4a882] hover:text-[#c4a882]"
             }`}
@@ -98,12 +115,52 @@ export default function PhotoValidatorForm() {
             {t.label}
           </button>
         ))}
+        <button
+          type="button"
+          onClick={() => { setMode("custom"); setResult(null); }}
+          className={`px-3 py-1.5 rounded-full text-sm font-mono border transition-colors ${
+            mode === "custom"
+              ? "bg-[#c4a882] text-[#050508] border-[#c4a882] font-bold"
+              : "border-zinc-700 text-zinc-500 hover:border-[#c4a882] hover:text-[#c4a882]"
+          }`}
+        >
+          Personalizado
+        </button>
       </div>
 
-      <p className="text-xs font-mono text-zinc-600">
-        {PHOTO_TYPES.find((t) => t.id === photoType)?.hint} ·{" "}
-        {PHOTO_REGISTRY[photoType].institution}
-      </p>
+      {/* Hint / custom config bar */}
+      {mode !== "custom" ? (
+        <p className="text-xs font-mono text-zinc-600">
+          {PHOTO_TYPES.find((t) => t.id === mode)?.hint} ·{" "}
+          {PHOTO_REGISTRY[mode as PhotoType].institution}
+        </p>
+      ) : (
+        <div className="flex items-center justify-between rounded-xl border border-[#c4a882]/30 bg-[#c4a882]/5 px-4 py-2.5">
+          <div>
+            <p className="text-xs font-mono text-[#c4a882] font-bold">Configuración institucional</p>
+            <p className="text-[10px] text-zinc-500 font-mono mt-0.5">
+              {activeConfig?.rules.filter((r) => r.required).length} reglas activas ·{" "}
+              tolerancia {customOpts.tolerance === "strict" ? "estricta" : customOpts.tolerance === "medium" ? "media" : "flexible"}
+            </p>
+          </div>
+          <button
+            onClick={() => setPanelOpen(true)}
+            className="text-xs font-mono text-[#c4a882] hover:text-[#d4b892] transition-colors border border-[#c4a882]/40 hover:border-[#c4a882] px-3 py-1 rounded-lg"
+          >
+            Configurar →
+          </button>
+        </div>
+      )}
+
+      {/* Open config button when not in custom mode */}
+      {mode !== "custom" && (
+        <button
+          onClick={() => { setMode("custom"); setPanelOpen(true); setResult(null); }}
+          className="text-left text-[10px] font-mono text-zinc-600 hover:text-[#c4a882] transition-colors"
+        >
+          + Configurar requisitos institucionales propios
+        </button>
+      )}
 
       {!file ? (
         <label
@@ -137,21 +194,11 @@ export default function PhotoValidatorForm() {
         <div className="flex flex-col gap-4">
           <div className="relative rounded-xl border border-zinc-800 bg-zinc-900/50 overflow-hidden">
             {preview && (
-              <img
-                src={preview}
-                alt="Vista previa"
-                className="w-full max-h-64 object-contain"
-              />
+              <img src={preview} alt="Vista previa" className="w-full max-h-64 object-contain" />
             )}
             <div className="px-4 py-2.5 flex items-center justify-between border-t border-zinc-800">
               <span className="text-xs font-mono text-zinc-500 truncate max-w-[200px]">{file.name}</span>
-              <button
-                type="button"
-                onClick={handleClear}
-                className="text-xs font-mono text-zinc-600 hover:text-red-400 transition-colors"
-              >
-                Quitar
-              </button>
+              <button type="button" onClick={handleClear} className="text-xs font-mono text-zinc-600 hover:text-red-400 transition-colors">Quitar</button>
             </div>
           </div>
 
@@ -168,9 +215,7 @@ export default function PhotoValidatorForm() {
                 </svg>
                 Analizando fotografía…
               </span>
-            ) : (
-              "Validar fotografía"
-            )}
+            ) : "Validar fotografía"}
           </button>
         </div>
       )}
@@ -181,9 +226,16 @@ export default function PhotoValidatorForm() {
         </div>
       )}
 
-      {result && (
-        <PhotoResult result={result} config={PHOTO_REGISTRY[result.photoType]} />
+      {result && activeConfig && (
+        <PhotoResult result={result} config={activeConfig} />
       )}
+
+      <PhotoConfigPanel
+        open={panelOpen}
+        onClose={() => setPanelOpen(false)}
+        onApply={(opts) => { setCustomOpts(opts); setResult(null); }}
+        initialOptions={customOpts}
+      />
     </div>
   );
 }

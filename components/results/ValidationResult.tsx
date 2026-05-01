@@ -2,6 +2,9 @@
 
 import FieldsTable, { LABELS } from "./FieldsTable";
 
+import { EDUCATION_DOC_TYPES } from "@/lib/documents/types";
+import type { DocumentType } from "@/lib/documents/types";
+
 const DOC_TYPE_LABELS: Record<string, string> = {
   ine: "INE / IFE — Credencial para Votar",
   curp: "CURP — Clave Única de Registro de Población",
@@ -9,6 +12,19 @@ const DOC_TYPE_LABELS: Record<string, string> = {
   pasaporte: "Pasaporte Mexicano",
   acta: "Acta Oficial",
   dni: "DNI / Cédula de Identidad",
+  titulo_profesional: "Título Universitario / Cédula Profesional",
+  certificado_bachillerato: "Certificado de Bachillerato / Preparatoria",
+};
+
+const EDU_NOTES: Record<string, { text: string; url?: string; linkLabel?: string }> = {
+  titulo_profesional: {
+    text: "La autenticidad de la cédula profesional puede verificarse en el sistema SEP.",
+    url: "https://cedulaprofesional.sep.gob.mx/cedula/presidencia/indexAvanzada.action",
+    linkLabel: "Consultar en SEP →",
+  },
+  certificado_bachillerato: {
+    text: "Para verificar la autenticidad, contacta directamente a la institución emisora o consulta el sistema de validación de la SEP.",
+  },
 };
 
 type DiditStatus =
@@ -110,6 +126,35 @@ export default function ValidationResult({
         <p className="text-xs font-mono text-[#00f2ff] uppercase tracking-[0.2em]">
           {DOC_TYPE_LABELS[docType] ?? docType.toUpperCase()}
         </p>
+      )}
+
+      {docType && EDUCATION_DOC_TYPES.has(docType as DocumentType) && (
+        <div className="flex items-start gap-2.5 rounded-xl border border-amber-700/50 bg-amber-950/30 px-4 py-3 text-xs text-amber-400 font-mono">
+          <svg className="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+          </svg>
+          <div className="flex flex-col gap-1">
+            <span>Validación visual únicamente — no verificado contra bases de datos oficiales.</span>
+            {EDU_NOTES[docType] && (
+              <span className="text-amber-500/80">
+                {EDU_NOTES[docType].text}
+                {EDU_NOTES[docType].url && (
+                  <>
+                    {" "}
+                    <a
+                      href={EDU_NOTES[docType].url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline hover:text-amber-300 transition-colors"
+                    >
+                      {EDU_NOTES[docType].linkLabel ?? "Ver más →"}
+                    </a>
+                  </>
+                )}
+              </span>
+            )}
+          </div>
+        </div>
       )}
 
       <div

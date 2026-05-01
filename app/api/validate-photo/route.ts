@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { PHOTO_REGISTRY } from "@/lib/photos/config/index";
-import type { PhotoType } from "@/lib/photos/types";
+import type { PhotoType, PhotoConfig } from "@/lib/photos/types";
 import { analyzePhoto } from "@/lib/photos/PhotoEngine";
 
 const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -67,14 +67,29 @@ export async function POST(req: NextRequest) {
       { status: 413 }
     );
   }
-  if (!ALLOWED_PHOTO_TYPES.has(photoType)) {
-    return NextResponse.json(
-      { error: `Tipo de foto no soportado. Valores válidos: ${[...ALLOWED_PHOTO_TYPES].join(", ")}` },
-      { status: 400 }
-    );
-  }
+  const customConfigStr = formData.get("customConfig");
+  let config: PhotoConfig;
 
-  const config = PHOTO_REGISTRY[photoType];
+  if (typeof customConfigStr === "string" && customConfigStr.trim()) {
+    try {
+      const parsed = JSON.parse(customConfigStr) as PhotoConfig;
+      if (parsed.id && Array.isArray(parsed.rules) && parsed.systemPrompt) {
+        config = parsed;
+      } else {
+        config = PHOTO_REGISTRY[photoType] ?? PHOTO_REGISTRY["escolar"];
+      }
+    } catch {
+      config = PHOTO_REGISTRY[photoType] ?? PHOTO_REGISTRY["escolar"];
+    }
+  } else {
+    if (!ALLOWED_PHOTO_TYPES.has(photoType)) {
+      return NextResponse.json(
+        { error: `Tipo de foto no soportado. Valores válidos: ${[...ALLOWED_PHOTO_TYPES].join(", ")}` },
+        { status: 400 }
+      );
+    }
+    config = PHOTO_REGISTRY[photoType];
+  }
   const buffer = await file.arrayBuffer();
   const { autoRotateImage } = await import("@/lib/utils/image");
   const base64 = await autoRotateImage(buffer, file.type);

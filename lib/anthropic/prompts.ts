@@ -1,6 +1,6 @@
 import type Anthropic from "@anthropic-ai/sdk";
 
-export type DocumentType = "dni" | "acta" | "ine" | "curp" | "rfc" | "pasaporte";
+export type DocumentType = "dni" | "acta" | "ine" | "curp" | "rfc" | "pasaporte" | "titulo_profesional" | "certificado_bachillerato";
 
 type ImageMediaType = "image/jpeg" | "image/png" | "image/webp";
 
@@ -237,6 +237,9 @@ REGLAS:
 • VALIDACIÓN CRUZADA: si la CURP está presente, verifica que los chars 5–10 de la CURP coincidan con la fecha de nacimiento; si el MRZ es legible, verifica que el número de pasaporte del MRZ coincida con el impreso.
 • En "issues": pasaporte vencido, texto borroso, datos del MRZ que no coinciden con datos impresos, CURP incoherente con fecha/nombre, posible alteración.
 • "valid": true solo si número de pasaporte, nombres, apellidos y fechas son legibles y coherentes.`,
+
+  titulo_profesional: `Consulta lib/documents/config/titulo_profesional.config.ts`,
+  certificado_bachillerato: `Consulta lib/documents/config/certificado_bachillerato.config.ts`,
 
   acta: `Eres un sistema experto en Actas del Registro Civil mexicano.
 

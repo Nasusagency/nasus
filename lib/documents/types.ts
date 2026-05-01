@@ -1,4 +1,6 @@
-export type DocumentType = "dni" | "acta" | "ine" | "curp" | "rfc" | "pasaporte";
+export type DocumentType = "dni" | "acta" | "ine" | "curp" | "rfc" | "pasaporte" | "titulo_profesional" | "certificado_bachillerato";
+
+export const EDUCATION_DOC_TYPES = new Set<DocumentType>(["titulo_profesional", "certificado_bachillerato"]);
 
 export interface FieldDef {
   key: string;

@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react";
 import type { DocumentType } from "@/lib/anthropic/prompts";
+import { EDUCATION_DOC_TYPES } from "@/lib/documents/types";
 
 interface Props {
   onFile: (file: File, type: DocumentType) => void;
@@ -19,11 +20,14 @@ const DOC_TYPE_LABELS: Record<DocumentType, string> = {
   pasaporte: "Pasaporte",
   acta: "Acta oficial",
   dni: "DNI / Cédula",
+  titulo_profesional: "Título / Cédula Prof.",
+  certificado_bachillerato: "Cert. Bachillerato",
 };
 
 // CURP y RFC suelen venir como PDF oficial
-const PDF_COMMON: DocumentType[] = ["curp", "rfc", "acta"];
+const PDF_COMMON: DocumentType[] = ["curp", "rfc", "acta", "titulo_profesional", "certificado_bachillerato"];
 const MX_TYPES: DocumentType[] = ["ine", "curp", "rfc", "pasaporte", "acta"];
+const EDU_TYPES: DocumentType[] = ["titulo_profesional", "certificado_bachillerato"];
 
 export default function DropZone({ onFile, disabled }: Props) {
   const [dragging, setDragging] = useState(false);
@@ -69,22 +73,52 @@ export default function DropZone({ onFile, disabled }: Props) {
 
   return (
     <div className="flex flex-col gap-4 w-full">
-      <div className="flex flex-wrap gap-2">
-        {MX_TYPES.map((t) => (
-          <button
-            key={t}
-            type="button"
-            onClick={() => setDocType(t)}
-            className={`px-3 py-1.5 rounded-full text-sm font-mono border transition-colors ${
-              docType === t
-                ? "bg-[#c4a882] text-[#050508] border-[#c4a882] font-bold"
-                : "border-zinc-700 text-zinc-500 hover:border-[#c4a882] hover:text-[#c4a882]"
-            }`}
-          >
-            {DOC_TYPE_LABELS[t]}
-          </button>
-        ))}
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-wrap gap-2">
+          {MX_TYPES.map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setDocType(t)}
+              className={`px-3 py-1.5 rounded-full text-sm font-mono border transition-colors ${
+                docType === t
+                  ? "bg-[#c4a882] text-[#050508] border-[#c4a882] font-bold"
+                  : "border-zinc-700 text-zinc-500 hover:border-[#c4a882] hover:text-[#c4a882]"
+              }`}
+            >
+              {DOC_TYPE_LABELS[t]}
+            </button>
+          ))}
+        </div>
+        <div>
+          <p className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest mb-1.5">Documentos Educativos</p>
+          <div className="flex flex-wrap gap-2">
+            {EDU_TYPES.map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setDocType(t)}
+                className={`px-3 py-1.5 rounded-full text-sm font-mono border transition-colors ${
+                  docType === t
+                    ? "bg-amber-500 text-[#050508] border-amber-500 font-bold"
+                    : "border-zinc-700 text-zinc-500 hover:border-amber-500 hover:text-amber-400"
+                }`}
+              >
+                {DOC_TYPE_LABELS[t]}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
+
+      {EDUCATION_DOC_TYPES.has(docType) && (
+        <div className="flex items-start gap-2.5 rounded-xl border border-amber-700/50 bg-amber-950/30 px-4 py-3 text-xs text-amber-400 font-mono">
+          <svg className="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+          </svg>
+          <span>Los documentos educativos se validan visualmente. No se realiza verificación contra bases de datos oficiales.</span>
+        </div>
+      )}
 
       <label
         onDragOver={(e) => {
