@@ -253,6 +253,40 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── 4b. NASUS FACTURAS ─────────────────────────────────────── */}
+      <section className="pb-24 px-6">
+        <div className="max-w-5xl mx-auto">
+          <div className="border border-zinc-800 hover:border-zinc-700 rounded-2xl p-8 md:p-10 relative transition-colors bg-zinc-900/20">
+            <div className="flex flex-wrap items-start justify-between gap-4 mb-5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 border border-zinc-700 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <svg className="w-5 h-5 text-zinc-400" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                  </svg>
+                </div>
+                <h3 className="text-white font-bold text-xl">Nasus Facturas</h3>
+              </div>
+              <span className="bg-emerald-500 text-[#050508] text-xs font-bold px-3 py-1 rounded-full font-mono tracking-wide flex-shrink-0">
+                Nuevo
+              </span>
+            </div>
+            <p className="text-zinc-400 leading-relaxed mb-2">
+              Convierte facturas de Google Ads y Meta Ads a Excel automáticamente.
+              Desglose por campaña, cuenta y período listo para contabilidad.
+            </p>
+            <p className={`${CYAN} text-sm font-mono mb-6`}>
+              Tu factura de Google o Meta en Excel en segundos
+            </p>
+            <a
+              href="/facturas"
+              className="inline-flex items-center gap-2 text-sm font-mono font-bold text-[#050508] bg-[#c4a882] hover:bg-[#d4b892] px-5 py-2.5 rounded-lg transition-colors"
+            >
+              Probar gratis →
+            </a>
+          </div>
+        </div>
+      </section>
+
       {/* ── 5. PORTAFOLIO ──────────────────────────────────────────── */}
       <section className="py-24 px-6 border-t border-zinc-900">
         <div className="max-w-5xl mx-auto">

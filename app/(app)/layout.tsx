@@ -35,6 +35,12 @@ export default async function AppLayout({
               >
                 Fotografías
               </a>
+              <a
+                href="/facturas"
+                className="px-3 py-1.5 text-xs font-mono text-zinc-400 hover:text-[#c4a882] transition-colors rounded-lg hover:bg-zinc-900"
+              >
+                Facturas
+              </a>
             </nav>
             {user ? (
               <>
