@@ -5,16 +5,23 @@ import FacturasDemo from "./_components/FacturasDemo";
 import FotosDemo from "./_components/FotosDemo";
 
 export const metadata: Metadata = {
-  title: "Nasus Agency — Soluciones tecnológicas artesanales",
+  title: "Nasus Agency — Soluciones tecnológicas artesanales para empresas en escala",
   description:
-    "Implementamos IA directamente en tus sistemas. Validador de documentos oficiales mexicanos, extractor de facturas a Excel, validación de fotografías y automatización de procesos.",
+    "Automatiza la validación de documentos oficiales y el análisis de facturas publicitarias con IA. Implementación directa en tus sistemas. Sin intermediarios.",
+  alternates: { canonical: "https://nasus.lat" },
   openGraph: {
-    title: "Nasus Agency — Soluciones tecnológicas artesanales",
+    title: "Nasus Agency — Soluciones tecnológicas artesanales para empresas en escala",
     description:
-      "Implementamos IA directamente en tus sistemas. Validador de documentos oficiales mexicanos, extractor de facturas a Excel, validación de fotografías y automatización de procesos.",
+      "Automatiza la validación de documentos oficiales y el análisis de facturas publicitarias con IA. Implementación directa en tus sistemas. Sin intermediarios.",
     type: "website",
     siteName: "Nasus Agency",
     url: "https://nasus.lat",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Nasus Agency — Soluciones tecnológicas artesanales",
+    description:
+      "Automatiza la validación de documentos oficiales y el análisis de facturas publicitarias con IA.",
   },
 };
 
@@ -162,6 +169,15 @@ const TOOLS = [
     Demo: FotosDemo,
   },
 ] as const;
+
+const SCHEMA_ORG = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "Nasus Agency",
+  url: "https://nasus.lat",
+  email: "nasusagency@gmail.com",
+  description: "Agencia de soluciones tecnológicas artesanales. Implementamos IA directamente en los sistemas de nuestros clientes.",
+};
 
 export default function LandingPage() {
   return (
@@ -392,6 +408,11 @@ export default function LandingPage() {
           <ContactForm />
         </div>
       </section>
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(SCHEMA_ORG) }}
+      />
 
       {/* ── Footer ─────────────────────────────────────────────────── */}
       <footer className="py-10 px-6 border-t border-zinc-900">

@@ -3,9 +3,16 @@ import FacturasForm from "@/components/facturas/FacturasForm";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Nasus Facturas — Extractor de Facturas Google Ads y Meta Ads a Excel",
+  title: "Extractor de Facturas Google Ads y Meta a Excel — Nasus Agency",
   description:
-    "Sube tu factura de Google Ads o Meta Ads en PDF y descarga el desglose completo en Excel. Listo para contabilidad.",
+    "Convierte tu factura de Google Ads o Meta Ads de PDF a Excel en segundos. Desglose por campaña, cuenta y período listo para contabilidad.",
+  alternates: { canonical: "https://nasus.lat/facturas" },
+  openGraph: {
+    title: "Extractor de Facturas Google Ads y Meta a Excel — Nasus Agency",
+    description:
+      "Convierte tu factura de Google Ads o Meta Ads de PDF a Excel en segundos. Desglose por campaña, cuenta y período listo para contabilidad.",
+    url: "https://nasus.lat/facturas",
+  },
 };
 
 export default function FacturasPage() {

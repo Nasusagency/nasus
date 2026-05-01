@@ -51,20 +51,23 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-[#050508] flex items-center justify-center px-4">
       <div className="w-full max-w-sm flex flex-col gap-6">
         <div>
-          <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50 tracking-tight">
-            Validador de documentos
+          <a href="/" className="text-[#c4a882] font-mono font-bold tracking-wide text-sm mb-8 inline-block">
+            Nasus Agency
+          </a>
+          <h1 className="text-2xl font-semibold text-white tracking-tight mt-4">
+            {mode === "signin" ? "Iniciar sesión" : "Crear cuenta"}
           </h1>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-            {mode === "signin" ? "Inicia sesión para continuar." : "Crea una cuenta nueva."}
+          <p className="text-sm text-zinc-500 mt-1">
+            {mode === "signin" ? "Accede a tu cuenta para continuar." : "Crea una cuenta nueva."}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            <label className="text-sm font-medium text-zinc-400 font-mono">
               Correo electrónico
             </label>
             <input
@@ -73,12 +76,12 @@ export default function LoginPage() {
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="h-10 px-3 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm text-zinc-900 dark:text-zinc-50 outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-white transition-shadow"
+              className="h-10 px-3 rounded-lg border border-zinc-800 bg-zinc-900 text-sm text-white outline-none focus:ring-2 focus:ring-[#c4a882]/50 focus:border-[#c4a882]/50 transition-shadow placeholder:text-zinc-700"
             />
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            <label className="text-sm font-medium text-zinc-400 font-mono">
               Contraseña
             </label>
             <input
@@ -88,16 +91,14 @@ export default function LoginPage() {
               autoComplete={mode === "signin" ? "current-password" : "new-password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="h-10 px-3 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm text-zinc-900 dark:text-zinc-50 outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-white transition-shadow"
+              className="h-10 px-3 rounded-lg border border-zinc-800 bg-zinc-900 text-sm text-white outline-none focus:ring-2 focus:ring-[#c4a882]/50 focus:border-[#c4a882]/50 transition-shadow placeholder:text-zinc-700"
             />
           </div>
 
           {message && (
             <p
-              className={`text-sm ${
-                message.type === "error"
-                  ? "text-red-600 dark:text-red-400"
-                  : "text-green-600 dark:text-green-400"
+              className={`text-sm font-mono ${
+                message.type === "error" ? "text-red-400" : "text-emerald-400"
               }`}
             >
               {message.text}
@@ -107,7 +108,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="h-11 rounded-xl bg-zinc-900 text-white text-sm font-medium transition-colors hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+            className="h-11 rounded-xl bg-[#c4a882] text-[#050508] text-sm font-mono font-bold transition-colors hover:bg-[#d4b892] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading
               ? "Cargando…"
@@ -117,11 +118,11 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p className="text-sm text-center text-zinc-500 dark:text-zinc-400">
+        <p className="text-sm text-center text-zinc-600 font-mono">
           {mode === "signin" ? "¿No tienes cuenta?" : "¿Ya tienes cuenta?"}{" "}
           <button
             onClick={toggleMode}
-            className="text-zinc-900 dark:text-zinc-50 font-medium hover:underline"
+            className="text-[#c4a882] hover:text-[#d4b892] transition-colors"
           >
             {mode === "signin" ? "Regístrate" : "Inicia sesión"}
           </button>

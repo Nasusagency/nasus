@@ -8,7 +8,30 @@ export const maxDuration = 30;
 
 const MAX_BYTES = 20 * 1024 * 1024;
 
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_MAX = 5;
+const RATE_LIMIT_WINDOW_MS = 60_000;
+
+function checkRateLimit(key: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(key);
+  if (!entry || now >= entry.resetAt) {
+    rateLimitMap.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return true;
+  }
+  if (entry.count >= RATE_LIMIT_MAX) return false;
+  entry.count++;
+  return true;
+}
+
 export async function POST(req: NextRequest) {
+  const ip =
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    req.headers.get("x-real-ip") ??
+    "unknown";
+  if (!checkRateLimit(ip)) {
+    return errorResponse("Demasiadas solicitudes. Espera un momento e intenta de nuevo.", 429);
+  }
   let formData: FormData;
   try {
     formData = await req.formData();
@@ -46,7 +69,7 @@ export async function POST(req: NextRequest) {
     async start(controller) {
       try {
         const claudeStream = await anthropic.messages.create({
-          model: "claude-sonnet-4-5",
+          model: "claude-sonnet-4-6",
           max_tokens: 8192,
           stream: true,
           system: [

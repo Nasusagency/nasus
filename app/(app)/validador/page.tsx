@@ -1,6 +1,20 @@
+import type { Metadata } from "next";
 import ValidatorForm from "@/components/ValidatorForm";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Validador de Documentos Oficiales — Nasus Agency",
+  description:
+    "Valida INE, CURP, RFC, Pasaporte y Acta de Nacimiento automáticamente con IA. Extrae campos y cruza contra bases de datos oficiales en segundos.",
+  alternates: { canonical: "https://nasus.lat/validador" },
+  openGraph: {
+    title: "Validador de Documentos Oficiales — Nasus Agency",
+    description:
+      "Valida INE, CURP, RFC, Pasaporte y Acta de Nacimiento automáticamente con IA. Extrae campos y cruza contra bases de datos oficiales en segundos.",
+    url: "https://nasus.lat/validador",
+  },
+};
 
 export default function ValidadorPage() {
   return (
