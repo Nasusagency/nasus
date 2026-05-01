@@ -10,26 +10,26 @@ function mxn(n: number) {
 
 const DEMO_CUENTAS = [
   {
-    nombre: "Branding UAG",
-    id: "332-034-5197",
+    nombre: "Marca Corporativa",
+    id: "100-200-3001",
     campanas: [
-      { nombre: "Adview | Branding | Lic. Presencial | Caliente", clics: "6,285", importe: 89829.51 },
-      { nombre: "Adview | Top Keywords | Lic. Presencial | Fría", clics: "4,556", importe: 52089.43 },
-      { nombre: "Adview | Youtube | Branding | Fría (Nuevo Formato)", clics: "1,543,992 imp.", importe: 13327.96 },
+      { nombre: "Search | Brand | Términos principales | Caliente", clics: "4,210", importe: 74500.00 },
+      { nombre: "Display | Remarketing | Visitantes web | Fría", clics: "2,890", importe: 38200.00 },
+      { nombre: "YouTube | Branding | Awareness | Frío", clics: "980,000 imp.", importe: 12300.00 },
     ],
-    subtotal: 155246.9,
-    total: 180086.41,
+    subtotal: 125000.0,
+    total: 145000.0,
   },
   {
-    nombre: "UAG en Línea",
-    id: "829-732-7813",
+    nombre: "Producto Principal",
+    id: "100-200-3002",
     campanas: [
-      { nombre: "Licenciatura @Campus | Ing. Sistemas de Software", clics: "2,045", importe: 101505.46 },
-      { nombre: "Posgrados @Campus | Big Data", clics: "2,639", importe: 83284.26 },
-      { nombre: "Licenciaturas @Campus | Derecho", clics: "3,369", importe: 86572.24 },
+      { nombre: "Search | Producto | Palabras clave exactas", clics: "3,100", importe: 95000.00 },
+      { nombre: "Shopping | Catálogo completo", clics: "5,400", importe: 67000.00 },
+      { nombre: "Display | Prospección | Intereses similares", clics: "1,750", importe: 43000.00 },
     ],
-    subtotal: 271362.0,
-    total: 314779.92,
+    subtotal: 205000.0,
+    total: 237800.0,
   },
 ];
 
@@ -87,7 +87,7 @@ export default function FacturasDemo() {
           <svg className="w-4 h-4 text-[#c4a882] flex-shrink-0" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
           </svg>
-          <span className="text-[10px] font-mono text-zinc-400">Google_Ads_Dic2025.pdf</span>
+          <span className="text-[10px] font-mono text-zinc-400">Google_Ads_Diciembre_2025.pdf</span>
           <span className="text-[10px] font-mono text-zinc-600 ml-auto">2.1 MB</span>
         </div>
 
@@ -114,9 +114,9 @@ export default function FacturasDemo() {
             <div className="grid grid-cols-2 gap-2 rounded-lg border border-[#c4a882]/20 bg-[#c4a882]/5 px-3 py-2.5">
               {[
                 ["Período", "Dic 2025"],
-                ["Doc", "5458689254"],
+                ["Doc", "FAC-2025-0042"],
                 ["RFC Emisor", "GOM0809114P5"],
-                ["RFC Receptor", "UAG7806127I8"],
+                ["RFC Receptor", "EMP850101ABC"],
               ].map(([k, v]) => (
                 <div key={k}>
                   <p className="text-[8px] font-mono text-zinc-600 uppercase">{k}</p>
