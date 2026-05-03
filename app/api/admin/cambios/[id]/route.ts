@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin/auth";
 import { updateCambioEstado, deleteCambio, type EstadoCambio } from "@/lib/admin/data";
 
+const ALLOWED_ESTADOS: EstadoCambio[] = ["Pendiente", "En revisión", "Aprobado", "Rechazado"];
+
 async function auth(req: NextRequest): Promise<boolean> {
   const token = req.cookies.get(ADMIN_COOKIE)?.value;
   return !!token && (await verifyAdminToken(token));
@@ -14,6 +16,9 @@ export async function PATCH(
   if (!(await auth(req))) return NextResponse.json({}, { status: 401 });
   const { id } = await params;
   const { estado } = (await req.json()) as { estado: EstadoCambio };
+  if (!ALLOWED_ESTADOS.includes(estado)) {
+    return NextResponse.json({ error: "Estado no válido." }, { status: 400 });
+  }
   const updated = updateCambioEstado(id, estado);
   if (!updated) return NextResponse.json({ error: "No encontrado." }, { status: 404 });
   return NextResponse.json(updated);

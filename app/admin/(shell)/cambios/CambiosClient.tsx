@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import type { CambioRequest, EstadoCambio } from "@/lib/admin/data";
 
 const ESTADOS: EstadoCambio[] = ["Pendiente", "En revisión", "Aprobado", "Rechazado"];
@@ -20,7 +19,6 @@ export default function CambiosClient({
   cambiosInit: CambioRequest[];
   clientes: { slug: string; nombre: string }[];
 }) {
-  const router = useRouter();
   const [cambios, setCambios] = useState(cambiosInit);
   const [filterSlug, setFilterSlug] = useState("");
 
@@ -30,6 +28,7 @@ export default function CambiosClient({
   const [solicitadoPor, setSolicitadoPor] = useState("");
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState("");
+  const [mutationError, setMutationError] = useState("");
 
   const filtered = filterSlug
     ? cambios.filter((c) => c.clienteSlug === filterSlug)
@@ -58,6 +57,7 @@ export default function CambiosClient({
   }
 
   async function updateEstado(id: string, estado: EstadoCambio) {
+    setMutationError("");
     const res = await fetch(`/api/admin/cambios/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -66,12 +66,19 @@ export default function CambiosClient({
     if (res.ok) {
       const updated = (await res.json()) as CambioRequest;
       setCambios((prev) => prev.map((c) => (c.id === id ? updated : c)));
+    } else {
+      setMutationError("No se pudo actualizar el estado.");
     }
   }
 
   async function remove(id: string) {
+    setMutationError("");
     const res = await fetch(`/api/admin/cambios/${id}`, { method: "DELETE" });
-    if (res.ok) setCambios((prev) => prev.filter((c) => c.id !== id));
+    if (res.ok) {
+      setCambios((prev) => prev.filter((c) => c.id !== id));
+    } else {
+      setMutationError("No se pudo eliminar el cambio.");
+    }
   }
 
   return (
@@ -147,6 +154,12 @@ export default function CambiosClient({
             </button>
           ))}
         </div>
+      )}
+
+      {mutationError && (
+        <p className="text-xs text-red-400 bg-red-950/30 border border-red-900/30 rounded-lg px-3 py-2">
+          {mutationError}
+        </p>
       )}
 
       {/* List */}
