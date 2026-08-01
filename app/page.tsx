@@ -5,29 +5,38 @@ import FacturasDemo from "./_components/FacturasDemo";
 import FotosDemo from "./_components/FotosDemo";
 
 export const metadata: Metadata = {
-  title: "Nasus Agency — Soluciones tecnológicas artesanales para empresas en escala",
+  title: "Nasus Agency — Desarrollo web, apps y soluciones tecnológicas a medida",
   description:
-    "Automatiza la validación de documentos oficiales y el análisis de facturas publicitarias con IA. Implementación directa en tus sistemas. Sin intermediarios.",
+    "Páginas web, aplicaciones, CRMs y automatización para empresas en crecimiento. Implementación directa, sin intermediarios.",
   alternates: { canonical: "https://nasus.lat" },
   openGraph: {
-    title: "Nasus Agency — Soluciones tecnológicas artesanales para empresas en escala",
+    title: "Nasus Agency — Desarrollo web, apps y soluciones tecnológicas a medida",
     description:
-      "Automatiza la validación de documentos oficiales y el análisis de facturas publicitarias con IA. Implementación directa en tus sistemas. Sin intermediarios.",
+      "Páginas web, aplicaciones, CRMs y automatización para empresas en crecimiento. Implementación directa, sin intermediarios.",
     type: "website",
     siteName: "Nasus Agency",
     url: "https://nasus.lat",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Nasus Agency — Soluciones tecnológicas artesanales",
+    title: "Nasus Agency — Desarrollo web, apps y soluciones tecnológicas a medida",
     description:
-      "Automatiza la validación de documentos oficiales y el análisis de facturas publicitarias con IA.",
+      "Páginas web, aplicaciones, CRMs y automatización para empresas en crecimiento. Implementación directa, sin intermediarios.",
   },
 };
 
 const GOLD = "text-[#c4a882]";
 const CYAN = "text-[#00f2ff]";
 const BORDER = "border border-zinc-800";
+const WHATSAPP_URL = "https://wa.me/523329621602";
+
+const specializations = [
+  "Páginas web a medida",
+  "Aplicaciones web y móviles",
+  "CRMs y sistemas de gestión",
+  "Automatización de procesos",
+  "Ecosistemas de marketing digital",
+];
 
 const painPoints = [
   {
@@ -111,7 +120,20 @@ const portfolio = [
   },
 ];
 
-const TOOLS = [
+type Tool = {
+  id: string;
+  badge: string;
+  badgeClass: string;
+  cardClass: string;
+  title: string;
+  tagline: string;
+  desc: string;
+  features: string[];
+  ctaText: string;
+  Demo?: typeof DemoIsland;
+};
+
+const TOOLS: Tool[] = [
   {
     id: "validador",
     badge: "MVP activo",
@@ -130,6 +152,7 @@ const TOOLS = [
       "Título universitario / Cédula profesional",
       "Certificado de Bachillerato",
     ],
+    ctaText: "Pedir acceso →",
     Demo: DemoIsland,
   },
   {
@@ -148,6 +171,7 @@ const TOOLS = [
       "Hoja Para Contabilidad lista para entregar",
       "Detecta actividad no válida (importes negativos)",
     ],
+    ctaText: "Pedir acceso →",
     Demo: FacturasDemo,
   },
   {
@@ -166,9 +190,26 @@ const TOOLS = [
       "Detecta lentes, accesorios, fondo incorrecto",
       "Presets guardables por institución",
     ],
+    ctaText: "Pedir acceso →",
     Demo: FotosDemo,
   },
-] as const;
+  {
+    id: "webapps",
+    badge: "Disponible",
+    badgeClass: "bg-[#00f2ff] text-[#050508]",
+    cardClass: "border-zinc-800",
+    title: "Páginas web a medida",
+    tagline: "De la idea a producción en semanas, no meses",
+    desc: "Sitios profesionales construidos con Next.js, optimizados para SEO y conversión. Con panel de administración opcional para que tú manejes tu contenido.",
+    features: [
+      "Construido con Next.js — rápido y SEO-first",
+      "Diseño a medida, no templates",
+      "Panel de administración opcional",
+      "Integración con tus sistemas y formularios",
+    ],
+    ctaText: "Ver más →",
+  },
+];
 
 const SCHEMA_ORG = {
   "@context": "https://schema.org",
@@ -189,7 +230,9 @@ export default function LandingPage() {
             Nasus Agency
           </span>
           <a
-            href="mailto:nasusagency@gmail.com"
+            href={WHATSAPP_URL}
+            target="_blank"
+            rel="noopener noreferrer"
             className="text-sm border border-[#c4a882] text-[#c4a882] px-4 py-2 rounded-lg hover:bg-[#c4a882] hover:text-[#050508] transition-colors"
           >
             Hablar con Nasus
@@ -213,7 +256,9 @@ export default function LandingPage() {
             sin reuniones innecesarias.
           </p>
           <a
-            href="mailto:nasusagency@gmail.com"
+            href={WHATSAPP_URL}
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-block bg-[#c4a882] text-[#050508] font-bold px-8 py-4 rounded-lg text-lg hover:bg-[#d4b892] transition-colors"
           >
             Hablar con Nasus
@@ -221,7 +266,48 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── 2. PROBLEMA ────────────────────────────────────────────── */}
+      {/* ── 2. ESPECIALIZACIÓN ─────────────────────────────────────── */}
+      <section className="py-24 px-6 border-t border-zinc-900">
+        <div className="max-w-5xl mx-auto">
+          <p className={`${CYAN} text-xs font-mono tracking-[0.3em] uppercase mb-4`}>
+            Especialización
+          </p>
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-16 max-w-xl">
+            Construimos tu presencia digital completa
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-12">
+            {specializations.map((s) => (
+              <div
+                key={s}
+                className={`${BORDER} rounded-xl p-5 flex flex-col gap-3`}
+              >
+                <span className={`${GOLD} text-lg font-mono`}>→</span>
+                <span className="text-zinc-200 text-sm font-medium leading-snug">
+                  {s}
+                </span>
+              </div>
+            ))}
+          </div>
+          <div className={`${BORDER} rounded-xl p-8 bg-[#c4a882]/[0.03]`}>
+            <p className="text-zinc-300 leading-relaxed mb-6">
+              También trabajamos en software a medida, CRMs, sistemas
+              financieros y cualquier solución digital según la viabilidad y
+              necesidad de tu negocio. Si tienes un problema específico,
+              hablemos.
+            </p>
+            <a
+              href={WHATSAPP_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-sm font-mono font-bold text-[#050508] bg-[#c4a882] hover:bg-[#d4b892] px-5 py-2.5 rounded-lg transition-colors"
+            >
+              Hablar con Nasus
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* ── 3. PROBLEMA ────────────────────────────────────────────── */}
       <section className="py-24 px-6 border-t border-zinc-900">
         <div className="max-w-5xl mx-auto">
           <p className={`${CYAN} text-xs font-mono tracking-[0.3em] uppercase mb-4`}>
@@ -242,7 +328,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── 3. CÓMO TRABAJAMOS ─────────────────────────────────────── */}
+      {/* ── 4. CÓMO TRABAJAMOS ─────────────────────────────────────── */}
       <section className="py-24 px-6 border-t border-zinc-900">
         <div className="max-w-5xl mx-auto">
           <p className={`${CYAN} text-xs font-mono tracking-[0.3em] uppercase mb-4`}>
@@ -271,7 +357,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── 4. HERRAMIENTAS ACTIVAS ────────────────────────────────── */}
+      {/* ── 5. HERRAMIENTAS ACTIVAS ────────────────────────────────── */}
       <section className="py-24 px-6 border-t border-zinc-900">
         <div className="max-w-5xl mx-auto">
           <p className={`${CYAN} text-xs font-mono tracking-[0.3em] uppercase mb-4`}>
@@ -281,11 +367,11 @@ export default function LandingPage() {
             Automatización lista para conectar a tus sistemas
           </h2>
           <p className="text-zinc-500 mb-16">
-            Tres productos en producción. Pide acceso y los integramos en tu flujo esta semana.
+            Cuatro productos en producción. Pide acceso y los integramos en tu flujo esta semana.
           </p>
 
           <div className="flex flex-col gap-8">
-            {TOOLS.map(({ id, badge, badgeClass, cardClass, title, tagline, desc, features, Demo }) => (
+            {TOOLS.map(({ id, badge, badgeClass, cardClass, title, tagline, desc, features, ctaText, Demo }) => (
               <div key={id} className={`border rounded-2xl p-8 md:p-10 ${cardClass}`}>
                 <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
                   <h3 className="text-white font-bold text-2xl">{title}</h3>
@@ -294,7 +380,7 @@ export default function LandingPage() {
                   </span>
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-8">
+                <div className={Demo ? "grid md:grid-cols-2 gap-8" : ""}>
                   <div>
                     <p className={`${CYAN} text-sm font-mono mb-3`}>{tagline}</p>
                     <p className="text-zinc-300 leading-relaxed mb-5">{desc}</p>
@@ -307,18 +393,22 @@ export default function LandingPage() {
                       ))}
                     </div>
                     <a
-                      href="mailto:nasusagency@gmail.com"
+                      href={WHATSAPP_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 text-sm font-mono font-bold text-[#050508] bg-[#c4a882] hover:bg-[#d4b892] px-5 py-2.5 rounded-lg transition-colors"
                     >
-                      Pedir acceso →
+                      {ctaText}
                     </a>
                   </div>
-                  <div className="flex flex-col">
-                    <p className="text-xs font-mono text-zinc-600 uppercase tracking-widest mb-3">
-                      Demo interactivo
-                    </p>
-                    <Demo />
-                  </div>
+                  {Demo && (
+                    <div className="flex flex-col">
+                      <p className="text-xs font-mono text-zinc-600 uppercase tracking-widest mb-3">
+                        Demo interactivo
+                      </p>
+                      <Demo />
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -326,7 +416,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── 5. PORTAFOLIO ──────────────────────────────────────────── */}
+      {/* ── 6. PORTAFOLIO ──────────────────────────────────────────── */}
       <section className="py-24 px-6 border-t border-zinc-900">
         <div className="max-w-5xl mx-auto">
           <p className={`${CYAN} text-xs font-mono tracking-[0.3em] uppercase mb-4`}>
@@ -372,7 +462,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── 6. POR QUÉ NASUS ───────────────────────────────────────── */}
+      {/* ── 7. POR QUÉ NASUS ───────────────────────────────────────── */}
       <section className="py-24 px-6 border-t border-zinc-900">
         <div className="max-w-5xl mx-auto">
           <p className={`${CYAN} text-xs font-mono tracking-[0.3em] uppercase mb-4`}>
@@ -393,7 +483,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── 7. CONTACTO ────────────────────────────────────────────── */}
+      {/* ── 8. CONTACTO ────────────────────────────────────────────── */}
       <section className="py-24 px-6 border-t border-zinc-900">
         <div className="max-w-2xl mx-auto">
           <p className={`${CYAN} text-xs font-mono tracking-[0.3em] uppercase mb-4`}>
@@ -422,10 +512,12 @@ export default function LandingPage() {
             Soluciones tecnológicas artesanales
           </span>
           <a
-            href="mailto:nasusagency@gmail.com"
+            href={WHATSAPP_URL}
+            target="_blank"
+            rel="noopener noreferrer"
             className="text-zinc-500 text-sm hover:text-[#c4a882] transition-colors"
           >
-            nasusagency@gmail.com
+            Hablar con Nasus
           </a>
         </div>
       </footer>

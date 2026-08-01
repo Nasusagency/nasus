@@ -7,13 +7,10 @@ export default function ContactForm() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const subject = encodeURIComponent(
-      `Contacto desde Nasus Agency — ${form.company}`
+    const message = encodeURIComponent(
+      `Hola, soy ${form.name} de ${form.company}.\n\nProblema:\n${form.problem}`
     );
-    const body = encodeURIComponent(
-      `Nombre: ${form.name}\nEmpresa: ${form.company}\n\nProblema:\n${form.problem}`
-    );
-    window.location.href = `mailto:nasusagency@gmail.com?subject=${subject}&body=${body}`;
+    window.open(`https://wa.me/523329621602?text=${message}`, "_blank");
   };
 
   const inputClass =
@@ -63,12 +60,14 @@ export default function ContactForm() {
         Enviar mensaje
       </button>
       <p className="text-center text-zinc-600 text-sm">
-        o escríbenos directo a{" "}
+        o escríbenos directo por{" "}
         <a
-          href="mailto:nasusagency@gmail.com"
+          href="https://wa.me/523329621602"
+          target="_blank"
+          rel="noopener noreferrer"
           className="text-zinc-400 hover:text-[#c4a882] transition-colors"
         >
-          nasusagency@gmail.com
+          WhatsApp
         </a>
       </p>
     </form>

@@ -172,7 +172,9 @@ export default function DemoIsland() {
               </table>
             </div>
             <a
-              href="mailto:nasusagency@gmail.com"
+              href="https://wa.me/523329621602"
+              target="_blank"
+              rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 w-full h-10 rounded-xl bg-[#c4a882] text-[#050508] text-xs font-mono font-bold hover:bg-[#d4b892] transition-colors"
             >
               Pedir acceso →

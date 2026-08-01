@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Crimson_Pro, JetBrains_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
+import FloatingWhatsApp from "./_components/FloatingWhatsApp";
 import "./globals.css";
 
 export const dynamic = "force-dynamic";
@@ -19,18 +20,20 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Nasus Agency — Soluciones tecnológicas artesanales para empresas en escala",
+    default: "Nasus Agency — Desarrollo web, apps y soluciones tecnológicas a medida",
     template: "%s — Nasus Agency",
   },
   description:
-    "Automatiza la validación de documentos oficiales y el análisis de facturas publicitarias con IA. Implementación directa en tus sistemas. Sin intermediarios.",
+    "Páginas web, aplicaciones, CRMs y automatización para empresas en crecimiento. Implementación directa, sin intermediarios.",
   keywords: [
+    "páginas web a medida México",
+    "desarrollo de aplicaciones web y móviles",
+    "CRM a medida",
+    "automatización de procesos",
+    "agencia IA México",
     "validador documentos México",
     "extractor facturas Google Ads Excel",
-    "agencia IA México",
-    "automatización empresas",
     "validar INE CURP RFC",
-    "factura Meta Ads Excel",
   ],
   metadataBase: new URL("https://nasus.lat"),
   alternates: { canonical: "/" },
@@ -39,18 +42,18 @@ export const metadata: Metadata = {
     shortcut: "/favicon.svg",
   },
   openGraph: {
-    title: "Nasus Agency — Soluciones tecnológicas artesanales para empresas en escala",
+    title: "Nasus Agency — Desarrollo web, apps y soluciones tecnológicas a medida",
     description:
-      "Automatiza la validación de documentos oficiales y el análisis de facturas publicitarias con IA. Implementación directa en tus sistemas. Sin intermediarios.",
+      "Páginas web, aplicaciones, CRMs y automatización para empresas en crecimiento. Implementación directa, sin intermediarios.",
     type: "website",
     siteName: "Nasus Agency",
     url: "https://nasus.lat",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Nasus Agency — Soluciones tecnológicas artesanales",
+    title: "Nasus Agency — Desarrollo web, apps y soluciones tecnológicas a medida",
     description:
-      "Automatiza la validación de documentos oficiales y el análisis de facturas publicitarias con IA.",
+      "Páginas web, aplicaciones, CRMs y automatización para empresas en crecimiento. Implementación directa, sin intermediarios.",
   },
 };
 
@@ -66,6 +69,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-[#050508] text-white">
         {children}
+        <FloatingWhatsApp />
         <Analytics />
       </body>
     </html>
