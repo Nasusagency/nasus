@@ -30,6 +30,65 @@ const CYAN = "text-[#00f2ff]";
 const BORDER = "border border-zinc-800";
 const WHATSAPP_URL = "https://wa.me/523329621602";
 
+const SOCIAL_LINKS = [
+  {
+    name: "X",
+    href: "https://twitter.com/NasusAgency",
+    icon: (
+      <path d="M18.9 2H22l-7.6 8.7L23.3 22h-6.9l-5.4-7-6.2 7H1.4l8.1-9.3L1 2h7l4.9 6.5L18.9 2Zm-1.2 18.1h1.9L6.4 3.8H4.3l13.4 16.3Z" />
+    ),
+  },
+  {
+    name: "LinkedIn",
+    href: "https://linkedin.com/company/nasus-agency",
+    icon: (
+      <path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5ZM3 9h4v12H3V9Zm7 0h3.8v1.7h.05c.53-1 1.83-2.05 3.77-2.05 4.03 0 4.78 2.65 4.78 6.1V21h-4v-5.6c0-1.34-.02-3.06-1.87-3.06-1.87 0-2.16 1.46-2.16 2.97V21h-4V9Z" />
+    ),
+  },
+  {
+    name: "Instagram",
+    href: "https://instagram.com/nasus.agency",
+    icon: (
+      <path d="M12 2.2c2.7 0 3 0 4.1.06 1.1.05 1.8.22 2.2.37.55.21.94.47 1.36.88.41.42.67.81.88 1.36.15.4.32 1.1.37 2.2.06 1.1.06 1.4.06 4.1s0 3-.06 4.1c-.05 1.1-.22 1.8-.37 2.2-.21.55-.47.94-.88 1.36-.42.41-.81.67-1.36.88-.4.15-1.1.32-2.2.37-1.1.06-1.4.06-4.1.06s-3 0-4.1-.06c-1.1-.05-1.8-.22-2.2-.37a3.7 3.7 0 0 1-1.36-.88 3.7 3.7 0 0 1-.88-1.36c-.15-.4-.32-1.1-.37-2.2-.06-1.1-.06-1.4-.06-4.1s0-3 .06-4.1c.05-1.1.22-1.8.37-2.2.21-.55.47-.94.88-1.36.42-.41.81-.67 1.36-.88.4-.15 1.1-.32 2.2-.37 1.1-.06 1.4-.06 4.1-.06ZM12 0C9.25 0 8.9 0 7.8.06c-1.1.05-1.86.23-2.52.5a5.9 5.9 0 0 0-2.13 1.4A5.9 5.9 0 0 0 1.75 4.1c-.27.66-.45 1.42-.5 2.52C1.2 7.7 1.2 8.05 1.2 10.8v2.4c0 2.75 0 3.1.06 4.2.05 1.1.23 1.86.5 2.52.28.68.65 1.26 1.4 2 .69.7 1.32 1.13 2 1.4.66.27 1.42.45 2.52.5 1.1.06 1.45.06 4.2.06s3.1 0 4.2-.06c1.1-.05 1.86-.23 2.52-.5a5.9 5.9 0 0 0 2-1.4c.7-.69 1.13-1.32 1.4-2 .27-.66.45-1.42.5-2.52.06-1.1.06-1.45.06-4.2s0-3.1-.06-4.2c-.05-1.1-.23-1.86-.5-2.52a5.9 5.9 0 0 0-1.4-2 5.9 5.9 0 0 0-2-1.4c-.66-.27-1.42-.45-2.52-.5C15.1 0 14.75 0 12 0Zm0 5.84A6.16 6.16 0 1 0 12 18.2 6.16 6.16 0 0 0 12 5.84Zm0 10.16a4 4 0 1 1 0-8 4 4 0 0 1 0 8Zm6.4-10.4a1.44 1.44 0 1 1-2.88 0 1.44 1.44 0 0 1 2.88 0Z" />
+    ),
+  },
+  {
+    name: "Facebook",
+    href: "https://www.facebook.com/share/18fR2Yn33t/",
+    icon: (
+      <path d="M22 12a10 10 0 1 0-11.56 9.88v-6.99H7.9V12h2.54V9.8c0-2.5 1.49-3.89 3.77-3.89 1.09 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56V12h2.78l-.44 2.89h-2.34v6.99A10 10 0 0 0 22 12Z" />
+    ),
+  },
+  {
+    name: "TikTok",
+    href: "https://tiktok.com/@nasusagency",
+    icon: (
+      <path d="M16.6 2h-3.2v13.6a3 3 0 1 1-2.1-2.86V9.4a6.2 6.2 0 1 0 5.3 6.14V8.3a7.9 7.9 0 0 0 4.6 1.47V6.6A4.7 4.7 0 0 1 16.6 2Z" />
+    ),
+  },
+];
+
+function SocialIcons({ className = "" }: { className?: string }) {
+  return (
+    <div className={`flex items-center gap-4 ${className}`}>
+      {SOCIAL_LINKS.map(({ name, href, icon }) => (
+        <a
+          key={name}
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={name}
+          className="text-[#c4a882] hover:text-[#00f2ff] transition-colors"
+        >
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+            {icon}
+          </svg>
+        </a>
+      ))}
+    </div>
+  );
+}
+
 const specializations = [
   "Páginas web a medida",
   "Aplicaciones web y móviles",
@@ -496,6 +555,12 @@ export default function LandingPage() {
             Cuéntanos. Sin compromiso, sin pitch de venta.
           </p>
           <ContactForm />
+          <div className="mt-12 pt-8 border-t border-zinc-900">
+            <p className="text-zinc-600 text-xs font-mono uppercase tracking-widest mb-4">
+              Síguenos
+            </p>
+            <SocialIcons />
+          </div>
         </div>
       </section>
 
@@ -506,11 +571,12 @@ export default function LandingPage() {
 
       {/* ── Footer ─────────────────────────────────────────────────── */}
       <footer className="py-10 px-6 border-t border-zinc-900">
-        <div className="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
           <span className={`${GOLD} font-mono font-bold`}>Nasus Agency</span>
           <span className="text-zinc-600 text-sm">
             Soluciones tecnológicas artesanales
           </span>
+          <SocialIcons />
           <a
             href={WHATSAPP_URL}
             target="_blank"
