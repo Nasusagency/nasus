@@ -53,6 +53,7 @@
 #### API Endpoints
 | Ruta | Descripción |
 |------|-------------|
+| `POST /api/assistant` | Asistente de voz — Claude + ElevenLabs TTS (público, 5/IP/hora) |
 | `POST /api/validate` | Validación de documentos generales |
 | `POST /api/validate-photo` | Validación de fotografías |
 | `POST /api/facturas/extract` | Extracción de facturas PDF → JSON/Excel |
@@ -75,6 +76,7 @@
 | Auth admin | JWT propio con Web Crypto API (httpOnly cookie) |
 | Base de datos | Supabase (PostgreSQL) |
 | IA | Anthropic Claude (`claude-sonnet-4-6`) — visión + generación |
+| Voz | Web Speech API (STT, navegador) + ElevenLabs TTS (voz clonada) |
 | Verificación ext. | Didit API (validación CURP en base de datos oficial) |
 | Despliegue | Vercel (Edge + Node.js runtime según ruta) |
 | Exports | SheetJS (XLSX) |
@@ -167,4 +169,7 @@ UAG_API_KEY                — API key del cliente UAG
 ADMIN_EMAIL                — Email de acceso al admin
 ADMIN_PASSWORD             — Contraseña del admin
 ADMIN_JWT_SECRET           — Secret para firmar tokens JWT del admin
+ELEVENLABS_API_KEY         — Text-to-speech del asistente de voz
+ELEVENLABS_VOICE_ID        — ID de la voz clonada de Nasus
+ELEVENLABS_MODEL_ID        — Opcional (default: eleven_multilingual_v2)
 ```

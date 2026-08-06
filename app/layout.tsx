@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Crimson_Pro, JetBrains_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import FloatingWhatsApp from "./_components/FloatingWhatsApp";
+import VoiceAssistant from "./_components/VoiceAssistant";
 import "./globals.css";
 
 export const dynamic = "force-dynamic";
@@ -69,6 +70,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-[#050508] text-white">
         {children}
+        <VoiceAssistant />
         <FloatingWhatsApp />
         <Analytics />
       </body>
