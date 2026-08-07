@@ -7,7 +7,16 @@
       "Bash(git config *)",
       "Bash(vercel --version)",
       "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\Oscar\\\\validador\" -Filter \"middleware*\" -Recurse)",
-      "Bash(Select-Object FullName)"
+      "Bash(Select-Object FullName)",
+      "Bash(npx tsc *)",
+      "Bash(git add *)",
+      "Bash(git push *)",
+      "Skill(claude-api)",
+      "Skill(claude-api:*)",
+      "PowerShell(npx tsc --noEmit)",
+      "PowerShell(npm run dev -- --port 3123)",
+      "PowerShell(\\(Invoke-WebRequest -Uri \"http://localhost:3123/\" -UseBasicParsing\\).Headers[\"Permissions-Policy\"])",
+      "PowerShell(git check-ignore -v .env.local)"
     ]
   }
 }

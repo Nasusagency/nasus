@@ -67,8 +67,8 @@ export async function POST(req: NextRequest) {
     const response = await anthropic.messages.create({
       model: VOZ_MODEL,
       max_tokens: VOZ_MAX_TOKENS,
-      thinking: { type: "disabled" },
-      output_config: { effort: "low" },
+      // Haiku 4.5 no acepta `effort` ni `thinking: disabled`: omitirlos es el
+      // equivalente correcto — sin `thinking`, el modelo no razona.
       system: [
         {
           type: "text",

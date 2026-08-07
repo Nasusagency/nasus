@@ -1,4 +1,6 @@
-export const VOZ_MODEL = "claude-sonnet-4-6";
+// Haiku 4.5 basta para respuestas de máximo 3 oraciones y cuesta ~3× menos
+// que Sonnet 4.6 ($1/$5 vs $3/$15 por millón de tokens), con menor latencia.
+export const VOZ_MODEL = "claude-haiku-4-5-20251001";
 
 export const VOZ_MAX_TOKENS = 300;
 

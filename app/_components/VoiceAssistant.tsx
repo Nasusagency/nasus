@@ -60,6 +60,60 @@ function getRecognitionCtor(): SpeechRecognitionCtor | null {
   return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
 }
 
+// ─── Permiso de micrófono ─────────────────────────────────────────────────────
+
+// getUserMedia solo existe en contextos seguros (https, localhost o 127.0.0.1).
+// Servir el sitio por IP de red local (http://192.168.x.x) deja `mediaDevices`
+// como undefined, lo que sin esta comprobación se confunde con permiso denegado.
+function contextoInseguro(): boolean {
+  if (window.isSecureContext) return false;
+  return !navigator.mediaDevices?.getUserMedia;
+}
+
+// Devuelve null si el micrófono está disponible, o el mensaje de error concreto.
+async function asegurarMicrofono(): Promise<string | null> {
+  if (contextoInseguro()) {
+    return "El micrófono necesita una conexión segura (https o localhost).";
+  }
+  if (!navigator.mediaDevices?.getUserMedia) {
+    return "Tu navegador no permite acceder al micrófono.";
+  }
+
+  // Si el permiso ya está concedido no volvemos a abrir el stream: dejamos que
+  // SpeechRecognition tome el micrófono directamente y evitamos el ciclo
+  // abrir/cerrar/reabrir, que en Chrome a veces falla.
+  try {
+    const estado = await navigator.permissions?.query({
+      name: "microphone" as PermissionName,
+    });
+    if (estado?.state === "granted") return null;
+  } catch {
+    // Permissions API no disponible o sin soporte para "microphone": seguimos.
+  }
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    stream.getTracks().forEach((t) => t.stop());
+    return null;
+  } catch (err) {
+    const nombre = err instanceof DOMException ? err.name : "";
+    switch (nombre) {
+      case "NotAllowedError":
+      case "SecurityError":
+        return "Necesito permiso para usar tu micrófono.";
+      case "NotFoundError":
+      case "OverconstrainedError":
+        return "No encontré ningún micrófono conectado.";
+      case "NotReadableError":
+        return "Otra aplicación está usando el micrófono. Ciérrala e intenta de nuevo.";
+      case "AbortError":
+        return "No pude abrir el micrófono. Intenta de nuevo.";
+      default:
+        return "No pude acceder al micrófono. Intenta de nuevo.";
+    }
+  }
+}
+
 // El soporte del navegador es estado externo: se lee con useSyncExternalStore
 // para no provocar un mismatch de hidratación ni un setState dentro de un efecto.
 const noSuscribir = () => () => {};
@@ -188,12 +242,11 @@ export default function VoiceAssistant() {
     transcriptRef.current = "";
     enviadoRef.current = false;
 
-    // Permiso explícito de micrófono, con un mensaje claro si se deniega.
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.getTracks().forEach((t) => t.stop());
-    } catch {
-      fallar("Necesito permiso para usar tu micrófono.");
+    // Permiso explícito de micrófono. Se solicita aquí — dentro del gesto del
+    // usuario — nunca al montar el componente.
+    const errorMicrofono = await asegurarMicrofono();
+    if (errorMicrofono) {
+      fallar(errorMicrofono);
       return;
     }
 
@@ -214,14 +267,29 @@ export default function VoiceAssistant() {
 
     recognition.onerror = (event) => {
       enviadoRef.current = true;
-      if (event.error === "not-allowed" || event.error === "service-not-allowed") {
-        fallar("Necesito permiso para usar tu micrófono.");
-      } else if (event.error === "no-speech") {
-        fallar("No escuché nada. Toca y habla de nuevo.");
-      } else if (event.error === "aborted") {
-        setEstado("idle");
-      } else {
-        fallar("Hubo un problema con el micrófono. Intenta de nuevo.");
+      switch (event.error) {
+        case "not-allowed":
+          fallar("Necesito permiso para usar tu micrófono.");
+          break;
+        case "service-not-allowed":
+          // El micrófono puede estar concedido: lo bloqueado es el servicio de
+          // dictado (origen no seguro o política del navegador).
+          fallar("Tu navegador bloqueó el dictado por voz en esta página.");
+          break;
+        case "audio-capture":
+          fallar("No encontré ningún micrófono conectado.");
+          break;
+        case "network":
+          fallar("El dictado necesita conexión. Revísala e intenta de nuevo.");
+          break;
+        case "no-speech":
+          fallar("No escuché nada. Toca y habla de nuevo.");
+          break;
+        case "aborted":
+          setEstado("idle");
+          break;
+        default:
+          fallar("Hubo un problema con el micrófono. Intenta de nuevo.");
       }
     };
 
