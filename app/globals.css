@@ -18,6 +18,13 @@ body {
   font-family: system-ui, -apple-system, sans-serif;
 }
 
+/* Navegación por anclas de la landing. */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
 /* Ondas del asistente de voz (estado "Escuchando…") */
 @keyframes nasus-wave {
   0%,

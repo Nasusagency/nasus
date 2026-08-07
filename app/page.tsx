@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import Image from "next/image";
+import AssistantHint from "./_components/AssistantHint";
 import ContactForm from "./_components/ContactForm";
 import DemoIsland from "./_components/DemoIsland";
 import FacturasDemo from "./_components/FacturasDemo";
@@ -28,6 +30,8 @@ export const metadata: Metadata = {
 const GOLD = "text-[#c4a882]";
 const CYAN = "text-[#00f2ff]";
 const BORDER = "border border-zinc-800";
+const EYEBROW = `${CYAN} text-xs font-mono tracking-[0.3em] uppercase mb-4`;
+const SECTION = "py-24 px-6 border-t border-zinc-900 scroll-mt-14";
 const WHATSAPP_URL = "https://wa.me/523329621602";
 
 const SOCIAL_LINKS = [
@@ -89,12 +93,13 @@ function SocialIcons({ className = "" }: { className?: string }) {
   );
 }
 
-const specializations = [
-  "Páginas web a medida",
-  "Aplicaciones web y móviles",
-  "CRMs y sistemas de gestión",
-  "Automatización de procesos",
-  "Ecosistemas de marketing digital",
+/** Capacidades resumidas bajo el CTA del hero. */
+const CAPABILITIES = [
+  "Web",
+  "Software",
+  "IA",
+  "Automatización",
+  "Sistemas internos",
 ];
 
 const painPoints = [
@@ -115,67 +120,123 @@ const painPoints = [
   },
 ];
 
+/** Qué construimos — cuatro categorías amplias, no un catálogo de servicios. */
+const buildCategories = [
+  {
+    n: "01",
+    title: "Productos digitales",
+    desc: "Webs, aplicaciones y plataformas.",
+  },
+  {
+    n: "02",
+    title: "Sistemas empresariales",
+    desc: "CRMs, backoffices, sistemas financieros y herramientas internas.",
+  },
+  {
+    n: "03",
+    title: "IA y automatización",
+    desc: "Asistentes, procesamiento documental, workflows e integraciones.",
+  },
+  {
+    n: "04",
+    title: "Infraestructura comercial",
+    desc: "E-commerce, captación, analítica y ecosistemas digitales.",
+  },
+];
+
 const steps = [
   {
     n: "01",
     title: "Diagnóstico",
-    desc: "Entendemos tu problema real en una sola sesión. Sin formularios extensos ni descubrimientos de semanas.",
+    desc: "Entendemos el problema real y el contexto técnico.",
   },
   {
     n: "02",
     title: "Propuesta",
-    desc: "Una propuesta técnica clara: qué construimos, cuánto tarda, qué ROI esperar. Sin ambigüedad.",
+    desc: "Definimos qué construiremos, alcance, tiempos y criterios de éxito.",
   },
   {
     n: "03",
-    title: "Implementación directa",
-    desc: "Nos conectamos a tus sistemas y construimos. No subcontratamos ni tercerizamos el trabajo.",
+    title: "Desarrollo e integración",
+    desc: "Construimos directamente sobre tus sistemas e integraciones.",
   },
   {
     n: "04",
-    title: "Entrega funcional",
-    desc: "Entregamos en producción, no prototipos. Lo que construimos funciona desde el primer día.",
-  },
-  {
-    n: "05",
-    title: "ROI medible",
-    desc: "Definimos métricas de éxito antes de empezar y las revisamos juntos al terminar.",
+    title: "Lanzamiento y seguimiento",
+    desc: "Entregamos en producción, medimos resultados y ajustamos cuando sea necesario.",
   },
 ];
 
 const differentiators = [
   {
-    title: "Implementación directa en tus sistemas",
-    desc: "No entregamos PDFs ni presentaciones. Nos sentamos con tu equipo y construimos dentro de tus repositorios.",
+    title: "Implementación directa",
+    desc: "Construimos dentro de tus sistemas. Sin capas innecesarias entre quien define la solución y quien la desarrolla.",
   },
   {
-    title: "IA como motor, juicio humano como filtro",
-    desc: "Usamos los modelos más avanzados disponibles. Cada decisión crítica tiene un humano que la valida.",
+    title: "Tecnología elegida por el problema",
+    desc: "IA cuando aporta valor. Software tradicional cuando es suficiente. Elegimos la herramienta por viabilidad, costo y resultado.",
   },
   {
-    title: "Cobro basado en ROI",
-    desc: "Definimos el valor que vamos a generar antes de firmar. Si no podemos medirlo, no cobramos por ello.",
+    title: "Desarrollo flexible",
+    desc: "Podemos entrar desde un proyecto puntual hasta acompañar a tu equipo como capacidad técnica adicional.",
   },
 ];
 
-const portfolio = [
+type Caso = {
+  id: string;
+  name: string;
+  category: string;
+  desc: string;
+  /** Segunda línea opcional; solo cuando aporta algo real. */
+  note?: string;
+  /**
+   * Stack visible. Vacío a propósito cuando no está documentado en el repo:
+   * preferimos no mostrar nada antes que inventar tecnologías.
+   */
+  stack: string[];
+  href: string;
+  external: boolean;
+  cta: string;
+  /** Dominio mostrado en el panel cuando todavía no hay screenshot. */
+  domain: string;
+  /** Ruta en /public de la captura, cuando exista. */
+  image?: string;
+};
+
+const cases: Caso[] = [
   {
-    title: "CV AI Analyzer",
-    desc: "Analizador de CVs con IA para reclutadores. Procesa hasta 10 PDFs simultáneos, genera resumen y puntaje por perfil.",
-    stack: ["Python", "Streamlit"],
-    href: "https://recruitai.gumroad.com/l/analyzer",
+    id: "ceemi",
+    name: "CEEMI",
+    category: "Presencia digital / Conversión",
+    desc: "Sitio comercial para clínica estética orientado a adquisición y conversión, con catálogo de tratamientos, programas, precios y captación directa vía WhatsApp.",
+    stack: [],
+    href: "https://www.ceemispa.com/",
+    external: true,
+    cta: "Ver proyecto ↗",
+    domain: "ceemispa.com",
   },
   {
-    title: "Soccer Sticker App",
-    desc: "Web app para el Mundial — registra tu álbum, gestiona duplicados, intercambia cartas con otros coleccionistas por ubicación.",
-    stack: ["Next.js", "Supabase", "Vercel"],
-    href: "https://soccersticker.app",
-  },
-  {
-    title: "Theia.lat",
-    desc: "Tienda de moda femenina con dropshipping integrado. Logística y envío gestionados por el proveedor.",
+    id: "theia",
+    name: "Theia",
+    category: "E-commerce / Operación",
+    desc: "E-commerce construido de extremo a extremo con catálogo, pagos, base de datos y fulfillment conectado con proveedor.",
     stack: ["Next.js", "Supabase", "Vercel"],
     href: "https://theia.lat",
+    external: true,
+    cta: "Ver proyecto ↗",
+    domain: "theia.lat",
+  },
+  {
+    id: "validador",
+    name: "Validador de Documentos",
+    category: "IA / Automatización",
+    desc: "Sistema para extracción, validación y cruce de información documental mediante IA.",
+    note: "Diseñado para reducir horas de revisión manual y estandarizar procesos documentales.",
+    stack: ["Next.js", "Claude API", "Supabase"],
+    href: "#productos",
+    external: false,
+    cta: "Ver demo ↓",
+    domain: "nasus.lat/validador",
   },
 ];
 
@@ -187,10 +248,15 @@ type Tool = {
   title: string;
   tagline: string;
   desc: string;
+  /** Se conservan completas; en pantalla mostramos las 4 primeras. */
   features: string[];
+  /** Sustantivo para el resumen "+ N …" cuando hay más de 4. */
+  moreNoun: string;
   ctaText: string;
   Demo?: typeof DemoIsland;
 };
+
+const VISIBLE_FEATURES = 4;
 
 const TOOLS: Tool[] = [
   {
@@ -211,6 +277,7 @@ const TOOLS: Tool[] = [
       "Título universitario / Cédula profesional",
       "Certificado de Bachillerato",
     ],
+    moreNoun: "validaciones más",
     ctaText: "Pedir acceso →",
     Demo: DemoIsland,
   },
@@ -230,6 +297,7 @@ const TOOLS: Tool[] = [
       "Hoja Para Contabilidad lista para entregar",
       "Detecta actividad no válida (importes negativos)",
     ],
+    moreNoun: "capacidades más",
     ctaText: "Pedir acceso →",
     Demo: FacturasDemo,
   },
@@ -249,24 +317,9 @@ const TOOLS: Tool[] = [
       "Detecta lentes, accesorios, fondo incorrecto",
       "Presets guardables por institución",
     ],
+    moreNoun: "validaciones más",
     ctaText: "Pedir acceso →",
     Demo: FotosDemo,
-  },
-  {
-    id: "webapps",
-    badge: "Disponible",
-    badgeClass: "bg-[#00f2ff] text-[#050508]",
-    cardClass: "border-zinc-800",
-    title: "Páginas web a medida",
-    tagline: "De la idea a producción en semanas, no meses",
-    desc: "Sitios profesionales construidos con Next.js, optimizados para SEO y conversión. Con panel de administración opcional para que tú manejes tu contenido.",
-    features: [
-      "Construido con Next.js — rápido y SEO-first",
-      "Diseño a medida, no templates",
-      "Panel de administración opcional",
-      "Integración con tus sistemas y formularios",
-    ],
-    ctaText: "Ver más →",
   },
 ];
 
@@ -276,7 +329,8 @@ const SCHEMA_ORG = {
   name: "Nasus Agency",
   url: "https://nasus.lat",
   email: "nasusagency@gmail.com",
-  description: "Agencia de soluciones tecnológicas artesanales. Implementamos IA directamente en los sistemas de nuestros clientes.",
+  description:
+    "Diseñamos, construimos e integramos software, IA y automatización en los sistemas de nuestros clientes.",
 };
 
 export default function LandingPage() {
@@ -284,15 +338,26 @@ export default function LandingPage() {
     <div className="bg-[#050508] text-white min-h-screen">
       {/* ── Sticky nav ─────────────────────────────────────────────── */}
       <nav className="sticky top-0 z-50 bg-[#050508]/90 backdrop-blur border-b border-zinc-900">
-        <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between gap-4">
           <span className={`${GOLD} font-mono font-bold tracking-wide`}>
             Nasus Agency
           </span>
+          <div className="hidden md:flex items-center gap-7 font-mono text-xs text-zinc-500">
+            <a href="#productos" className="hover:text-[#c4a882] transition-colors">
+              Productos
+            </a>
+            <a href="#casos" className="hover:text-[#c4a882] transition-colors">
+              Casos
+            </a>
+            <a href="#contacto" className="hover:text-[#c4a882] transition-colors">
+              Contacto
+            </a>
+          </div>
           <a
             href={WHATSAPP_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm border border-[#c4a882] text-[#c4a882] px-4 py-2 rounded-lg hover:bg-[#c4a882] hover:text-[#050508] transition-colors"
+            className="text-sm border border-[#c4a882] text-[#c4a882] px-4 py-2 rounded-lg hover:bg-[#c4a882] hover:text-[#050508] transition-colors whitespace-nowrap"
           >
             Hablar con Nasus
           </a>
@@ -300,140 +365,56 @@ export default function LandingPage() {
       </nav>
 
       {/* ── 1. HERO ────────────────────────────────────────────────── */}
-      <section className="min-h-[calc(100vh-56px)] flex flex-col items-center justify-center px-6 text-center py-8">
-        <div className="max-w-3xl mx-auto">
-          <p className={`${CYAN} text-xs font-mono tracking-[0.3em] uppercase mb-5`}>
+      <section className="min-h-[calc(100dvh-56px)] flex flex-col items-center justify-center px-6 text-center py-20">
+        <div className="max-w-3xl mx-auto flex flex-col items-center">
+          <p className={`${CYAN} text-xs font-mono tracking-[0.3em] uppercase mb-6`}>
             Nasus Agency
           </p>
-          <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-5 leading-[1.1]">
-            Soluciones tecnológicas{" "}
-            <span className={GOLD}>artesanales</span>
-            <br className="hidden md:block" /> para empresas en escala
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-[1.1] text-balance">
+            Construimos <span className={GOLD}>tecnología</span>
+            <br className="hidden sm:block" /> que mueve empresas.
           </h1>
-          <p className="text-zinc-400 text-xl mb-8 max-w-xl mx-auto leading-relaxed">
-            Implementamos IA directamente en tus sistemas. Sin intermediarios,
-            sin reuniones innecesarias.
+          <p className="text-zinc-400 text-lg sm:text-xl mb-10 max-w-xl mx-auto leading-relaxed text-balance">
+            IA, software y automatización conectados directamente a tus sistemas.
           </p>
           <a
-            href={WHATSAPP_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-block bg-[#c4a882] text-[#050508] font-bold px-8 py-4 rounded-lg text-lg hover:bg-[#d4b892] transition-colors"
+            href="#contacto"
+            className="inline-block bg-[#c4a882] text-[#050508] font-bold px-8 py-4 rounded-lg text-base sm:text-lg hover:bg-[#d4b892] transition-colors"
           >
-            Hablar con Nasus
+            Cuéntanos qué necesitas →
           </a>
-        </div>
-      </section>
 
-      {/* ── 2. ESPECIALIZACIÓN ─────────────────────────────────────── */}
-      <section className="py-24 px-6 border-t border-zinc-900">
-        <div className="max-w-5xl mx-auto">
-          <p className={`${CYAN} text-xs font-mono tracking-[0.3em] uppercase mb-4`}>
-            Especialización
-          </p>
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-16 max-w-xl">
-            Construimos tu presencia digital completa
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-12">
-            {specializations.map((s) => (
-              <div
-                key={s}
-                className={`${BORDER} rounded-xl p-5 flex flex-col gap-3`}
-              >
-                <span className={`${GOLD} text-lg font-mono`}>→</span>
-                <span className="text-zinc-200 text-sm font-medium leading-snug">
-                  {s}
-                </span>
-              </div>
+          <div className="mt-14 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 font-mono text-[10px] sm:text-xs text-zinc-600 uppercase tracking-[0.2em]">
+            {CAPABILITIES.map((c, i) => (
+              <span key={c} className="flex items-center gap-3">
+                {i > 0 && <span className="text-zinc-800" aria-hidden="true">·</span>}
+                {c}
+              </span>
             ))}
           </div>
-          <div className={`${BORDER} rounded-xl p-8 bg-[#c4a882]/[0.03]`}>
-            <p className="text-zinc-300 leading-relaxed mb-6">
-              También trabajamos en software a medida, CRMs, sistemas
-              financieros y cualquier solución digital según la viabilidad y
-              necesidad de tu negocio. Si tienes un problema específico,
-              hablemos.
-            </p>
-            <a
-              href={WHATSAPP_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-sm font-mono font-bold text-[#050508] bg-[#c4a882] hover:bg-[#d4b892] px-5 py-2.5 rounded-lg transition-colors"
-            >
-              Hablar con Nasus
-            </a>
+
+          <div className="mt-8">
+            <AssistantHint />
           </div>
         </div>
       </section>
 
-      {/* ── 3. PROBLEMA ────────────────────────────────────────────── */}
-      <section className="py-24 px-6 border-t border-zinc-900">
+      {/* ── 2. PRODUCTOS EN PRODUCCIÓN ─────────────────────────────── */}
+      <section id="productos" className={SECTION}>
         <div className="max-w-5xl mx-auto">
-          <p className={`${CYAN} text-xs font-mono tracking-[0.3em] uppercase mb-4`}>
-            El problema
-          </p>
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-16 max-w-xl">
-            Tu equipo técnico está saturado. Los proyectos se acumulan.
+          <p className={EYEBROW}>Productos en producción</p>
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 max-w-2xl text-balance">
+            Ya construimos soluciones que puedes usar hoy.
           </h2>
-          <div className="grid md:grid-cols-3 gap-6">
-            {painPoints.map((p) => (
-              <div key={p.n} className={`${BORDER} p-8 rounded-xl`}>
-                <div className={`${GOLD} text-3xl font-bold font-mono mb-5`}>{p.n}</div>
-                <h3 className="text-white font-semibold text-lg mb-3">{p.title}</h3>
-                <p className="text-zinc-400 leading-relaxed">{p.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── 4. CÓMO TRABAJAMOS ─────────────────────────────────────── */}
-      <section className="py-24 px-6 border-t border-zinc-900">
-        <div className="max-w-5xl mx-auto">
-          <p className={`${CYAN} text-xs font-mono tracking-[0.3em] uppercase mb-4`}>
-            Cómo trabajamos
-          </p>
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-            Proceso directo. Sin fricción.
-          </h2>
-          <p className="text-zinc-500 mb-16">Sin reuniones innecesarias.</p>
-          <div>
-            {steps.map((s) => (
-              <div
-                key={s.n}
-                className="flex gap-8 py-8 border-b border-zinc-900 items-start"
-              >
-                <span className={`${GOLD} font-mono text-xl font-bold flex-shrink-0 w-10 pt-0.5`}>
-                  {s.n}
-                </span>
-                <div>
-                  <h3 className="text-white font-semibold text-lg mb-2">{s.title}</h3>
-                  <p className="text-zinc-400 leading-relaxed">{s.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── 5. HERRAMIENTAS ACTIVAS ────────────────────────────────── */}
-      <section className="py-24 px-6 border-t border-zinc-900">
-        <div className="max-w-5xl mx-auto">
-          <p className={`${CYAN} text-xs font-mono tracking-[0.3em] uppercase mb-4`}>
-            Herramientas activas
-          </p>
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-            Automatización lista para conectar a tus sistemas
-          </h2>
-          <p className="text-zinc-500 mb-16">
-            Cuatro productos en producción. Pide acceso y los integramos en tu flujo esta semana.
+          <p className="text-zinc-500 mb-16 max-w-xl">
+            Productos funcionales listos para integrarse a operaciones reales.
           </p>
 
           <div className="flex flex-col gap-8">
-            {TOOLS.map(({ id, badge, badgeClass, cardClass, title, tagline, desc, features, ctaText, Demo }) => (
-              <div key={id} className={`border rounded-2xl p-8 md:p-10 ${cardClass}`}>
+            {TOOLS.map(({ id, badge, badgeClass, cardClass, title, tagline, desc, features, moreNoun, ctaText, Demo }) => (
+              <div key={id} className={`border rounded-2xl p-6 sm:p-8 md:p-10 ${cardClass}`}>
                 <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
-                  <h3 className="text-white font-bold text-2xl">{title}</h3>
+                  <h3 className="text-white font-bold text-xl sm:text-2xl">{title}</h3>
                   <span className={`text-xs font-bold px-3 py-1 rounded-full font-mono tracking-wide flex-shrink-0 ${badgeClass}`}>
                     {badge}
                   </span>
@@ -444,12 +425,17 @@ export default function LandingPage() {
                     <p className={`${CYAN} text-sm font-mono mb-3`}>{tagline}</p>
                     <p className="text-zinc-300 leading-relaxed mb-5">{desc}</p>
                     <div className="flex flex-col gap-2 mb-6">
-                      {features.map((f) => (
-                        <div key={f} className="flex items-center gap-2 text-sm text-zinc-400">
-                          <span className={`${GOLD} text-xs font-mono flex-shrink-0`}>✓</span>
+                      {features.slice(0, VISIBLE_FEATURES).map((f) => (
+                        <div key={f} className="flex items-start gap-2 text-sm text-zinc-400">
+                          <span className={`${GOLD} text-xs font-mono flex-shrink-0 pt-1`}>✓</span>
                           {f}
                         </div>
                       ))}
+                      {features.length > VISIBLE_FEATURES && (
+                        <p className="text-sm font-mono text-zinc-600 pl-5">
+                          + {features.length - VISIBLE_FEATURES} {moreNoun}
+                        </p>
+                      )}
                     </div>
                     <a
                       href={WHATSAPP_URL}
@@ -475,60 +461,168 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── 6. PORTAFOLIO ──────────────────────────────────────────── */}
-      <section className="py-24 px-6 border-t border-zinc-900">
+      {/* ── 3. EL PROBLEMA ─────────────────────────────────────────── */}
+      <section className={SECTION}>
         <div className="max-w-5xl mx-auto">
-          <p className={`${CYAN} text-xs font-mono tracking-[0.3em] uppercase mb-4`}>
-            Proyectos anteriores
-          </p>
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-            Experiencia previa
+          <p className={EYEBROW}>El problema</p>
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-16 max-w-xl text-balance">
+            Tu equipo técnico está saturado. Los proyectos se acumulan.
           </h2>
-          <p className="text-zinc-500 mb-16">
-            Productos que construimos y lanzamos. Muestra del rango de lo que hacemos.
-          </p>
-          <div className="grid md:grid-cols-3 gap-5">
-            {portfolio.map((p) => (
-              <a
-                key={p.title}
-                href={p.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group border border-zinc-800 hover:border-zinc-700 rounded-xl p-6 flex flex-col gap-3 transition-colors"
+          <div className="grid md:grid-cols-3 gap-6">
+            {painPoints.map((p) => (
+              <div key={p.n} className={`${BORDER} p-8 rounded-xl`}>
+                <div className={`${GOLD} text-3xl font-bold font-mono mb-5`}>{p.n}</div>
+                <h3 className="text-white font-semibold text-lg mb-3">{p.title}</h3>
+                <p className="text-zinc-400 leading-relaxed">{p.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── 4. QUÉ CONSTRUIMOS ─────────────────────────────────────── */}
+      <section className={SECTION}>
+        <div className="max-w-5xl mx-auto">
+          <p className={EYEBROW}>Qué construimos</p>
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-16 max-w-xl text-balance">
+            Lo que podemos construir contigo.
+          </h2>
+          <div className="border-t border-zinc-900">
+            {buildCategories.map(({ n, title, desc }) => (
+              <div
+                key={n}
+                className="grid md:grid-cols-[1.1fr_1fr] gap-x-12 gap-y-3 py-10 border-b border-zinc-900"
               >
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="text-zinc-200 font-semibold group-hover:text-white transition-colors">
-                    {p.title}
+                <div className="flex items-baseline gap-5">
+                  <span className={`${GOLD} font-mono text-sm flex-shrink-0`}>{n}</span>
+                  <h3 className="text-white text-2xl md:text-3xl font-bold leading-tight">
+                    {title}
                   </h3>
-                  <span className="text-[10px] font-mono bg-zinc-800 text-zinc-500 px-2 py-0.5 rounded-full flex-shrink-0">
-                    Portafolio
-                  </span>
                 </div>
-                <p className="text-zinc-500 text-sm leading-relaxed">{p.desc}</p>
-                <div className="flex flex-wrap gap-1.5 mt-auto pt-1">
-                  {p.stack.map((s) => (
-                    <span
-                      key={s}
-                      className="text-[10px] font-mono text-zinc-600 border border-zinc-800 px-2 py-0.5 rounded"
-                    >
-                      {s}
-                    </span>
-                  ))}
+                <p className="text-zinc-400 leading-relaxed md:pt-2 pl-10 md:pl-0">
+                  {desc}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── 5. CASOS REALES ────────────────────────────────────────── */}
+      <section id="casos" className={SECTION}>
+        <div className="max-w-5xl mx-auto">
+          <p className={EYEBROW}>Casos reales</p>
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 max-w-xl text-balance">
+            Proyectos en producción.
+          </h2>
+          <p className="text-zinc-500 mb-16 max-w-xl">
+            Sistemas que diseñamos, construimos y lanzamos.
+          </p>
+
+          <div className="flex flex-col gap-16 md:gap-20">
+            {cases.map((c, i) => (
+              <article
+                key={c.id}
+                className="grid md:grid-cols-2 gap-8 md:gap-12 items-center"
+              >
+                {/* Visual */}
+                <div className={i % 2 === 1 ? "md:order-2" : ""}>
+                  <div
+                    className={`${BORDER} rounded-2xl overflow-hidden bg-[#c4a882]/[0.03] aspect-[16/10] relative`}
+                  >
+                    {c.image ? (
+                      <Image
+                        src={c.image}
+                        alt={`Captura del proyecto ${c.name}`}
+                        fill
+                        sizes="(min-width: 768px) 50vw, 100vw"
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center">
+                        <span className="font-mono text-sm sm:text-base text-zinc-400 break-all">
+                          {c.domain}
+                        </span>
+                        <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-zinc-700">
+                          En producción
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </a>
+
+                {/* Contenido */}
+                <div className={i % 2 === 1 ? "md:order-1" : ""}>
+                  <p className={`${CYAN} text-[11px] font-mono tracking-[0.25em] uppercase mb-4`}>
+                    {c.category}
+                  </p>
+                  <h3 className="text-white font-bold text-2xl md:text-3xl mb-4">
+                    {c.name}
+                  </h3>
+                  <p className="text-zinc-300 leading-relaxed mb-3">{c.desc}</p>
+                  {c.note && (
+                    <p className="text-zinc-500 text-sm leading-relaxed mb-3">{c.note}</p>
+                  )}
+                  {c.stack.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-5 mb-6">
+                      {c.stack.map((s) => (
+                        <span
+                          key={s}
+                          className="text-[10px] font-mono text-zinc-500 border border-zinc-800 px-2 py-0.5 rounded"
+                        >
+                          {s}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <a
+                    href={c.href}
+                    {...(c.external
+                      ? { target: "_blank", rel: "noopener noreferrer" }
+                      : {})}
+                    className={`${GOLD} inline-flex items-center gap-2 text-sm font-mono border-b border-transparent hover:border-[#c4a882] transition-colors mt-2`}
+                  >
+                    {c.cta}
+                  </a>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── 6. CÓMO TRABAJAMOS ─────────────────────────────────────── */}
+      <section className={SECTION}>
+        <div className="max-w-5xl mx-auto">
+          <p className={EYEBROW}>Cómo trabajamos</p>
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-16 text-balance">
+            Proceso directo. Sin fricción.
+          </h2>
+          <div>
+            {steps.map((s) => (
+              <div
+                key={s.n}
+                className="flex gap-6 sm:gap-8 py-8 border-b border-zinc-900 items-start"
+              >
+                <span className={`${GOLD} font-mono text-xl font-bold flex-shrink-0 w-10 pt-0.5`}>
+                  {s.n}
+                </span>
+                <div>
+                  <h3 className="text-white font-semibold text-lg mb-2">{s.title}</h3>
+                  <p className="text-zinc-400 leading-relaxed">{s.desc}</p>
+                </div>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
       {/* ── 7. POR QUÉ NASUS ───────────────────────────────────────── */}
-      <section className="py-24 px-6 border-t border-zinc-900">
+      <section className={SECTION}>
         <div className="max-w-5xl mx-auto">
-          <p className={`${CYAN} text-xs font-mono tracking-[0.3em] uppercase mb-4`}>
-            Por qué Nasus
-          </p>
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-16">
-            No somos una agencia típica.
+          <p className={EYEBROW}>Por qué Nasus</p>
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-16 text-balance">
+            Diseñamos. Construimos. Integramos.
           </h2>
           <div className="grid md:grid-cols-3 gap-10">
             {differentiators.map((d) => (
@@ -542,17 +636,15 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── 8. CONTACTO ────────────────────────────────────────────── */}
-      <section className="py-24 px-6 border-t border-zinc-900">
+      {/* ── 8. CTA / CONTACTO ──────────────────────────────────────── */}
+      <section id="contacto" className={SECTION}>
         <div className="max-w-2xl mx-auto">
-          <p className={`${CYAN} text-xs font-mono tracking-[0.3em] uppercase mb-4`}>
-            Contacto
-          </p>
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-            ¿Tienes un problema técnico real?
+          <p className={EYEBROW}>Contacto</p>
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 text-balance">
+            ¿Qué necesitas construir?
           </h2>
           <p className="text-zinc-400 mb-12">
-            Cuéntanos. Sin compromiso, sin pitch de venta.
+            Cuéntanos el problema. Nosotros vemos la parte técnica.
           </p>
           <ContactForm />
           <div className="mt-12 pt-8 border-t border-zinc-900">
@@ -570,11 +662,12 @@ export default function LandingPage() {
       />
 
       {/* ── Footer ─────────────────────────────────────────────────── */}
-      <footer className="py-10 px-6 border-t border-zinc-900">
+      {/* pb extra en móvil para que el asistente flotante no tape el contenido. */}
+      <footer className="py-10 pb-28 md:pb-10 px-6 border-t border-zinc-900">
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
           <span className={`${GOLD} font-mono font-bold`}>Nasus Agency</span>
-          <span className="text-zinc-600 text-sm">
-            Soluciones tecnológicas artesanales
+          <span className="text-zinc-600 text-sm text-center">
+            Diseñamos, construimos e integramos
           </span>
           <SocialIcons />
           <a

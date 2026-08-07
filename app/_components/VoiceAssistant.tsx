@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 
+import { ASSISTANT_BUTTON_ID } from "./assistant-support";
+
 const GOLD = "#c4a882";
 const CYAN = "#00f2ff";
 const MAX_LISTEN_MS = 30_000;
@@ -9,7 +11,7 @@ const MAX_LISTEN_MS = 30_000;
 type Estado = "idle" | "listening" | "processing" | "speaking" | "error";
 
 const ETIQUETAS: Record<Estado, string> = {
-  idle: "Hablar con Nasus",
+  idle: "Probar asistente IA",
   listening: "Escuchando…",
   processing: "Procesando…",
   speaking: "Nasus responde…",
@@ -355,6 +357,7 @@ export default function VoiceAssistant() {
       )}
 
       <button
+        id={ASSISTANT_BUTTON_ID}
         type="button"
         onClick={alHacerClick}
         disabled={estado === "processing"}
