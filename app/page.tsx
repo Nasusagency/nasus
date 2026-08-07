@@ -214,6 +214,7 @@ const cases: Caso[] = [
     external: true,
     cta: "Ver proyecto ↗",
     domain: "ceemispa.com",
+    image: "/casos/ceemi.png",
   },
   {
     id: "theia",
@@ -225,6 +226,7 @@ const cases: Caso[] = [
     external: true,
     cta: "Ver proyecto ↗",
     domain: "theia.lat",
+    image: "/casos/theia.png",
   },
   {
     id: "validador",
@@ -237,6 +239,7 @@ const cases: Caso[] = [
     external: false,
     cta: "Ver demo ↓",
     domain: "nasus.lat/validador",
+    image: "/casos/validador.png",
   },
 ];
 
@@ -536,7 +539,10 @@ export default function LandingPage() {
                         alt={`Captura del proyecto ${c.name}`}
                         fill
                         sizes="(min-width: 768px) 50vw, 100vw"
-                        className="object-cover"
+                        // Las capturas no comparten proporción (1.23–2.04) y el
+                        // panel es 16/10: anclamos arriba para que el recorte se
+                        // coma el pie de página y no el encabezado del sitio.
+                        className="object-cover object-top"
                       />
                     ) : (
                       <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center">
