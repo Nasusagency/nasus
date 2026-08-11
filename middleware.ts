@@ -65,6 +65,8 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    // `api/whatsapp` queda fuera: Meta reintenta si el 200 tarda, y el
+    // middleware añade una llamada a Supabase que el webhook no necesita.
+    "/((?!_next/static|_next/image|api/whatsapp|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
