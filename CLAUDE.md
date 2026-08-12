@@ -112,7 +112,14 @@
 
 3. **Seguridad antes de deploy:** Invocar el **Agente de Seguridad** (`.cloud/agents/security.md`) para auditar cualquier cambio que toque rutas de API, auth, o manejo de imágenes.
 
-4. **Sin PII en logs ni base de datos:** Los documentos se procesan en memoria. Solo se persiste tipo de documento y resultado (válido/inválido). Nunca nombres, números de documento ni imágenes.
+4. **Sin PII en logs:** Nunca escribir datos personales en `console.log` / `console.error` — los logs de Vercel no tienen RLS, se retienen fuera de nuestro control y son visibles para cualquiera con acceso al proyecto. Esta parte no tiene excepciones. En los módulos de documentos y fotos tampoco se persiste: se procesan en memoria y solo se guarda tipo de documento y resultado (válido/inválido), nunca nombres, números de documento ni imágenes.
+
+   **Excepción documentada — WhatsApp (`lib/whatsapp/store.ts`):** las conversaciones sí se guardan, incluyendo el número del contacto y el contenido de los mensajes. Es lo que permite armar los tickets de solicitud y darle contexto al hilo. Condiciones que hacen válida la excepción:
+   - Solo en Postgres, en `whatsapp_mensajes` y `whatsapp_clientes`. Ambas con **RLS activo y sin políticas**: ni `anon` ni `authenticated` pueden leerlas. El único acceso es `SUPABASE_SERVICE_ROLE_KEY` desde el servidor (`lib/supabase/service.ts`).
+   - **Nunca en consola.** El contenido de los mensajes y el número completo no aparecen en ningún `console.*`; los errores del módulo registran solo el mensaje de error.
+   - Las imágenes no se copian: se guarda el `media_id` de Meta como referencia, no el archivo.
+
+   Al agregar un módulo nuevo que necesite persistir PII, documentar la excepción aquí con las mismas condiciones.
 
 5. **Variables sensibles:** Solo en `.env.local` (local) y panel de Vercel (producción). Nunca en código ni en Git. `.env.local` está en `.gitignore`.
 
@@ -122,7 +129,16 @@
 
 7. **Construcción local primero:** Toda la lógica se desarrolla y prueba localmente antes de hacer push. No subir código sin TypeScript limpio (`npx tsc --noEmit` sin errores).
 
-8. **Prompt caching:** Usar `cache_control: { type: "ephemeral" }` en todos los system prompts de Claude para reducir costos.
+8. **Prompt caching:** Usar `cache_control: { type: "ephemeral" }` en los system prompts de Claude para reducir costos, **verificando primero que el prompt rebase el mínimo cacheable del modelo**. Por debajo del mínimo la marca no da error: simplemente no cachea nada, en silencio.
+
+   | Modelo | Mínimo cacheable |
+   |---|---|
+   | Haiku 4.5 (`claude-haiku-4-5-*`) | ~4096 tokens |
+   | Sonnet 4.5 / 4.6 | ~1024 tokens |
+
+   Los prompts del webhook de WhatsApp y del asistente de voz miden ~160 tokens: **no cachean nada** y nunca lo hicieron. No asumas ahorro por tener la marca puesta — mídelo con `client.messages.countTokens()` y confírmalo con `usage.cache_read_input_tokens` en la respuesta (si sale 0 de forma consistente, no está cacheando).
+
+   Corolario: no deformes un prompt para que sea idéntico byte a byte a otro "para compartir caché" sin haber comprobado antes que rebasa el mínimo.
 
 ---
 

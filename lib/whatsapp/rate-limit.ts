@@ -6,20 +6,42 @@
  * de abuso, no como cuota exacta.
  */
 
-// ─── Rate limit: 10 mensajes por número por hora ──────────────────────────────
-const RATE_LIMIT_MAX = 10;
+// ─── Rate limit por número ────────────────────────────────────────────────────
+//
+// Dos cuotas según quién escribe:
+//
+// - Desconocidos (modo demo): 10/hora. Freno de abuso para un número público.
+// - Clientes dados de alta: 100/hora. Un cliente describiendo varios ajustes
+//   pasa de 10 sin problema, así que el límite bajo lo cortaría a media
+//   conversación. No se les exenta del todo: el límite sigue siendo el tope
+//   que evita que un bucle de mensajes queme el presupuesto de la API.
+
+const RATE_LIMIT_DEMO = 10;
+const RATE_LIMIT_CLIENTE = 100;
 const RATE_LIMIT_WINDOW_MS = 60 * 60_000;
 
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 
-export function checkRateLimit(phone: string): boolean {
+/**
+ * @param esClienteActivo El número existe en `whatsapp_clientes` con
+ *   `activo = true`. El webhook ya hizo esa consulta para elegir el system
+ *   prompt, así que se pasa como parámetro en vez de repetirla aquí.
+ */
+export function checkRateLimit(phone: string, esClienteActivo = false): boolean {
+  const limite = esClienteActivo ? RATE_LIMIT_CLIENTE : RATE_LIMIT_DEMO;
   const now = Date.now();
   const entry = rateLimitMap.get(phone);
+
   if (!entry || now >= entry.resetAt) {
     rateLimitMap.set(phone, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
     return true;
   }
-  if (entry.count >= RATE_LIMIT_MAX) return false;
+
+  // El límite se evalúa con la cuota vigente en cada mensaje: si el número se
+  // da de alta como cliente a media ventana, el contador acumulado se conserva
+  // pero se compara contra la cuota nueva.
+  if (entry.count >= limite) return false;
+
   entry.count++;
   return true;
 }
