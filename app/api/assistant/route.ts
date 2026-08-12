@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAnthropic } from "@/lib/anthropic/client";
 import { textToSpeech } from "@/lib/voz/elevenlabs";
+import { stripMarkdown } from "@/lib/voz/sanitize";
 import {
   VOZ_MAX_CHARS_TTS,
   VOZ_MAX_TOKENS,
@@ -79,11 +80,14 @@ export async function POST(req: NextRequest) {
       messages: [{ role: "user", content: message }],
     });
 
-    text = response.content
-      .filter((block) => block.type === "text")
-      .map((block) => block.text)
-      .join(" ")
-      .trim();
+    // Se sanea aquí, en el único punto por el que pasa el texto, para que la
+    // UI y ElevenLabs reciban exactamente lo mismo.
+    text = stripMarkdown(
+      response.content
+        .filter((block) => block.type === "text")
+        .map((block) => block.text)
+        .join(" "),
+    );
   } catch (err) {
     // Solo el mensaje, nunca el objeto de error completo: puede arrastrar
     // metadatos de la petición (ver .cloud/agents/security.md, hallazgo #7).
