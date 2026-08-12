@@ -52,6 +52,126 @@ body {
   --reveal-delay: calc(var(--i, 0) * 0.09s);
 }
 
+/* ── Dissolve ligado al scroll ─────────────────────────────────────────── */
+/*
+   El bloque de arriba es un reveal por umbral: cruzas el 18% del elemento y se
+   dispara una animación de 0.8s que ya no depende de ti. Esto es lo contrario:
+   la línea de tiempo ES el scroll. El contenido se disuelve al entrar y se
+   desvanece al salir, de forma continua y reversible, a la velocidad a la que
+   la persona decida moverse.
+
+   Se apoya en `animation-timeline: view()`, nativo: cero JS, cero dependencias,
+   y corre en el compositor. Donde no exista, el `@supports` no aplica y queda
+   el reveal por IntersectionObserver de arriba, que sigue siendo el
+   comportamiento base — no un degradado roto.
+
+   Dos exclusiones deliberadas, ambas marcadas en el JSX:
+
+   `[data-hero]`  — la entrada del hero es una animación de CARGA escalonada
+     (--reveal-delay: 0.08s, 0.22s, 0.3s…). Ligarla al viewport la eliminaría,
+     porque el hero ya está en pantalla cuando la página carga: su timeline
+     nacería completado y todo aparecería de golpe.
+
+   `[data-dissolve-keep]` — el CTA final se disuelve al entrar pero NUNCA al
+     salir. Es el último bloque del documento: si el scroll se acaba a mitad de
+     su rango de salida, se quedaría atenuado de forma permanente y el CTA
+     acabaría medio invisible justo donde tiene que ser más claro.
+*/
+
+@keyframes nasus-dissolve-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--dissolve-shift, 16px));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Mismo gesto de identidad que la ruta por IntersectionObserver (la máscara
+   sube y descubre la imagen), pero conducido por el scroll. */
+@keyframes nasus-case-reveal {
+  from {
+    clip-path: inset(0 0 100% 0);
+    opacity: 0;
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+    opacity: 1;
+  }
+}
+
+@keyframes nasus-dissolve-out {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(calc(var(--dissolve-shift, 16px) * -0.5));
+  }
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    /* Solo entrada: el hero queda fuera del scroll, el CTA final fuera de la
+       salida.
+
+       Los rangos van en PÍXELES y no en %. Un `entry 5% entry 85%` se mide
+       sobre la altura del propio elemento, así que un h2 de 40px resolvía su
+       fundido en ~110px de scroll (un parpadeo) y su salida ocurría entera por
+       encima del borde superior, donde ya no se ve. En px el gesto dura lo
+       mismo para un título que para una fila: 260px de recorrido. */
+    [data-reveal]:not([data-hero] *),
+    [data-dissolve] {
+      /* Las transiciones pesan MÁS que las animaciones en la cascada: si la
+         del reveal por umbral sigue viva, gana durante sus 0.8s y pelea con
+         el timeline. Se desactiva aquí; `is-in` pasa a ser inofensivo. */
+      transition: none;
+      opacity: 1;
+      transform: none;
+      animation: nasus-dissolve-in linear both;
+      animation-timeline: view();
+      animation-range: entry 0px entry 260px;
+    }
+
+    /* Entrada + salida para todo lo que no esté marcado como "se queda". */
+    [data-reveal]:not([data-hero] *):not([data-dissolve-keep] *),
+    [data-dissolve]:not([data-dissolve-keep] *) {
+      animation:
+        nasus-dissolve-in linear both,
+        /* `forwards` y no `both` a propósito: con `both` esta animación
+           rellenaría hacia atrás con su fotograma inicial (opacity: 1) y
+           pisaría a la de entrada, que va antes en la misma línea de tiempo. */
+        nasus-dissolve-out linear forwards;
+      animation-timeline: view(), view();
+      animation-range:
+        entry 0px entry 260px,
+        exit -300px exit 20px;
+    }
+
+    /* Los casos conservan su mask reveal, pero conducido por el scroll y no por
+       el observer. Dejar la entrada en `is-in` y la salida en el timeline
+       partía el elemento entre dos sistemas que no se hablan: la imagen se
+       quedaba en opacity 0 durante toda su bajada por la pantalla y solo
+       aparecía al empezar a irse. Aquí manda una sola línea de tiempo. */
+    .case-reveal {
+      transition: none;
+      opacity: 1;
+      transform: none;
+      clip-path: inset(0 0 0 0);
+      animation:
+        nasus-case-reveal linear both,
+        nasus-dissolve-out linear forwards;
+      animation-timeline: view(), view();
+      animation-range:
+        entry 0px entry 320px,
+        exit -300px exit 20px;
+    }
+  }
+}
+
 /* ── Capítulos numerados ───────────────────────────────────────────────── */
 
 .chapter-numeral {
@@ -207,6 +327,71 @@ body {
     margin 0.25s var(--ease-out-expo),
     background-color 0.25s ease,
     opacity 0.3s ease;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Móvil / tablet pequeña (≤768px) — simplificación
+   Desktop queda intacto: todo lo de aquí vive dentro del media query.
+   Criterio: contenido primero, movimiento como apoyo. Se recorta ambiente,
+   no identidad: sobreviven el grano, el glow cian y el mask reveal de casos.
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* 767.98px y no 768px: el breakpoint `md` de Tailwind es `min-width: 768px`,
+   así que a 768px exactos manda desktop. Si aquí pusiéramos 768 tendríamos un
+   viewport con layout de desktop y ambiente de móvil. */
+@media (max-width: 767.98px) {
+  /* Partículas: de 12 a 3. Suficiente para que el ambiente siga leyéndose. */
+  .nasus-particle:nth-child(n + 4) {
+    display: none;
+  }
+
+  /* El grano se queda como textura, pero deja de repintarse en bucle. */
+  .nasus-grain {
+    animation: none;
+    opacity: 0.03;
+  }
+
+  /* Numerales: de elemento ambiental gigante a marca editorial discreta.
+     Sin blur (coste de pintado + compite con el texto encima). */
+  .chapter-numeral {
+    font-size: min(88px, 18vw);
+    top: -0.05em;
+    right: 4vw;
+    filter: none;
+    transform: none;
+    transition: opacity 0.8s var(--ease-out-expo);
+  }
+
+  .chapter-numeral.is-in {
+    opacity: 0.045;
+    filter: none;
+    transform: none;
+  }
+
+  /* Casos: se conserva el mask reveal; se retira la escala que lo acompaña. */
+  .case-reveal {
+    transform: none;
+    transition:
+      clip-path 1.1s var(--ease-out-expo),
+      opacity 0.6s ease;
+    transition-delay: var(--reveal-delay, 0s);
+  }
+
+  .case-reveal.is-in {
+    transform: none;
+  }
+
+  /* Reveal genérico: mismo gesto, recorrido más corto. La custom property la
+     leen los keyframes del dissolve; el transform es el estado base de la ruta
+     por IntersectionObserver. */
+  [data-reveal],
+  [data-dissolve] {
+    --dissolve-shift: 10px;
+  }
+
+  [data-reveal] {
+    transform: translateY(18px);
+  }
 }
 
 /* ── Accesibilidad: sin movimiento ─────────────────────────────────────── */
