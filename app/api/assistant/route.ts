@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { anthropic } from "@/lib/anthropic/client";
+import { getAnthropic } from "@/lib/anthropic/client";
 import { textToSpeech } from "@/lib/voz/elevenlabs";
 import {
   VOZ_MAX_CHARS_TTS,
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
   // ─── Claude ────────────────────────────────────────────────────────────────
   let text: string;
   try {
-    const response = await anthropic.messages.create({
+    const response = await getAnthropic().messages.create({
       model: VOZ_MODEL,
       max_tokens: VOZ_MAX_TOKENS,
       // Haiku 4.5 no acepta `effort` ni `thinking: disabled`: omitirlos es el
@@ -84,7 +84,13 @@ export async function POST(req: NextRequest) {
       .map((block) => block.text)
       .join(" ")
       .trim();
-  } catch {
+  } catch (err) {
+    // Solo el mensaje, nunca el objeto de error completo: puede arrastrar
+    // metadatos de la petición (ver .cloud/agents/security.md, hallazgo #7).
+    console.error(
+      "[assistant] Claude error:",
+      err instanceof Error ? err.message : String(err),
+    );
     return errorResponse("No pude procesar tu pregunta. Intenta de nuevo.", 502);
   }
 

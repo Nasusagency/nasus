@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { anthropic } from "@/lib/anthropic/client";
+import { getAnthropic } from "@/lib/anthropic/client";
 import { DOCUMENT_REGISTRY } from "@/lib/documents/config";
 import { analyzePhoto } from "@/lib/photos/PhotoEngine";
 import type { DocumentType } from "@/lib/documents/types";
@@ -182,7 +182,7 @@ async function validateWithRegistry(params: {
     isPdf ? " Si el PDF tiene varias páginas, analiza la primera con información relevante." : "",
   ].filter(Boolean).join(" ");
 
-  const response = await anthropic.messages.create({
+  const response = await getAnthropic().messages.create({
     model: MODEL,
     max_tokens: 1024,
     system: [{ type: "text", text: config.systemPrompt, cache_control: { type: "ephemeral" } }],
@@ -296,7 +296,7 @@ async function validateUagSpecific(params: {
     alumnoNombre ? `Nombre del alumno en el expediente: "${alumnoNombre}". Verifica si el nombre en el documento coincide.` : "",
   ].filter(Boolean).join(" ");
 
-  const response = await anthropic.messages.create({
+  const response = await getAnthropic().messages.create({
     model: MODEL,
     max_tokens: 1024,
     system: [{ type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } }],

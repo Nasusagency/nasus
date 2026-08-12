@@ -1,5 +1,5 @@
 import { after, NextRequest, NextResponse } from "next/server";
-import { anthropic } from "@/lib/anthropic/client";
+import { getAnthropic } from "@/lib/anthropic/client";
 import { sendWhatsAppText } from "@/lib/whatsapp/client";
 import { enviarTicket, notifyAsesorRequest } from "@/lib/whatsapp/notify";
 import { buildSystemPrompt, WHATSAPP_MAX_TOKENS, WHATSAPP_MODEL } from "@/lib/whatsapp/prompt";
@@ -317,7 +317,7 @@ async function responderConClaude(
 
   const contenido = deteccion ? `${base}\n\n${NOTA_ACUSE}` : base;
 
-  const response = await anthropic.messages.create({
+  const response = await getAnthropic().messages.create({
     model: WHATSAPP_MODEL,
     max_tokens: WHATSAPP_MAX_TOKENS,
     // En modo demo el prompt es idéntico byte a byte al del asistente de voz,

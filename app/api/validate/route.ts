@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+// Solo las clases de error (Anthropic.RateLimitError, .AuthenticationError).
+// El cliente lo instancia DocumentEngine, que es quien llama al modelo.
 import Anthropic from "@anthropic-ai/sdk";
-import { anthropic } from "@/lib/anthropic/client";
 import { DOCUMENT_REGISTRY } from "@/lib/documents/config/index";
 import type { DocumentType } from "@/lib/documents/types";
 import { analyzeDocument } from "@/lib/documents/DocumentEngine";
