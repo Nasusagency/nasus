@@ -1,21 +1,26 @@
 import type { Metadata } from "next";
-import { Crimson_Pro, JetBrains_Mono } from "next/font/google";
+import { Playfair_Display, Space_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import VoiceAssistant from "./_components/VoiceAssistant";
 import "./globals.css";
 
 export const dynamic = "force-dynamic";
 
-const crimsonPro = Crimson_Pro({
-  variable: "--font-crimson",
+// Playfair para titulares editoriales, Space Mono para datos y etiquetas.
+// Se cargan con next/font (self-host + preload) en vez del <link> a Google
+// que trae el prototipo: evita una petición bloqueante a otro dominio.
+const displaySerif = Playfair_Display({
+  variable: "--font-display-serif",
   subsets: ["latin"],
-  weight: ["400", "600", "700"],
+  weight: ["400", "600", "700", "800", "900"],
+  display: "swap",
 });
 
-const jetbrainsMono = JetBrains_Mono({
-  variable: "--font-jetbrains",
+const monoSpace = Space_Mono({
+  variable: "--font-mono-space",
   subsets: ["latin"],
-  weight: ["400", "500", "700"],
+  weight: ["400", "700"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -65,7 +70,7 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className={`${crimsonPro.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      className={`${displaySerif.variable} ${monoSpace.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-[#050508] text-white">
         {children}

@@ -10,7 +10,7 @@ export default function ContactForm() {
     const message = encodeURIComponent(
       `Hola, soy ${form.name} de ${form.company}.\n\nProblema:\n${form.problem}`
     );
-    window.open(`https://wa.me/523329621602?text=${message}`, "_blank");
+    window.open(`https://wa.me/523329142391?text=${message}`, "_blank");
   };
 
   const inputClass =
@@ -62,7 +62,7 @@ export default function ContactForm() {
       <p className="text-center text-zinc-600 text-sm">
         o escríbenos directo por{" "}
         <a
-          href="https://wa.me/523329621602"
+          href="https://wa.me/523329142391"
           target="_blank"
           rel="noopener noreferrer"
           className="text-zinc-400 hover:text-[#c4a882] transition-colors"

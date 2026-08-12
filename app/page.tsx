@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import AssistantHint from "./_components/AssistantHint";
+import SiteChrome from "./_components/SiteChrome";
 import ContactForm from "./_components/ContactForm";
 import DemoIsland from "./_components/DemoIsland";
 import FacturasDemo from "./_components/FacturasDemo";
@@ -30,9 +31,25 @@ export const metadata: Metadata = {
 const GOLD = "text-[#c4a882]";
 const CYAN = "text-[#00f2ff]";
 const BORDER = "border border-zinc-800";
-const EYEBROW = `${CYAN} text-xs font-mono tracking-[0.3em] uppercase mb-4`;
-const SECTION = "py-24 px-6 border-t border-zinc-900 scroll-mt-14";
-const WHATSAPP_URL = "https://wa.me/523329621602";
+const EYEBROW = `${GOLD} text-xs font-mono tracking-[0.3em] uppercase mb-6`;
+const SECTION =
+  "relative chapter-seam py-28 md:py-36 px-6 scroll-mt-16 overflow-hidden";
+/* ─────────────────────────────────────────────────────────────────────────
+   DOS números de WhatsApp, separados a propósito. No intercambiar.
+
+   HUMANO (+52 33 2914 2391) — WhatsApp Business normal. Atiende una persona.
+     Destino de todo CTA comercial: "Hablar con Nasus", "Contactar",
+     formulario de contacto, CTAs al final de las demos.
+
+   ASISTENTE (+52 33 2962 1602) — línea conectada a la WhatsApp Cloud API de
+     Meta. Aquí NO responde una persona: es el producto Nasus WhatsApp
+     Assistant. Único destino: el CTA "Probar asistente".
+   ───────────────────────────────────────────────────────────────────────── */
+const WHATSAPP_HUMANO = "https://wa.me/523329142391";
+const WHATSAPP_ASSISTANT = "https://wa.me/523329621602";
+
+/** Alias del número humano: es el destino por defecto de los CTA. */
+const WHATSAPP_URL = WHATSAPP_HUMANO;
 
 const SOCIAL_LINKS = [
   {
@@ -256,6 +273,10 @@ type Tool = {
   /** Sustantivo para el resumen "+ N …" cuando hay más de 4. */
   moreNoun: string;
   ctaText: string;
+  /** Destino del CTA. Por defecto el número humano; solo el asistente usa el suyo. */
+  ctaHref?: string;
+  /** Etiqueta técnica sobre el título (p. ej. "// WHATSAPP CLOUD API"). */
+  meta?: string;
   Demo?: typeof DemoIsland;
 };
 
@@ -305,6 +326,28 @@ const TOOLS: Tool[] = [
     Demo: FacturasDemo,
   },
   {
+    id: "whatsapp-assistant",
+    badge: "En producción",
+    badgeClass: "bg-[#00f2ff] text-[#050508]",
+    cardClass: "border-[#00f2ff]/40 bg-[#00f2ff]/[0.03]",
+    meta: "// WHATSAPP CLOUD API",
+    title: "Nasus WhatsApp Assistant",
+    tagline: "Tu cliente escribe. El sistema entiende. Tu equipo recibe contexto.",
+    desc: "Asistente conectado a WhatsApp que distingue prospectos de clientes, usa el contexto específico de cada negocio y convierte solicitudes reales en trabajo estructurado.",
+    features: [
+      "Distingue prospecto de cliente registrado en cada mensaje",
+      "Carga el contexto del negocio del cliente antes de responder",
+      "Detecta cuándo un mensaje es una solicitud concreta y cuándo no",
+      "Formaliza la solicitud y la envía por correo con resumen y urgencia",
+      "Acusa recibo dentro de la misma conversación, sin cortar el tono",
+      "Conversaciones persistidas con acceso restringido por RLS",
+    ],
+    moreNoun: "capacidades más",
+    ctaText: "Probar asistente →",
+    // Único CTA de la landing que apunta a la línea de la Cloud API.
+    ctaHref: WHATSAPP_ASSISTANT,
+  },
+  {
     id: "fotos",
     badge: "Activo",
     badgeClass: "bg-zinc-700 text-zinc-300",
@@ -338,13 +381,25 @@ const SCHEMA_ORG = {
 
 export default function LandingPage() {
   return (
-    <div className="bg-[#050508] text-white min-h-screen">
-      {/* ── Sticky nav ─────────────────────────────────────────────── */}
-      <nav className="sticky top-0 z-50 bg-[#050508]/90 backdrop-blur border-b border-zinc-900">
-        <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between gap-4">
-          <span className={`${GOLD} font-mono font-bold tracking-wide`}>
-            Nasus Agency
+    <div className="bg-[#050508] text-white min-h-screen relative">
+      <SiteChrome />
+
+      {/* ── Navbar dinámica ────────────────────────────────────────── */}
+      {/* Se renderiza en el servidor; SiteChrome solo alterna data-scrolled. */}
+      <nav
+        id="site-nav"
+        data-scrolled="false"
+        className="group sticky top-0 z-50 transition-[background-color,backdrop-filter,border-color] duration-500 border-b border-transparent data-[scrolled=true]:bg-[#050508]/80 data-[scrolled=true]:backdrop-blur-xl data-[scrolled=true]:border-[#c4a882]/15"
+      >
+        <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between gap-4">
+          <span className="font-mono text-[13px] tracking-[0.25em] text-white">
+            NASUS AGENCY
           </span>
+          <span
+            id="nav-chapter"
+            aria-hidden="true"
+            className="hidden lg:block font-mono text-[11px] tracking-[0.2em] text-white/30"
+          />
           <div className="hidden md:flex items-center gap-7 font-mono text-xs text-zinc-500">
             <a href="#productos" className="hover:text-[#c4a882] transition-colors">
               Productos
@@ -367,36 +422,86 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      {/* ── 1. HERO ────────────────────────────────────────────────── */}
-      <section className="min-h-[calc(100dvh-56px)] flex flex-col items-center justify-center px-6 text-center py-20">
-        <div className="max-w-3xl mx-auto flex flex-col items-center">
-          <p className={`${CYAN} text-xs font-mono tracking-[0.3em] uppercase mb-6`}>
-            Nasus Agency
+      {/* ── 1. HERO editorial ──────────────────────────────────────── */}
+      <section className="relative min-h-[92svh] flex flex-col justify-center px-6 md:px-[5vw] py-24 overflow-hidden">
+        {/* Glow cian sutil. Estático: sigue al scroll natural, sin listener. */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -top-36 -right-24 w-[520px] h-[520px] rounded-full blur-[50px]"
+          style={{
+            background:
+              "radial-gradient(circle, rgba(0,242,255,.14), transparent 70%)",
+          }}
+        />
+        {/* Retícula que se desvanece hacia abajo — continuidad con el capítulo 01. */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 opacity-50"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(196,168,130,.05) 1px, transparent 1px),linear-gradient(90deg, rgba(196,168,130,.05) 1px, transparent 1px)",
+            backgroundSize: "64px 64px",
+            maskImage: "linear-gradient(to bottom, black, transparent 65%)",
+            WebkitMaskImage: "linear-gradient(to bottom, black, transparent 65%)",
+          }}
+        />
+
+        <div className="relative max-w-[1150px]">
+          <p
+            data-reveal
+            className={`${GOLD} text-xs font-mono tracking-[0.3em] uppercase mb-7`}
+          >
+            N° 00 — Agencia de tecnología artesanal
           </p>
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-[1.1] text-balance">
-            Construimos <span className={GOLD}>tecnología</span>
-            <br className="hidden sm:block" /> que mueve empresas.
+
+          <h1
+            data-reveal
+            style={{ ["--reveal-delay" as string]: "0.08s" }}
+            className="font-display font-extrabold text-white leading-[1.08] text-[clamp(44px,8.5vw,100px)] max-w-[1150px]"
+          >
+            Construimos <span className={GOLD}>tecnología</span> que mueve
+            empresas.
           </h1>
-          <p className="text-zinc-400 text-lg sm:text-xl mb-10 max-w-xl mx-auto leading-relaxed text-balance">
+
+          <p
+            data-reveal
+            style={{ ["--reveal-delay" as string]: "0.22s" }}
+            className="max-w-[540px] mt-9 font-mono text-[15px] leading-[1.9] text-white/65"
+          >
             IA, software y automatización conectados directamente a tus sistemas.
           </p>
-          <a
-            href="#contacto"
-            className="inline-block bg-[#c4a882] text-[#050508] font-bold px-8 py-4 rounded-lg text-base sm:text-lg hover:bg-[#d4b892] transition-colors"
-          >
-            Cuéntanos qué necesitas →
-          </a>
 
-          <div className="mt-14 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 font-mono text-[10px] sm:text-xs text-zinc-600 uppercase tracking-[0.2em]">
+          <div
+            data-reveal
+            style={{ ["--reveal-delay" as string]: "0.3s" }}
+            className="mt-12 flex flex-wrap items-center gap-4"
+          >
+            <a
+              href="#contacto"
+              className="inline-flex items-center gap-3 px-8 py-4 border border-[#c4a882] text-white font-mono text-[13px] tracking-[0.15em] transition-colors hover:bg-[#c4a882] hover:text-[#050508]"
+            >
+              CUÉNTANOS QUÉ NECESITAS <span aria-hidden="true">→</span>
+            </a>
+          </div>
+
+          <div
+            data-reveal
+            style={{ ["--reveal-delay" as string]: "0.38s" }}
+            className="mt-14 flex flex-wrap items-center gap-x-3 gap-y-2 font-mono text-[10px] sm:text-xs text-zinc-600 uppercase tracking-[0.2em]"
+          >
             {CAPABILITIES.map((c, i) => (
               <span key={c} className="flex items-center gap-3">
-                {i > 0 && <span className="text-zinc-800" aria-hidden="true">·</span>}
+                {i > 0 && (
+                  <span className="text-zinc-800" aria-hidden="true">
+                    ·
+                  </span>
+                )}
                 {c}
               </span>
             ))}
           </div>
 
-          <div className="mt-8">
+          <div data-reveal style={{ ["--reveal-delay" as string]: "0.46s" }} className="mt-8">
             <AssistantHint />
           </div>
         </div>
@@ -405,7 +510,8 @@ export default function LandingPage() {
       {/* ── 2. PRODUCTOS EN PRODUCCIÓN ─────────────────────────────── */}
       <section id="productos" className={SECTION}>
         <div className="max-w-5xl mx-auto">
-          <p className={EYEBROW}>Productos en producción</p>
+          <span aria-hidden="true" className="chapter-numeral">01</span>
+          <p data-reveal className={EYEBROW}>N° 01 — Productos en producción</p>
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 max-w-2xl text-balance">
             Ya construimos soluciones que puedes usar hoy.
           </h2>
@@ -414,10 +520,17 @@ export default function LandingPage() {
           </p>
 
           <div className="flex flex-col gap-8">
-            {TOOLS.map(({ id, badge, badgeClass, cardClass, title, tagline, desc, features, moreNoun, ctaText, Demo }) => (
+            {TOOLS.map(({ id, badge, badgeClass, cardClass, title, tagline, desc, features, moreNoun, ctaText, ctaHref, meta, Demo }) => (
               <div key={id} className={`border rounded-2xl p-6 sm:p-8 md:p-10 ${cardClass}`}>
                 <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
-                  <h3 className="text-white font-bold text-xl sm:text-2xl">{title}</h3>
+                  <div>
+                    {meta && (
+                      <p className="font-mono text-[10px] tracking-[0.3em] text-[#00f2ff]/70 mb-2">
+                        {meta}
+                      </p>
+                    )}
+                    <h3 className="text-white font-bold text-xl sm:text-2xl">{title}</h3>
+                  </div>
                   <span className={`text-xs font-bold px-3 py-1 rounded-full font-mono tracking-wide flex-shrink-0 ${badgeClass}`}>
                     {badge}
                   </span>
@@ -441,7 +554,7 @@ export default function LandingPage() {
                       )}
                     </div>
                     <a
-                      href={WHATSAPP_URL}
+                      href={ctaHref ?? WHATSAPP_URL}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 text-sm font-mono font-bold text-[#050508] bg-[#c4a882] hover:bg-[#d4b892] px-5 py-2.5 rounded-lg transition-colors"
@@ -465,15 +578,16 @@ export default function LandingPage() {
       </section>
 
       {/* ── 3. EL PROBLEMA ─────────────────────────────────────────── */}
-      <section className={SECTION}>
+      <section id="problema" className={SECTION}>
         <div className="max-w-5xl mx-auto">
-          <p className={EYEBROW}>El problema</p>
+          <span aria-hidden="true" className="chapter-numeral">02</span>
+          <p data-reveal className={EYEBROW}>N° 02 — El problema</p>
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-16 max-w-xl text-balance">
             Tu equipo técnico está saturado. Los proyectos se acumulan.
           </h2>
-          <div className="grid md:grid-cols-3 gap-6">
+          <div data-reveal-group className="grid md:grid-cols-3 gap-6">
             {painPoints.map((p) => (
-              <div key={p.n} className={`${BORDER} p-8 rounded-xl`}>
+              <div data-reveal key={p.n} className={`${BORDER} p-8 rounded-xl`}>
                 <div className={`${GOLD} text-3xl font-bold font-mono mb-5`}>{p.n}</div>
                 <h3 className="text-white font-semibold text-lg mb-3">{p.title}</h3>
                 <p className="text-zinc-400 leading-relaxed">{p.desc}</p>
@@ -484,17 +598,19 @@ export default function LandingPage() {
       </section>
 
       {/* ── 4. QUÉ CONSTRUIMOS ─────────────────────────────────────── */}
-      <section className={SECTION}>
+      <section id="construimos" className={SECTION}>
         <div className="max-w-5xl mx-auto">
-          <p className={EYEBROW}>Qué construimos</p>
+          <span aria-hidden="true" className="chapter-numeral">03</span>
+          <p data-reveal className={EYEBROW}>N° 03 — Qué construimos</p>
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-16 max-w-xl text-balance">
             Lo que podemos construir contigo.
           </h2>
-          <div className="border-t border-zinc-900">
+          <div data-reveal-group className="border-t border-zinc-900">
             {buildCategories.map(({ n, title, desc }) => (
               <div
+                data-reveal
                 key={n}
-                className="grid md:grid-cols-[1.1fr_1fr] gap-x-12 gap-y-3 py-10 border-b border-zinc-900"
+                className="grid md:grid-cols-[1.1fr_1fr] gap-x-12 gap-y-3 py-10 border-b border-zinc-900 transition-[padding-left,border-color] duration-500 hover:pl-4 hover:border-[#00f2ff]/40"
               >
                 <div className="flex items-baseline gap-5">
                   <span className={`${GOLD} font-mono text-sm flex-shrink-0`}>{n}</span>
@@ -514,7 +630,8 @@ export default function LandingPage() {
       {/* ── 5. CASOS REALES ────────────────────────────────────────── */}
       <section id="casos" className={SECTION}>
         <div className="max-w-5xl mx-auto">
-          <p className={EYEBROW}>Casos reales</p>
+          <span aria-hidden="true" className="chapter-numeral">04</span>
+          <p data-reveal className={EYEBROW}>N° 04 — Casos reales</p>
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 max-w-xl text-balance">
             Proyectos en producción.
           </h2>
@@ -529,9 +646,13 @@ export default function LandingPage() {
                 className="grid md:grid-cols-2 gap-8 md:gap-12 items-center"
               >
                 {/* Visual */}
-                <div className={i % 2 === 1 ? "md:order-2" : ""}>
+                <div
+                  data-cursor-view
+                  className={`case-reveal ${i % 2 === 1 ? "md:order-2" : ""}`}
+                  style={{ ["--reveal-delay" as string]: `${i * 0.08}s` }}
+                >
                   <div
-                    className={`${BORDER} rounded-2xl overflow-hidden bg-[#c4a882]/[0.03] aspect-[16/10] relative`}
+                    className={`${BORDER} rounded-2xl overflow-hidden bg-[#c4a882]/[0.03] aspect-[16/10] relative transition-[transform,border-color,box-shadow] duration-700 hover:-translate-y-2 hover:border-[#00f2ff]/60`}
                   >
                     {c.image ? (
                       <Image
@@ -558,7 +679,11 @@ export default function LandingPage() {
                 </div>
 
                 {/* Contenido */}
-                <div className={i % 2 === 1 ? "md:order-1" : ""}>
+                <div
+                  data-reveal
+                  style={{ ["--reveal-delay" as string]: `${0.12 + i * 0.08}s` }}
+                  className={i % 2 === 1 ? "md:order-1" : ""}
+                >
                   <p className={`${CYAN} text-[11px] font-mono tracking-[0.25em] uppercase mb-4`}>
                     {c.category}
                   </p>
@@ -600,7 +725,8 @@ export default function LandingPage() {
       {/* ── 6. CÓMO TRABAJAMOS ─────────────────────────────────────── */}
       <section className={SECTION}>
         <div className="max-w-5xl mx-auto">
-          <p className={EYEBROW}>Cómo trabajamos</p>
+          <span aria-hidden="true" className="chapter-numeral">05</span>
+          <p data-reveal className={EYEBROW}>N° 05 — Cómo trabajamos</p>
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-16 text-balance">
             Proceso directo. Sin fricción.
           </h2>
@@ -626,7 +752,8 @@ export default function LandingPage() {
       {/* ── 7. POR QUÉ NASUS ───────────────────────────────────────── */}
       <section className={SECTION}>
         <div className="max-w-5xl mx-auto">
-          <p className={EYEBROW}>Por qué Nasus</p>
+          <span aria-hidden="true" className="chapter-numeral">06</span>
+          <p data-reveal className={EYEBROW}>N° 06 — Por qué Nasus</p>
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-16 text-balance">
             Diseñamos. Construimos. Integramos.
           </h2>
@@ -645,11 +772,27 @@ export default function LandingPage() {
       {/* ── 8. CTA / CONTACTO ──────────────────────────────────────── */}
       <section id="contacto" className={SECTION}>
         <div className="max-w-2xl mx-auto">
-          <p className={EYEBROW}>Contacto</p>
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 text-balance">
-            ¿Qué necesitas construir?
+          <span aria-hidden="true" className="chapter-numeral">07</span>
+          <p
+            data-reveal
+            className="font-mono text-[11px] tracking-[0.3em] text-white/35 mb-4"
+          >
+            {"// READY WHEN YOU ARE"}
+          </p>
+          <p data-reveal className={EYEBROW}>N° 07 — Contacto</p>
+          <h2
+            data-reveal
+            style={{ ["--reveal-delay" as string]: "0.1s" }}
+            className="font-display font-bold text-white leading-[1.15] text-[clamp(38px,6.5vw,76px)] mb-6"
+          >
+            <span className="block">Tu problema.</span>
+            <span className={`block ${CYAN}`}>Nuestro código.</span>
           </h2>
-          <p className="text-zinc-400 mb-12">
+          <p
+            data-reveal
+            style={{ ["--reveal-delay" as string]: "0.2s" }}
+            className="font-mono text-[15px] text-white/60 mb-12"
+          >
             Cuéntanos el problema. Nosotros vemos la parte técnica.
           </p>
           <ContactForm />
