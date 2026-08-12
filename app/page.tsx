@@ -4,8 +4,6 @@ import AssistantHint from "./_components/AssistantHint";
 import SiteChrome from "./_components/SiteChrome";
 import ContactForm from "./_components/ContactForm";
 import DemoIsland from "./_components/DemoIsland";
-import FacturasDemo from "./_components/FacturasDemo";
-import FotosDemo from "./_components/FotosDemo";
 
 export const metadata: Metadata = {
   title: "Nasus Agency — Desarrollo web, apps y soluciones tecnológicas a medida",
@@ -51,7 +49,9 @@ const SECTION =
 
    ASISTENTE (+52 33 2962 1602) — línea conectada a la WhatsApp Cloud API de
      Meta. Aquí NO responde una persona: es el producto Nasus WhatsApp
-     Assistant. Único destino: el CTA "Probar asistente".
+     Assistant. Solo dos destinos, ambos apuntan al producto en sí:
+       · el CTA "Probar asistente" de la tarjeta flagship
+       · el enlace de su ficha en Casos reales
    ───────────────────────────────────────────────────────────────────────── */
 const WHATSAPP_HUMANO = "https://wa.me/523329142391";
 const WHATSAPP_ASSISTANT = "https://wa.me/523329621602";
@@ -254,17 +254,18 @@ const cases: Caso[] = [
     image: "/casos/theia.png",
   },
   {
-    id: "validador",
-    name: "Validador de Documentos",
-    category: "IA / Automatización",
-    desc: "Sistema para extracción, validación y cruce de información documental mediante IA.",
-    note: "Diseñado para reducir horas de revisión manual y estandarizar procesos documentales.",
-    stack: ["Next.js", "Claude API", "Supabase"],
-    href: "#productos",
-    external: false,
-    cta: "Ver demo ↓",
-    domain: "nasus.lat/validador",
-    image: "/casos/validador.png",
+    id: "whatsapp-assistant",
+    name: "Nasus WhatsApp Assistant",
+    category: "IA / Atención y operación",
+    desc: "Asistente conectado a la WhatsApp Cloud API que distingue prospectos de clientes, responde con el contexto de cada negocio y convierte las solicitudes reales en tickets con resumen y urgencia.",
+    note: "En producción sobre una línea real: el enlace abre una conversación con el sistema, no con una persona.",
+    stack: ["WhatsApp Cloud API", "Claude API", "Supabase"],
+    href: WHATSAPP_ASSISTANT,
+    external: true,
+    cta: "Probar asistente ↗",
+    // Sin `image`: todavía no hay captura del asistente en /public/casos, así
+    // que cae al panel de respaldo (dominio + "En producción").
+    domain: "wa.me/523329621602",
   },
 ];
 
@@ -289,95 +290,196 @@ type Tool = {
 };
 
 const VISIBLE_FEATURES = 4;
+/** Los productos de apoyo enseñan la mitad: así no compiten con el flagship. */
+const COMPACT_FEATURES = 3;
 /** ≤768px mostramos la mitad: la ficha completa satura la tarjeta. */
 const MOBILE_VISIBLE_FEATURES = 2;
 
-const TOOLS: Tool[] = [
+/**
+ * Producto insignia. Se renderiza en una tarjeta a ancho completo, con acentos
+ * cian y tipografía mayor: la jerarquía sale de tamaño y densidad, no de
+ * elementos nuevos.
+ */
+const FLAGSHIP: Tool = {
+  id: "whatsapp-assistant",
+  badge: "En producción",
+  badgeClass: "bg-[#00f2ff] text-[#050508]",
+  cardClass: "border-[#00f2ff]/40 bg-[#00f2ff]/[0.03]",
+  meta: "// WHATSAPP CLOUD API",
+  title: "Nasus WhatsApp Assistant",
+  tagline: "Tu cliente escribe. El sistema entiende. Tu equipo recibe contexto.",
+  desc: "Asistente conectado a WhatsApp que distingue prospectos de clientes, usa el contexto específico de cada negocio y convierte solicitudes reales en trabajo estructurado.",
+  features: [
+    "Distingue prospecto de cliente registrado en cada mensaje",
+    "Carga el contexto del negocio del cliente antes de responder",
+    "Detecta cuándo un mensaje es una solicitud concreta y cuándo no",
+    "Formaliza la solicitud y la envía por correo con resumen y urgencia",
+    "Acusa recibo dentro de la misma conversación, sin cortar el tono",
+    "Conversaciones persistidas con acceso restringido por RLS",
+  ],
+  moreNoun: "capacidades más",
+  ctaText: "Probar asistente →",
+  ctaHref: WHATSAPP_ASSISTANT,
+};
+
+/**
+ * Productos de apoyo: deliberadamente por debajo del flagship.
+ *
+ * El validador unifica en una sola vitrina lo que antes eran tres tarjetas
+ * (documentos, facturas y fotografías). Es solo presentación: las rutas
+ * /validador, /facturas y /fotos siguen intactas y con su propia interfaz.
+ */
+const COMPACT: Tool[] = [
   {
     id: "validador",
     badge: "MVP activo",
     badgeClass: "bg-[#c4a882] text-[#050508]",
-    cardClass: "border-[#c4a882] bg-[#c4a882]/[0.03]",
-    title: "Validador de Documentos",
-    tagline: "Elimina 25+ horas semanales de revisión manual",
-    desc: "Valida INE, CURP, RFC, Pasaporte y Acta de Nacimiento con IA. Extrae todos los campos, cruza datos contra bases de datos oficiales y genera un reporte de integridad en segundos.",
+    cardClass: "border-zinc-800",
+    title: "Validador de documentos",
+    tagline: "Identidad, facturas y fotografías en un mismo motor",
+    desc: "Extrae, valida y cruza información documental con IA. Cubre documentos de identidad y académicos, facturas de Google y Meta Ads con salida a Excel, y fotografías contra requisitos oficiales.",
     features: [
-      "INE / IFE — Credencial para Votar",
-      "CURP — Registro de Población",
-      "RFC — SAT",
-      "Pasaporte mexicano (SRE)",
-      "Acta de Nacimiento oficial",
-      "DNI / Cédula extranjera",
-      "Título universitario / Cédula profesional",
-      "Certificado de Bachillerato",
+      "Identidad: INE, CURP, RFC, pasaporte y acta de nacimiento",
+      "Académicos: título, cédula profesional y certificados",
+      "Facturas de Google Ads y Meta Ads exportadas a Excel",
+      "Fotografías contra requisitos de pasaporte, visa e instituciones",
+      "Cruce contra bases de datos oficiales",
+      "Reporte de integridad por documento",
     ],
-    moreNoun: "validaciones más",
+    moreNoun: "capacidades más",
     ctaText: "Pedir acceso →",
     Demo: DemoIsland,
   },
   {
-    id: "facturas",
-    badge: "Nuevo",
-    badgeClass: "bg-emerald-500 text-[#050508]",
-    cardClass: "border-zinc-800",
-    title: "Nasus Facturas",
-    tagline: "Tu factura de Google o Meta en Excel en segundos",
-    desc: "Extrae facturas de Google Ads y Meta Ads a Excel automáticamente. Desglose por campaña, cuenta y período con tres hojas listas para contabilidad.",
-    features: [
-      "Google Ads — todas las cuentas y campañas",
-      "Meta Ads — ad accounts y conjuntos",
-      "Hoja Resumen con RFC emisor y receptor",
-      "Hoja Detalle con todas las campañas",
-      "Hoja Para Contabilidad lista para entregar",
-      "Detecta actividad no válida (importes negativos)",
-    ],
-    moreNoun: "capacidades más",
-    ctaText: "Pedir acceso →",
-    Demo: FacturasDemo,
-  },
-  {
-    id: "whatsapp-assistant",
-    badge: "En producción",
-    badgeClass: "bg-[#00f2ff] text-[#050508]",
-    cardClass: "border-[#00f2ff]/40 bg-[#00f2ff]/[0.03]",
-    meta: "// WHATSAPP CLOUD API",
-    title: "Nasus WhatsApp Assistant",
-    tagline: "Tu cliente escribe. El sistema entiende. Tu equipo recibe contexto.",
-    desc: "Asistente conectado a WhatsApp que distingue prospectos de clientes, usa el contexto específico de cada negocio y convierte solicitudes reales en trabajo estructurado.",
-    features: [
-      "Distingue prospecto de cliente registrado en cada mensaje",
-      "Carga el contexto del negocio del cliente antes de responder",
-      "Detecta cuándo un mensaje es una solicitud concreta y cuándo no",
-      "Formaliza la solicitud y la envía por correo con resumen y urgencia",
-      "Acusa recibo dentro de la misma conversación, sin cortar el tono",
-      "Conversaciones persistidas con acceso restringido por RLS",
-    ],
-    moreNoun: "capacidades más",
-    ctaText: "Probar asistente →",
-    // Único CTA de la landing que apunta a la línea de la Cloud API.
-    ctaHref: WHATSAPP_ASSISTANT,
-  },
-  {
-    id: "fotos",
+    id: "voz",
     badge: "Activo",
     badgeClass: "bg-zinc-700 text-zinc-300",
     cardClass: "border-zinc-800",
-    title: "Validador de Fotografías",
-    tagline: "Foto rechazada cero: valida antes de imprimir",
-    desc: "Verifica que las fotografías cumplan los requisitos oficiales para pasaportes, visas y documentos escolares. Configura tus propios criterios institucionales.",
-    features: [
-      "Pasaporte mexicano — requisitos SRE",
-      "Visa USA — estándar USCIS",
-      "Foto escolar / infantil",
-      "Configuración institucional personalizada",
-      "Detecta lentes, accesorios, fondo incorrecto",
-      "Presets guardables por institución",
-    ],
-    moreNoun: "validaciones más",
-    ctaText: "Pedir acceso →",
-    Demo: FotosDemo,
+    title: "Asistente de voz",
+    tagline: "Tu sitio contesta en voz alta",
+    desc: "Asistente de voz con voz clonada, integrado en la propia página. Escucha la pregunta del visitante, responde en segundos y deriva a WhatsApp cuando la conversación lo merece. Está activo en esta página, abajo a la izquierda.",
+    features: [],
+    moreNoun: "",
+    ctaText: "Cuéntanos tu caso →",
+  },
+  {
+    id: "web",
+    badge: "Servicio",
+    badgeClass: "bg-zinc-700 text-zinc-300",
+    cardClass: "border-zinc-800",
+    title: "Páginas web y apps",
+    tagline: "Del sitio que convierte al sistema que opera",
+    desc: "Diseñamos y construimos sitios, tiendas y aplicaciones a medida, conectados a tus sistemas desde el primer día. CEEMI y Theia, en la sección de casos, salieron de aquí.",
+    features: [],
+    moreNoun: "",
+    ctaText: "Cuéntanos tu proyecto →",
   },
 ];
+
+/**
+ * Tarjeta de producto en dos pesos.
+ *
+ * `flagship` ocupa el ancho completo con más aire, título mayor y la ficha
+ * entera; `compact` reduce padding, tipografía y número de capacidades. Misma
+ * paleta y misma retícula: la jerarquía es de escala, no de lenguaje visual.
+ */
+function ProductCard({
+  tool,
+  variant,
+}: {
+  tool: Tool;
+  variant: "flagship" | "compact";
+}) {
+  const { badge, badgeClass, cardClass, title, tagline, desc, features, moreNoun, ctaText, ctaHref, meta, Demo } = tool;
+  const esFlagship = variant === "flagship";
+  // El compacto enseña la mitad de capacidades: es lo que lo mantiene por
+  // debajo del flagship sin cambiar su composición.
+  const visibles = esFlagship ? VISIBLE_FEATURES : COMPACT_FEATURES;
+  const restantes = features.length - visibles;
+
+  return (
+    <div
+      className={`border rounded-2xl ${cardClass} ${
+        esFlagship ? "p-6 sm:p-10 md:p-12" : "p-6 sm:p-8"
+      }`}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
+        <div>
+          {/* Etiqueta de infraestructura: solo desktop. */}
+          {meta && (
+            <p className="font-mono text-[10px] tracking-[0.3em] text-[#00f2ff]/70 mb-2 max-md:hidden">
+              {meta}
+            </p>
+          )}
+          <h3
+            className={`text-white font-bold ${
+              esFlagship ? "text-2xl sm:text-3xl md:text-4xl" : "text-lg sm:text-xl"
+            }`}
+          >
+            {title}
+          </h3>
+        </div>
+        <span className={`text-xs font-bold px-3 py-1 rounded-full font-mono tracking-wide flex-shrink-0 ${badgeClass}`}>
+          {badge}
+        </span>
+      </div>
+
+      <div className={Demo ? "grid md:grid-cols-2 gap-8" : ""}>
+        <div>
+          <p className={`${CYAN} font-mono mb-3 ${esFlagship ? "text-base sm:text-lg" : "text-sm"}`}>
+            {tagline}
+          </p>
+          <p className={`text-zinc-300 leading-relaxed mb-5 ${esFlagship ? "sm:text-lg" : "text-sm sm:text-base"}`}>
+            {desc}
+          </p>
+          {features.length > 0 && (
+            <div className="flex flex-col gap-2 max-md:gap-2.5 mb-6">
+              {features.slice(0, visibles).map((f, i) => (
+                <div
+                  key={f}
+                  className={`flex items-start gap-2 text-sm text-zinc-400 ${
+                    i >= MOBILE_VISIBLE_FEATURES ? "max-md:hidden" : ""
+                  }`}
+                >
+                  <span className={`${GOLD} text-xs font-mono flex-shrink-0 pt-1`}>✓</span>
+                  {f}
+                </div>
+              ))}
+              {/* Dos resúmenes porque el recuento cambia con el breakpoint;
+                  mostrar el de desktop en móvil mentiría. */}
+              {features.length > MOBILE_VISIBLE_FEATURES && (
+                <p className="md:hidden text-sm font-mono text-zinc-600 pl-5">
+                  + {features.length - MOBILE_VISIBLE_FEATURES} {moreNoun}
+                </p>
+              )}
+              {restantes > 0 && (
+                <p className="max-md:hidden text-sm font-mono text-zinc-600 pl-5">
+                  + {restantes} {moreNoun}
+                </p>
+              )}
+            </div>
+          )}
+          <a
+            href={ctaHref ?? WHATSAPP_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-sm font-mono font-bold text-[#050508] bg-[#c4a882] hover:bg-[#d4b892] px-5 py-2.5 rounded-lg transition-colors"
+          >
+            {ctaText}
+          </a>
+        </div>
+        {Demo && (
+          <div className="flex flex-col">
+            <p className="text-xs font-mono text-zinc-600 uppercase tracking-widest mb-3">
+              Demo interactivo
+            </p>
+            <Demo />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 const SCHEMA_ORG = {
   "@context": "https://schema.org",
@@ -555,72 +657,20 @@ export default function LandingPage() {
               de scroll en resolverse y se leería como contenido a medio cargar.
               El dissolve se aplica a bloques de altura de párrafo o de fila. */}
           <div className="flex flex-col gap-8 max-md:gap-12">
-            {TOOLS.map(({ id, badge, badgeClass, cardClass, title, tagline, desc, features, moreNoun, ctaText, ctaHref, meta, Demo }) => (
-              <div key={id} className={`border rounded-2xl p-6 sm:p-8 md:p-10 ${cardClass}`}>
-                <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
-                  <div>
-                    {/* Etiqueta de infraestructura: solo desktop. */}
-                    {meta && (
-                      <p className="font-mono text-[10px] tracking-[0.3em] text-[#00f2ff]/70 mb-2 max-md:hidden">
-                        {meta}
-                      </p>
-                    )}
-                    <h3 className="text-white font-bold text-xl sm:text-2xl">{title}</h3>
-                  </div>
-                  <span className={`text-xs font-bold px-3 py-1 rounded-full font-mono tracking-wide flex-shrink-0 ${badgeClass}`}>
-                    {badge}
-                  </span>
-                </div>
+            <ProductCard tool={FLAGSHIP} variant="flagship" />
 
-                <div className={Demo ? "grid md:grid-cols-2 gap-8" : ""}>
-                  <div>
-                    <p className={`${CYAN} text-sm font-mono mb-3`}>{tagline}</p>
-                    <p className="text-zinc-300 leading-relaxed mb-5">{desc}</p>
-                    <div className="flex flex-col gap-2 max-md:gap-2.5 mb-6">
-                      {features.slice(0, VISIBLE_FEATURES).map((f, i) => (
-                        <div
-                          key={f}
-                          className={`flex items-start gap-2 text-sm text-zinc-400 ${
-                            i >= MOBILE_VISIBLE_FEATURES ? "max-md:hidden" : ""
-                          }`}
-                        >
-                          <span className={`${GOLD} text-xs font-mono flex-shrink-0 pt-1`}>✓</span>
-                          {f}
-                        </div>
-                      ))}
-                      {/* Dos resúmenes porque el recuento cambia con el
-                          breakpoint; mostrar el de desktop en móvil mentiría. */}
-                      {features.length > MOBILE_VISIBLE_FEATURES && (
-                        <p className="md:hidden text-sm font-mono text-zinc-600 pl-5">
-                          + {features.length - MOBILE_VISIBLE_FEATURES} {moreNoun}
-                        </p>
-                      )}
-                      {features.length > VISIBLE_FEATURES && (
-                        <p className="max-md:hidden text-sm font-mono text-zinc-600 pl-5">
-                          + {features.length - VISIBLE_FEATURES} {moreNoun}
-                        </p>
-                      )}
-                    </div>
-                    <a
-                      href={ctaHref ?? WHATSAPP_URL}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 text-sm font-mono font-bold text-[#050508] bg-[#c4a882] hover:bg-[#d4b892] px-5 py-2.5 rounded-lg transition-colors"
-                    >
-                      {ctaText}
-                    </a>
-                  </div>
-                  {Demo && (
-                    <div className="flex flex-col">
-                      <p className="text-xs font-mono text-zinc-600 uppercase tracking-widest mb-3">
-                        Demo interactivo
-                      </p>
-                      <Demo />
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
+            {/* El validador va solo en su fila porque lleva demo y necesita las
+                dos columnas; los otros dos comparten fila en desktop. */}
+            {COMPACT.map((tool) =>
+              tool.Demo ? (
+                <ProductCard key={tool.id} tool={tool} variant="compact" />
+              ) : null,
+            )}
+            <div className="grid md:grid-cols-2 gap-8 max-md:gap-12">
+              {COMPACT.filter((tool) => !tool.Demo).map((tool) => (
+                <ProductCard key={tool.id} tool={tool} variant="compact" />
+              ))}
+            </div>
           </div>
         </div>
       </section>
