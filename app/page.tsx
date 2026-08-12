@@ -32,8 +32,16 @@ const GOLD = "text-[#c4a882]";
 const CYAN = "text-[#00f2ff]";
 const BORDER = "border border-zinc-800";
 const EYEBROW = `${GOLD} text-xs font-mono tracking-[0.3em] uppercase mb-6`;
+/* py móvil > py desktop original a propósito: en pantallas pequeñas la pausa
+   entre capítulos es lo que sustituye a la composición de dos columnas. */
+/* overflow-clip y NO overflow-hidden: `hidden` convierte la sección en un
+   scroll container, y `animation-timeline: view()` resuelve su timeline contra
+   el scroll container más cercano. Con `hidden`, cada capítulo se convertía en
+   el contenedor de referencia de su propio contenido — un contenedor que nunca
+   scrollea — y el dissolve quedaba inerte (animación adjunta, progreso fijo).
+   `clip` recorta igual pero no crea scroll container. */
 const SECTION =
-  "relative chapter-seam py-28 md:py-36 px-6 scroll-mt-16 overflow-hidden";
+  "relative chapter-seam py-32 md:py-36 px-6 scroll-mt-16 overflow-clip";
 /* ─────────────────────────────────────────────────────────────────────────
    DOS números de WhatsApp, separados a propósito. No intercambiar.
 
@@ -281,6 +289,8 @@ type Tool = {
 };
 
 const VISIBLE_FEATURES = 4;
+/** ≤768px mostramos la mitad: la ficha completa satura la tarjeta. */
+const MOBILE_VISIBLE_FEATURES = 2;
 
 const TOOLS: Tool[] = [
   {
@@ -391,8 +401,10 @@ export default function LandingPage() {
         data-scrolled="false"
         className="group sticky top-0 z-50 transition-[background-color,backdrop-filter,border-color] duration-500 border-b border-transparent data-[scrolled=true]:bg-[#050508]/80 data-[scrolled=true]:backdrop-blur-xl data-[scrolled=true]:border-[#c4a882]/15"
       >
-        <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between gap-4">
-          <span className="font-mono text-[13px] tracking-[0.25em] text-white">
+        {/* Alturas y tracking reducidos ≤768px: a 320px el logo y el CTA no
+            caben con las medidas de desktop y la barra se desborda. */}
+        <div className="max-w-5xl mx-auto px-6 max-md:px-4 h-16 max-md:h-14 flex items-center justify-between gap-4 max-md:gap-3">
+          <span className="font-mono text-[13px] max-md:text-[11px] tracking-[0.25em] max-md:tracking-[0.18em] text-white whitespace-nowrap">
             NASUS AGENCY
           </span>
           <span
@@ -415,7 +427,7 @@ export default function LandingPage() {
             href={WHATSAPP_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm border border-[#c4a882] text-[#c4a882] px-4 py-2 rounded-lg hover:bg-[#c4a882] hover:text-[#050508] transition-colors whitespace-nowrap"
+            className="text-sm max-md:text-[12px] border border-[#c4a882] text-[#c4a882] px-4 py-2 max-md:px-3 max-md:py-1.5 rounded-lg hover:bg-[#c4a882] hover:text-[#050508] transition-colors whitespace-nowrap"
           >
             Hablar con Nasus
           </a>
@@ -423,20 +435,28 @@ export default function LandingPage() {
       </nav>
 
       {/* ── 1. HERO editorial ──────────────────────────────────────── */}
-      <section className="relative min-h-[92svh] flex flex-col justify-center px-6 md:px-[5vw] py-24 overflow-hidden">
-        {/* Glow cian sutil. Estático: sigue al scroll natural, sin listener. */}
+      {/* data-hero excluye este bloque del dissolve por scroll: su entrada es
+          una animación de carga escalonada, no de viewport. Ver globals.css. */}
+      <section
+        data-hero
+        className="relative min-h-[92svh] flex flex-col justify-center px-6 md:px-[5vw] py-24 overflow-clip"
+      >
+        {/* Glow cian sutil. Estático: sigue al scroll natural, sin listener.
+            Es el único elemento ambiental que sobrevive completo en móvil,
+            a menor escala y opacidad. */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute -top-36 -right-24 w-[520px] h-[520px] rounded-full blur-[50px]"
+          className="pointer-events-none absolute -top-36 -right-24 max-md:-top-24 max-md:-right-16 w-[520px] h-[520px] max-md:w-[320px] max-md:h-[320px] max-md:opacity-60 rounded-full blur-[50px]"
           style={{
             background:
               "radial-gradient(circle, rgba(0,242,255,.14), transparent 70%)",
           }}
         />
-        {/* Retícula que se desvanece hacia abajo — continuidad con el capítulo 01. */}
+        {/* Retícula que se desvanece hacia abajo — continuidad con el capítulo 01.
+            Oculta ≤768px: es decoración redundante y roba contraste al headline. */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 opacity-50"
+          className="pointer-events-none absolute inset-0 opacity-50 max-md:hidden"
           style={{
             backgroundImage:
               "linear-gradient(rgba(196,168,130,.05) 1px, transparent 1px),linear-gradient(90deg, rgba(196,168,130,.05) 1px, transparent 1px)",
@@ -449,15 +469,17 @@ export default function LandingPage() {
         <div className="relative max-w-[1150px]">
           <p
             data-reveal
-            className={`${GOLD} text-xs font-mono tracking-[0.3em] uppercase mb-7`}
+            className={`${GOLD} text-xs max-md:text-[10px] font-mono tracking-[0.3em] max-md:tracking-[0.22em] uppercase mb-7`}
           >
             N° 00 — Agencia de tecnología artesanal
           </p>
 
+          {/* El clamp de desktop arranca en 44px, que a 375px son 6 líneas.
+              El override ≤768px lo baja a 30–44px: 3 líneas o menos. */}
           <h1
             data-reveal
             style={{ ["--reveal-delay" as string]: "0.08s" }}
-            className="font-display font-extrabold text-white leading-[1.08] text-[clamp(44px,8.5vw,100px)] max-w-[1150px]"
+            className="font-display font-extrabold text-white leading-[1.08] max-md:leading-[1.15] text-[clamp(44px,8.5vw,100px)] max-md:text-[clamp(30px,8.2vw,44px)] max-w-[1150px]"
           >
             Construimos <span className={GOLD}>tecnología</span> que mueve
             empresas.
@@ -466,7 +488,7 @@ export default function LandingPage() {
           <p
             data-reveal
             style={{ ["--reveal-delay" as string]: "0.22s" }}
-            className="max-w-[540px] mt-9 font-mono text-[15px] leading-[1.9] text-white/65"
+            className="max-w-[540px] mt-9 max-md:mt-10 font-mono text-[15px] max-md:text-[14px] leading-[1.9] text-white/65"
           >
             IA, software y automatización conectados directamente a tus sistemas.
           </p>
@@ -474,20 +496,22 @@ export default function LandingPage() {
           <div
             data-reveal
             style={{ ["--reveal-delay" as string]: "0.3s" }}
-            className="mt-12 flex flex-wrap items-center gap-4"
+            className="mt-12 max-md:mt-14 flex flex-wrap items-center gap-4"
           >
             <a
               href="#contacto"
-              className="inline-flex items-center gap-3 px-8 py-4 border border-[#c4a882] text-white font-mono text-[13px] tracking-[0.15em] transition-colors hover:bg-[#c4a882] hover:text-[#050508]"
+              className="inline-flex items-center gap-3 px-8 py-4 max-md:px-4 max-md:w-full max-md:justify-center border border-[#c4a882] text-white font-mono text-[13px] max-md:text-[12px] tracking-[0.15em] max-md:tracking-[0.1em] transition-colors hover:bg-[#c4a882] hover:text-[#050508]"
             >
               CUÉNTANOS QUÉ NECESITAS <span aria-hidden="true">→</span>
             </a>
           </div>
 
+          {/* Metadata decorativa: fuera ≤768px. Lo que hacemos ya lo dicen la
+              descripción del hero y el capítulo 03. */}
           <div
             data-reveal
             style={{ ["--reveal-delay" as string]: "0.38s" }}
-            className="mt-14 flex flex-wrap items-center gap-x-3 gap-y-2 font-mono text-[10px] sm:text-xs text-zinc-600 uppercase tracking-[0.2em]"
+            className="mt-14 max-md:hidden flex flex-wrap items-center gap-x-3 gap-y-2 font-mono text-[10px] sm:text-xs text-zinc-600 uppercase tracking-[0.2em]"
           >
             {CAPABILITIES.map((c, i) => (
               <span key={c} className="flex items-center gap-3">
@@ -501,7 +525,13 @@ export default function LandingPage() {
             ))}
           </div>
 
-          <div data-reveal style={{ ["--reveal-delay" as string]: "0.46s" }} className="mt-8">
+          {/* Redundante ≤768px: el botón flotante del asistente ya está en
+              pantalla (fixed, abajo a la izquierda). */}
+          <div
+            data-reveal
+            style={{ ["--reveal-delay" as string]: "0.46s" }}
+            className="mt-8 max-md:hidden"
+          >
             <AssistantHint />
           </div>
         </div>
@@ -512,20 +542,26 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto">
           <span aria-hidden="true" className="chapter-numeral">01</span>
           <p data-reveal className={EYEBROW}>N° 01 — Productos en producción</p>
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 max-w-2xl text-balance">
+          <h2 data-dissolve className="text-3xl md:text-4xl font-bold text-white mb-4 max-w-2xl text-balance">
             Ya construimos soluciones que puedes usar hoy.
           </h2>
-          <p className="text-zinc-500 mb-16 max-w-xl">
+          <p data-dissolve className="text-zinc-500 mb-16 max-w-xl">
             Productos funcionales listos para integrarse a operaciones reales.
           </p>
 
-          <div className="flex flex-col gap-8">
+          {/* Sin data-dissolve a propósito: los rangos `entry`/`exit` se miden
+              en % de la altura del propio elemento, y estas tarjetas llevan
+              demo dentro (600–900px). El fundido tardaría cientos de píxeles
+              de scroll en resolverse y se leería como contenido a medio cargar.
+              El dissolve se aplica a bloques de altura de párrafo o de fila. */}
+          <div className="flex flex-col gap-8 max-md:gap-12">
             {TOOLS.map(({ id, badge, badgeClass, cardClass, title, tagline, desc, features, moreNoun, ctaText, ctaHref, meta, Demo }) => (
               <div key={id} className={`border rounded-2xl p-6 sm:p-8 md:p-10 ${cardClass}`}>
                 <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
                   <div>
+                    {/* Etiqueta de infraestructura: solo desktop. */}
                     {meta && (
-                      <p className="font-mono text-[10px] tracking-[0.3em] text-[#00f2ff]/70 mb-2">
+                      <p className="font-mono text-[10px] tracking-[0.3em] text-[#00f2ff]/70 mb-2 max-md:hidden">
                         {meta}
                       </p>
                     )}
@@ -540,15 +576,27 @@ export default function LandingPage() {
                   <div>
                     <p className={`${CYAN} text-sm font-mono mb-3`}>{tagline}</p>
                     <p className="text-zinc-300 leading-relaxed mb-5">{desc}</p>
-                    <div className="flex flex-col gap-2 mb-6">
-                      {features.slice(0, VISIBLE_FEATURES).map((f) => (
-                        <div key={f} className="flex items-start gap-2 text-sm text-zinc-400">
+                    <div className="flex flex-col gap-2 max-md:gap-2.5 mb-6">
+                      {features.slice(0, VISIBLE_FEATURES).map((f, i) => (
+                        <div
+                          key={f}
+                          className={`flex items-start gap-2 text-sm text-zinc-400 ${
+                            i >= MOBILE_VISIBLE_FEATURES ? "max-md:hidden" : ""
+                          }`}
+                        >
                           <span className={`${GOLD} text-xs font-mono flex-shrink-0 pt-1`}>✓</span>
                           {f}
                         </div>
                       ))}
+                      {/* Dos resúmenes porque el recuento cambia con el
+                          breakpoint; mostrar el de desktop en móvil mentiría. */}
+                      {features.length > MOBILE_VISIBLE_FEATURES && (
+                        <p className="md:hidden text-sm font-mono text-zinc-600 pl-5">
+                          + {features.length - MOBILE_VISIBLE_FEATURES} {moreNoun}
+                        </p>
+                      )}
                       {features.length > VISIBLE_FEATURES && (
-                        <p className="text-sm font-mono text-zinc-600 pl-5">
+                        <p className="max-md:hidden text-sm font-mono text-zinc-600 pl-5">
                           + {features.length - VISIBLE_FEATURES} {moreNoun}
                         </p>
                       )}
@@ -582,7 +630,7 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto">
           <span aria-hidden="true" className="chapter-numeral">02</span>
           <p data-reveal className={EYEBROW}>N° 02 — El problema</p>
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-16 max-w-xl text-balance">
+          <h2 data-dissolve className="text-3xl md:text-4xl font-bold text-white mb-16 max-w-xl text-balance">
             Tu equipo técnico está saturado. Los proyectos se acumulan.
           </h2>
           <div data-reveal-group className="grid md:grid-cols-3 gap-6">
@@ -602,7 +650,7 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto">
           <span aria-hidden="true" className="chapter-numeral">03</span>
           <p data-reveal className={EYEBROW}>N° 03 — Qué construimos</p>
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-16 max-w-xl text-balance">
+          <h2 data-dissolve className="text-3xl md:text-4xl font-bold text-white mb-16 max-w-xl text-balance">
             Lo que podemos construir contigo.
           </h2>
           <div data-reveal-group className="border-t border-zinc-900">
@@ -632,14 +680,14 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto">
           <span aria-hidden="true" className="chapter-numeral">04</span>
           <p data-reveal className={EYEBROW}>N° 04 — Casos reales</p>
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 max-w-xl text-balance">
+          <h2 data-dissolve className="text-3xl md:text-4xl font-bold text-white mb-4 max-w-xl text-balance">
             Proyectos en producción.
           </h2>
-          <p className="text-zinc-500 mb-16 max-w-xl">
+          <p data-dissolve className="text-zinc-500 mb-16 max-w-xl">
             Sistemas que diseñamos, construimos y lanzamos.
           </p>
 
-          <div className="flex flex-col gap-16 md:gap-20">
+          <div className="flex flex-col gap-24 md:gap-20">
             {cases.map((c, i) => (
               <article
                 key={c.id}
@@ -687,15 +735,19 @@ export default function LandingPage() {
                   <p className={`${CYAN} text-[11px] font-mono tracking-[0.25em] uppercase mb-4`}>
                     {c.category}
                   </p>
-                  <h3 className="text-white font-bold text-2xl md:text-3xl mb-4">
+                  <h3 className="text-white font-bold text-2xl md:text-3xl mb-4 max-md:mb-5">
                     {c.name}
                   </h3>
-                  <p className="text-zinc-300 leading-relaxed mb-3">{c.desc}</p>
+                  <p className="text-zinc-300 leading-relaxed mb-3 max-md:mb-5">{c.desc}</p>
+                  {/* Segunda línea y stack: metadata secundaria, solo desktop.
+                      En móvil el caso queda en imagen → nombre → desc → link. */}
                   {c.note && (
-                    <p className="text-zinc-500 text-sm leading-relaxed mb-3">{c.note}</p>
+                    <p className="max-md:hidden text-zinc-500 text-sm leading-relaxed mb-3">
+                      {c.note}
+                    </p>
                   )}
                   {c.stack.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 mt-5 mb-6">
+                    <div className="max-md:hidden flex flex-wrap gap-1.5 mt-5 mb-6">
                       {c.stack.map((s) => (
                         <span
                           key={s}
@@ -727,12 +779,13 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto">
           <span aria-hidden="true" className="chapter-numeral">05</span>
           <p data-reveal className={EYEBROW}>N° 05 — Cómo trabajamos</p>
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-16 text-balance">
+          <h2 data-dissolve className="text-3xl md:text-4xl font-bold text-white mb-16 text-balance">
             Proceso directo. Sin fricción.
           </h2>
           <div>
             {steps.map((s) => (
               <div
+                data-dissolve
                 key={s.n}
                 className="flex gap-6 sm:gap-8 py-8 border-b border-zinc-900 items-start"
               >
@@ -754,12 +807,12 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto">
           <span aria-hidden="true" className="chapter-numeral">06</span>
           <p data-reveal className={EYEBROW}>N° 06 — Por qué Nasus</p>
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-16 text-balance">
+          <h2 data-dissolve className="text-3xl md:text-4xl font-bold text-white mb-16 text-balance">
             Diseñamos. Construimos. Integramos.
           </h2>
           <div className="grid md:grid-cols-3 gap-10">
             {differentiators.map((d) => (
-              <div key={d.title}>
+              <div data-dissolve key={d.title}>
                 <div className={`${GOLD} text-2xl font-bold mb-5`}>→</div>
                 <h3 className="text-white font-semibold text-lg mb-3">{d.title}</h3>
                 <p className="text-zinc-400 leading-relaxed">{d.desc}</p>
@@ -770,20 +823,25 @@ export default function LandingPage() {
       </section>
 
       {/* ── 8. CTA / CONTACTO ──────────────────────────────────────── */}
-      <section id="contacto" className={SECTION}>
+      {/* data-dissolve-keep: entra con dissolve, pero no se desvanece al salir.
+          Es el último bloque del documento. Ver globals.css. */}
+      <section id="contacto" data-dissolve-keep className={SECTION}>
         <div className="max-w-2xl mx-auto">
-          <span aria-hidden="true" className="chapter-numeral">07</span>
+          {/* Único numeral que desaparece del todo ≤768px. */}
+          <span aria-hidden="true" className="chapter-numeral max-md:hidden">07</span>
           <p
             data-reveal
-            className="font-mono text-[11px] tracking-[0.3em] text-white/35 mb-4"
+            className="font-mono text-[11px] tracking-[0.3em] max-md:tracking-[0.24em] text-white/35 mb-4 max-md:mb-6"
           >
             {"// READY WHEN YOU ARE"}
           </p>
-          <p data-reveal className={EYEBROW}>N° 07 — Contacto</p>
+          {/* El momento más limpio de la página en móvil: se queda la línea
+              READY WHEN YOU ARE y se va el eyebrow numerado. */}
+          <p data-reveal className={`${EYEBROW} max-md:hidden`}>N° 07 — Contacto</p>
           <h2
             data-reveal
             style={{ ["--reveal-delay" as string]: "0.1s" }}
-            className="font-display font-bold text-white leading-[1.15] text-[clamp(38px,6.5vw,76px)] mb-6"
+            className="font-display font-bold text-white leading-[1.15] text-[clamp(38px,6.5vw,76px)] max-md:text-[clamp(30px,8.5vw,44px)] mb-6 max-md:mb-8"
           >
             <span className="block">Tu problema.</span>
             <span className={`block ${CYAN}`}>Nuestro código.</span>
@@ -791,7 +849,7 @@ export default function LandingPage() {
           <p
             data-reveal
             style={{ ["--reveal-delay" as string]: "0.2s" }}
-            className="font-mono text-[15px] text-white/60 mb-12"
+            className="font-mono text-[15px] max-md:text-[14px] text-white/60 mb-12 max-md:mb-14"
           >
             Cuéntanos el problema. Nosotros vemos la parte técnica.
           </p>
