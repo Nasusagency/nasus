@@ -9,7 +9,7 @@
  * puede devolver prosa alrededor del objeto y no hay que parsear a mano.
  */
 
-import { anthropic } from "@/lib/anthropic/client";
+import { getAnthropic } from "@/lib/anthropic/client";
 import { WHATSAPP_MODEL } from "./prompt";
 import type {
   ClienteContexto,
@@ -158,7 +158,7 @@ export async function detectarSolicitud(params: {
   ].join("\n");
 
   try {
-    const response = await anthropic.messages.create({
+    const response = await getAnthropic().messages.create({
       model: WHATSAPP_MODEL,
       max_tokens: DETECCION_MAX_TOKENS,
       // Las instrucciones son idénticas en cada llamada: se cachean.

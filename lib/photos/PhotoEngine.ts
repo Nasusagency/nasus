@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { anthropic } from "@/lib/anthropic/client";
+import { getAnthropic } from "@/lib/anthropic/client";
 import type { PhotoConfig, PhotoAnalysisResult, PhotoVerdict, RuleResult } from "./types";
 
 type ImageMediaType = "image/jpeg" | "image/png" | "image/webp";
@@ -20,7 +20,7 @@ export async function analyzePhoto(
         source: { type: "base64", media_type: mimeType as ImageMediaType, data: base64 },
       } as Anthropic.ContentBlockParam);
 
-  const response = await anthropic.messages.create({
+  const response = await getAnthropic().messages.create({
     model: "claude-sonnet-4-5",
     max_tokens: 1024,
     system: [

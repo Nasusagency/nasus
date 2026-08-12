@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
-import { anthropic } from "@/lib/anthropic/client";
+import { getAnthropic } from "@/lib/anthropic/client";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin/auth";
 import { getCliente } from "@/lib/admin/data";
 
@@ -74,7 +73,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const stream = await anthropic.messages.create({
+  const stream = await getAnthropic().messages.create({
     model: MODEL,
     max_tokens: 4096,
     system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
