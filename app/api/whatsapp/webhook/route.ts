@@ -12,6 +12,10 @@ import {
   saveMessage,
 } from "@/lib/whatsapp/store";
 import { construirTicket, detectarSolicitud, formatearHistorial } from "@/lib/whatsapp/ticket";
+import { callLLM } from "@/lib/llm/provider";
+import { ALL_TOOLS } from "@/lib/llm/tools";
+import { executeToolCall } from "@/lib/whatsapp/agent-handlers";
+import { selectProvider, maskPhoneNumber } from "@/lib/whatsapp/groq-allowlist";
 import type {
   ClienteContexto,
   DeteccionSolicitud,
@@ -19,6 +23,7 @@ import type {
   StoredMessage,
   WhatsAppWebhookPayload,
 } from "@/lib/whatsapp/types";
+import type { LLMMessage } from "@/lib/llm/provider";
 
 export const maxDuration = 30;
 
@@ -197,29 +202,81 @@ async function procesarMensaje(mensaje: IncomingMessage): Promise<void> {
       return;
     }
 
-    // Secuencial a propósito: la detección corre primero para que la respuesta
-    // pueda incorporar el acuse en el mismo mensaje. Cuesta una llamada extra
-    // de latencia y evita mandarle dos mensajes seguidos al cliente.
-    const deteccion = await detectarSolicitud({
-      mensaje: text,
-      historial,
-      cliente,
-      tieneImagen: Boolean(mediaId),
-    });
+    // Allowlist controlada: elegir entre Groq (solo números autorizados) o Claude
+    const provider = selectProvider(
+      from,
+      process.env.WHATSAPP_AGENT_PROVIDER,
+      process.env.WHATSAPP_GROQ_TEST_NUMBERS
+    );
 
-    const respuesta = await responderConClaude(text, historial, cliente, deteccion);
+    const maskedNumber = maskPhoneNumber(from);
 
-    // El ticket se manda antes de contestar: si la API de WhatsApp falla, el
-    // equipo se entera igual de la solicitud.
-    if (deteccion) {
-      await enviarTicketDeSolicitud({
-        deteccion,
-        numero: from,
-        profileName,
-        cliente,
-        mediaId,
+    let respuesta: string;
+    let fallbackUsed = false;
+
+    if (provider === "groq") {
+      // Groq Agent con tools (número autorizado)
+      const startTime = Date.now();
+
+      try {
+        console.log(`[whatsapp] ${maskedNumber} → Groq Agent (autorizado)`);
+        respuesta = await callGroqAgent(text, historial, from, profileName);
+        const latency = Date.now() - startTime;
+
+        console.log(
+          `[whatsapp] ${maskedNumber} Groq completado ${latency}ms | ${provider} | ${cliente ? "cliente" : "prospecto"}`
+        );
+      } catch (groqErr) {
+        // Fallback a Claude si Groq falla
+        fallbackUsed = true;
+        const latency = Date.now() - startTime;
+
+        logError(`groq fallback a claude (${latency}ms)`, groqErr);
+
+        const deteccion = await detectarSolicitud({
+          mensaje: text,
+          historial,
+          cliente,
+          tieneImagen: Boolean(mediaId),
+        });
+
+        respuesta = await responderConClaude(text, historial, cliente, deteccion);
+
+        console.log(
+          `[whatsapp] ${maskedNumber} Fallback a Claude | prospecto: ${cliente ? "cliente" : "sí"}`
+        );
+      }
+    } else {
+      // Claude con detección clásica (default o número no autorizado)
+      const startTime = Date.now();
+
+      const deteccion = await detectarSolicitud({
+        mensaje: text,
         historial,
+        cliente,
+        tieneImagen: Boolean(mediaId),
       });
+
+      respuesta = await responderConClaude(text, historial, cliente, deteccion);
+
+      const latency = Date.now() - startTime;
+
+      console.log(
+        `[whatsapp] ${maskedNumber} Claude ${latency}ms | ${cliente ? "cliente" : "prospecto"} ${deteccion ? "| ticket" : ""}`
+      );
+
+      // El ticket se manda antes de contestar: si la API de WhatsApp falla, el
+      // equipo se entera igual de la solicitud.
+      if (deteccion) {
+        await enviarTicketDeSolicitud({
+          deteccion,
+          numero: from,
+          profileName,
+          cliente,
+          mediaId,
+          historial,
+        });
+      }
     }
 
     await responder(conversationId, from, respuesta);
@@ -284,6 +341,82 @@ async function enviarTicketDeSolicitud(params: {
     await enviarTicket(construirTicket(params));
   } catch (err) {
     logError("fallo al enviar el ticket", err);
+  }
+}
+
+// ─── Groq Agent (Feature Flag) ────────────────────────────────────────────────
+
+/**
+ * Ejecuta el flujo del Groq Agent v1 con fallback a Claude.
+ * Diseñado para prospectos: detecta oportunidades, gestiona leads, registra solicitudes.
+ *
+ * Si Groq falla, `callLLM` automáticamente usa Claude.
+ */
+async function callGroqAgent(
+  text: string,
+  historial: StoredMessage[],
+  numero: string,
+  profileName?: string,
+): Promise<string> {
+  try {
+    const base =
+      historial.length > 1
+        ? `Conversación hasta ahora:\n${formatearHistorial(historial)}\n\nResponde al último mensaje del cliente.`
+        : text || "(el cliente envió una imagen sin texto)";
+
+    const messages: LLMMessage[] = [
+      { role: "user", content: base },
+    ];
+
+    const systemPrompt = [
+      {
+        type: "text",
+        text: buildSystemPrompt(null), // Groq Agent: sin contexto de cliente específico
+        cache_control: { type: "ephemeral" },
+      },
+    ];
+
+    const response = await callLLM({
+      model: "openai/gpt-oss-120b", // Groq
+      max_tokens: WHATSAPP_MAX_TOKENS,
+      system: systemPrompt as any,
+      messages,
+      tools: ALL_TOOLS,
+      tool_choice: { type: "auto" },
+    });
+
+    // Procesar respuesta
+    let respuestaFinal = "";
+
+    for (const block of response.content) {
+      if (block.type === "text") {
+        respuestaFinal += block.text + " ";
+      }
+
+      if (block.type === "tool_use") {
+        // Ejecutar tool y capturar resultado
+        try {
+          const result = await executeToolCall(block.name as any, block.input);
+          console.log(`[groq-agent] ${block.name} ejecutado:`, result);
+
+          // Nota: el resultado se usa para razonamiento del agente, no se manda al cliente
+          // (si Groq necesita el resultado, lo incluye en siguiente vuelta)
+        } catch (toolErr) {
+          console.error(`[groq-agent] error en tool ${block.name}:`, toolErr);
+        }
+      }
+    }
+
+    // Si Groq solo ejecutó tools sin text, retorna fallback
+    if (!respuestaFinal.trim()) {
+      respuestaFinal = "Gracias por tu mensaje. ¿En qué más puedo ayudarte?";
+    }
+
+    return respuestaFinal.trim();
+  } catch (err) {
+    logError("groq_agent error", err);
+    // Fallback a Claude si Groq falla (callLLM ya lo hace internamente)
+    throw err;
   }
 }
 
