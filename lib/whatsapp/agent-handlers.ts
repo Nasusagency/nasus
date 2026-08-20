@@ -26,34 +26,7 @@ import type {
   ToolResult,
 } from "@/lib/llm/tool-results";
 
-// ─── Deduplicación Mínima (ventana 5 minutos) ────────────────────────────────
-
-interface DedupeEntry {
-  hash: string;
-  timestamp: number;
-}
-
-const requerImientoDedupe: Map<string, DedupeEntry> = new Map();
-const emailDedupe: Map<string, DedupeEntry> = new Map();
-
-function cleanOldEntries(map: Map<string, DedupeEntry>) {
-  const now = Date.now();
-  const fiveMinutes = 5 * 60 * 1000;
-  for (const [key, entry] of map.entries()) {
-    if (now - entry.timestamp > fiveMinutes) {
-      map.delete(key);
-    }
-  }
-}
-
-function isDeduped(map: Map<string, DedupeEntry>, hash: string): boolean {
-  cleanOldEntries(map);
-  return map.has(hash);
-}
-
-function markDeduped(map: Map<string, DedupeEntry>, hash: string) {
-  map.set(hash, { hash, timestamp: Date.now() });
-}
+// ─── Idempotencia Persistente (Supabase) ────────────────────────────────────
 
 function hashContent(content: string): string {
   let hash = 0;
@@ -63,6 +36,67 @@ function hashContent(content: string): string {
     hash = hash & hash;
   }
   return Math.abs(hash).toString(36);
+}
+
+async function checkIdempotencyKey(
+  toolName: string,
+  key: string
+): Promise<{ isDuplicate: boolean; result?: unknown }> {
+  const supabase = createServiceClient();
+  if (!supabase) return { isDuplicate: false };
+
+  try {
+    const { data, error } = await supabase
+      .from("idempotency_keys")
+      .select("result")
+      .eq("key", key)
+      .eq("tool_name", toolName)
+      .maybeSingle();
+
+    // Si tabla no existe (error PGRST116), permitir
+    if (error && (error.code === "PGRST116" || error.message?.includes("does not exist"))) {
+      console.warn("[idempotency] tabla idempotency_keys no existe, permitiendo operación");
+      return { isDuplicate: false };
+    }
+
+    if (error) {
+      console.warn("[idempotency] error al verificar key:", error);
+      return { isDuplicate: false }; // Error = permitir (fail open)
+    }
+
+    if (data) {
+      return { isDuplicate: true, result: data.result };
+    }
+
+    return { isDuplicate: false };
+  } catch (err) {
+    console.warn("[idempotency] excepción al verificar key:", err);
+    return { isDuplicate: false }; // Error = permitir (fail open)
+  }
+}
+
+async function storeIdempotencyResult(
+  toolName: string,
+  key: string,
+  result: unknown
+): Promise<void> {
+  const supabase = createServiceClient();
+  if (!supabase) return;
+
+  try {
+    const { error } = await supabase.from("idempotency_keys").insert({
+      key,
+      tool_name: toolName,
+      result,
+    });
+
+    // Ignorar si tabla no existe o unique constraint
+    if (error && !(error.code === "PGRST116" || error.code === "23505")) {
+      console.warn("[idempotency] error al guardar result:", error);
+    }
+  } catch (err) {
+    console.warn("[idempotency] excepción al guardar result:", err);
+  }
 }
 
 // ─── Handler 1: Consultar Contexto Contacto ─────────────────────────────────
@@ -383,18 +417,25 @@ async function handleRegistrarRequerimiento(
       };
     }
 
-    // Deduplicación: evitar duplicados en 5 minutos
-    const dedupeKey = `${numero_contacto}:${tipo}`;
-    const contentHash = hashContent(descripcion_original);
-    const dedupeHash = `${dedupeKey}:${contentHash}`;
+    // Idempotencia: usar hash del contenido como clave
+    const contentHash = hashContent(
+      `${numero_contacto}:${tipo}:${descripcion_original}`
+    );
+    const idempotencyKey = `req_${contentHash}`;
 
-    if (isDeduped(requerImientoDedupe, dedupeHash)) {
+    // Verificar si ya fue procesado
+    const { isDuplicate, result: existingResult } = await checkIdempotencyKey(
+      "registrar_requerimiento",
+      idempotencyKey
+    );
+
+    if (isDuplicate && existingResult) {
       return {
         exito: false,
         requerimiento_id: "",
-        mensaje: "Requerimiento duplicado detectado (enviado hace <5 min)",
+        mensaje: "Requerimiento duplicado detectado (ya procesado)",
         guardado_en_bd: false,
-        error: "Requerimiento duplicado",
+        error: "Idempotencia: request duplicado",
       };
     }
 
@@ -414,15 +455,21 @@ async function handleRegistrarRequerimiento(
 
     if (error) throw error;
 
-    // Marcar como deduped solo si la inserción fue exitosa
-    markDeduped(requerImientoDedupe, dedupeHash);
-
-    return {
+    const successResult: RegistrarRequerimientoResult = {
       exito: true,
       requerimiento_id: created.id,
       mensaje: `Requerimiento registrado exitosamente (${tipo})`,
       guardado_en_bd: true,
     };
+
+    // Guardar en idempotency_keys solo si fue exitoso
+    await storeIdempotencyResult(
+      "registrar_requerimiento",
+      idempotencyKey,
+      successResult
+    );
+
+    return successResult;
   } catch (err) {
     console.error("[agent-handlers] error en registrar_requerimiento:", err);
     return {
@@ -452,20 +499,26 @@ async function handleNotificarHumano(
       };
     }
 
-    // Deduplicación: evitar enviar mismo email dos veces en 5 minutos
-    const contentHash = hashContent(`${asunto}:${cuerpo}`);
-    const dedupeKey = numero_contacto ? `${numero_contacto}:${contentHash}` : contentHash;
+    // Idempotencia: usar hash del contenido como clave
+    const contentHash = hashContent(`${asunto}:${cuerpo}:${numero_contacto || ""}`);
+    const idempotencyKey = `email_${contentHash}`;
 
-    if (isDeduped(emailDedupe, dedupeKey)) {
+    // Verificar si ya fue procesado
+    const { isDuplicate } = await checkIdempotencyKey(
+      "notificar_humano",
+      idempotencyKey
+    );
+
+    if (isDuplicate) {
       console.warn(
-        "[agent-handlers] Email duplicado detectado en ventana 5min:",
+        "[agent-handlers] Email duplicado detectado (idempotencia):",
         asunto
       );
       return {
         exito: false,
-        mensaje: "Email duplicado detectado (enviado hace <5 min)",
+        mensaje: "Email duplicado detectado (ya enviado)",
         email_enviado: false,
-        motivo_fallo: "Email duplicado",
+        motivo_fallo: "Idempotencia: request duplicado",
       };
     }
 
@@ -512,14 +565,20 @@ async function handleNotificarHumano(
       throw new Error(`resend_failed:${res.status}:${errText.slice(0, 100)}`);
     }
 
-    // Marcar como enviado solo si fue exitoso
-    markDeduped(emailDedupe, dedupeKey);
-
-    return {
+    const successResult: NotificarHumanoResult = {
       exito: true,
       mensaje: `Notificación enviada a ${to}`,
       email_enviado: true,
     };
+
+    // Guardar en idempotency_keys solo si fue exitoso
+    await storeIdempotencyResult(
+      "notificar_humano",
+      idempotencyKey,
+      successResult
+    );
+
+    return successResult;
   } catch (err) {
     console.error("[agent-handlers] error en notificar_humano:", err);
     return {
