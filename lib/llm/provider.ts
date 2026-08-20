@@ -194,9 +194,16 @@ async function callGroq(params: LLMCreateParams): Promise<LLMResponse> {
 /**
  * Llamada a Claude (Anthropic).
  * Mantiene la integración existente, usado como fallback.
+ *
+ * Si el modelo no es válido para Claude, usa Haiku por defecto.
  */
 async function callClaude(params: LLMCreateParams): Promise<LLMResponse> {
   const client = getAnthropicClient();
+
+  // Normalizar modelo si es inválido
+  const validClaudeModel = params.model.startsWith("claude-")
+    ? params.model
+    : "claude-haiku-4-5-20251001";
 
   // Convertir params a formato Anthropic
   const anthropicTools = params.tools
@@ -214,7 +221,7 @@ async function callClaude(params: LLMCreateParams): Promise<LLMResponse> {
     : undefined;
 
   const response = await client.messages.create({
-    model: params.model,
+    model: validClaudeModel,
     max_tokens: params.max_tokens,
     system: params.system,
     messages: params.messages.map((m) => ({
