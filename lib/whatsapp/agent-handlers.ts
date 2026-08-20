@@ -417,19 +417,19 @@ async function handleRegistrarRequerimiento(
       };
     }
 
-    // Idempotencia: usar hash del contenido como clave
+    // Idempotencia: usar hash del contenido como clave (FAIL CLOSED)
     const contentHash = hashContent(
       `${numero_contacto}:${tipo}:${descripcion_original}`
     );
     const idempotencyKey = `req_${contentHash}`;
 
     // Verificar si ya fue procesado
-    const { isDuplicate, result: existingResult } = await checkIdempotencyKey(
+    const { isDuplicate } = await checkIdempotencyKey(
       "registrar_requerimiento",
       idempotencyKey
     );
 
-    if (isDuplicate && existingResult) {
+    if (isDuplicate) {
       return {
         exito: false,
         requerimiento_id: "",
@@ -499,7 +499,7 @@ async function handleNotificarHumano(
       };
     }
 
-    // Idempotencia: usar hash del contenido como clave
+    // Idempotencia: usar hash del contenido como clave (FAIL CLOSED)
     const contentHash = hashContent(`${asunto}:${cuerpo}:${numero_contacto || ""}`);
     const idempotencyKey = `email_${contentHash}`;
 
