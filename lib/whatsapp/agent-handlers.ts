@@ -288,8 +288,12 @@ async function handleConsultarPortafolio(
 async function handleGuardarActualizarLead(
   input: GuardarActualizarLeadInput
 ): Promise<GuardarActualizarLeadResult> {
+  const numeroMasked = input.numero ? input.numero.slice(0, 2) + "***" + input.numero.slice(-3) : "????";
+  console.log(`[GROQ_TOOL] guardar_actualizar_lead requested | numero=${numeroMasked} stage=${input.stage}`);
+
   const supabase = createServiceClient();
   if (!supabase) {
+    console.error(`[GROQ_TOOL] guardar_actualizar_lead error=no_supabase_client`);
     return {
       exito: false,
       lead_id: "",
@@ -303,6 +307,7 @@ async function handleGuardarActualizarLead(
     const { numero, stage, ...data } = input;
 
     if (!numero || !numero.match(/^\d{10,15}$/)) {
+      console.error(`[GROQ_TOOL] guardar_actualizar_lead error=invalid_number | numero=${numeroMasked}`);
       return {
         exito: false,
         lead_id: "",
@@ -312,55 +317,76 @@ async function handleGuardarActualizarLead(
       };
     }
 
-    const { data: existing } = await supabase
+    console.log(`[GROQ_TOOL] guardar_actualizar_lead checking existing | payload_keys=${Object.keys({ ...data, stage }).join(',')}`);
+
+    const { data: existing, error: checkError } = await supabase
       .from("whatsapp_leads")
       .select("id")
       .eq("numero", numero)
       .maybeSingle();
 
+    if (checkError) {
+      console.error(`[GROQ_TOOL] guardar_actualizar_lead error=select_failed | code=${checkError.code} message=${checkError.message?.slice(0, 100)}`);
+      throw checkError;
+    }
+
     if (existing) {
+      console.log(`[GROQ_TOOL] guardar_actualizar_lead updating existing lead | id=${existing.id}`);
+      const updatePayload = {
+        ...data,
+        stage,
+        updated_at: new Date().toISOString(),
+        ultima_interaccion: new Date().toISOString(),
+      };
+
       const { data: updated, error } = await supabase
         .from("whatsapp_leads")
-        .update({
-          ...data,
-          stage,
-          updated_at: new Date().toISOString(),
-          ultima_interaccion: new Date().toISOString(),
-        })
+        .update(updatePayload)
         .eq("numero", numero)
         .select("id")
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error(`[GROQ_TOOL] guardar_actualizar_lead error=update_failed | code=${error.code} message=${error.message?.slice(0, 100)}`);
+        throw error;
+      }
 
+      console.log(`[GROQ_TOOL] guardar_actualizar_lead success=actualizado | id=${updated.id}`);
       return {
         exito: true,
         lead_id: updated.id,
         operacion: "actualizado",
-        mensaje: `Lead ${numero} actualizado exitosamente`,
+        mensaje: `Lead actualizado exitosamente`,
       };
     } else {
+      console.log(`[GROQ_TOOL] guardar_actualizar_lead creating new lead`);
+      const insertPayload = {
+        numero,
+        stage,
+        ...data,
+      };
+
       const { data: created, error } = await supabase
         .from("whatsapp_leads")
-        .insert({
-          numero,
-          stage,
-          ...data,
-        })
+        .insert(insertPayload)
         .select("id")
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error(`[GROQ_TOOL] guardar_actualizar_lead error=insert_failed | code=${error.code} message=${error.message?.slice(0, 100)}`);
+        throw error;
+      }
 
+      console.log(`[GROQ_TOOL] guardar_actualizar_lead success=creado | id=${created.id}`);
       return {
         exito: true,
         lead_id: created.id,
         operacion: "creado",
-        mensaje: `Lead ${numero} creado exitosamente`,
+        mensaje: `Lead creado exitosamente`,
       };
     }
   } catch (err) {
-    console.error("[agent-handlers] error en guardar_actualizar_lead:", err);
+    console.error(`[GROQ_TOOL] guardar_actualizar_lead exception | error=${err instanceof Error ? err.message : String(err)}`);
     return {
       exito: false,
       lead_id: "",

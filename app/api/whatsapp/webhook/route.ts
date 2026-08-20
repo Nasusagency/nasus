@@ -389,25 +389,32 @@ async function callGroqAgent(
     let respuestaFinal = "";
     const toolsEjecutados: string[] = [];
 
+    console.log(`[GROQ_AGENT] processing ${response.content.length} blocks`);
+
     for (const block of response.content) {
       if (block.type === "text") {
         respuestaFinal += block.text + " ";
+        console.log(`[GROQ_AGENT] text_block: ${block.text.slice(0, 50)}...`);
       }
 
       if (block.type === "tool_use") {
         toolsEjecutados.push(block.name);
+        console.log(`[GROQ_AGENT] tool_requested: ${block.name}`);
         // Ejecutar tool y capturar resultado
         try {
           const result = await executeToolCall(block.name as any, block.input);
-          console.log(`[groq-agent] ${block.name} ejecutado:`, result);
+          const resultStr = JSON.stringify(result).slice(0, 100);
+          console.log(`[GROQ_AGENT] tool_result: ${block.name} → ${resultStr}...`);
 
           // Nota: el resultado se usa para razonamiento del agente, no se manda al cliente
           // (si Groq necesita el resultado, lo incluye en siguiente vuelta)
         } catch (toolErr) {
-          console.error(`[groq-agent] error en tool ${block.name}:`, toolErr);
+          console.error(`[GROQ_AGENT] tool_error: ${block.name} → ${toolErr instanceof Error ? toolErr.message : String(toolErr)}`);
         }
       }
     }
+
+    console.log(`[GROQ_AGENT] total_tools_executed=${toolsEjecutados.length} text_length=${respuestaFinal.trim().length}`);
 
     // Si Groq solo ejecutó tools sin text, genera fallback contextual
     if (!respuestaFinal.trim()) {
