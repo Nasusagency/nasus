@@ -388,6 +388,7 @@ async function callGroqAgent(
     // Procesar respuesta
     let respuestaFinal = "";
     const toolsEjecutados: string[] = [];
+    const toolResults: Record<string, boolean> = {}; // Capturar éxito de cada tool
 
     console.log(`[GROQ_AGENT] processing ${response.content.length} blocks`);
 
@@ -404,29 +405,34 @@ async function callGroqAgent(
         try {
           const result = await executeToolCall(block.name as any, block.input);
           const resultStr = JSON.stringify(result).slice(0, 100);
-          console.log(`[GROQ_AGENT] tool_result: ${block.name} → ${resultStr}...`);
-
-          // Nota: el resultado se usa para razonamiento del agente, no se manda al cliente
-          // (si Groq necesita el resultado, lo incluye en siguiente vuelta)
+          const exito = (result as any)?.exito === true;
+          toolResults[block.name] = exito;
+          console.log(`[GROQ_AGENT] tool_result: ${block.name} → exito=${exito} | ${resultStr}...`);
         } catch (toolErr) {
+          toolResults[block.name] = false;
           console.error(`[GROQ_AGENT] tool_error: ${block.name} → ${toolErr instanceof Error ? toolErr.message : String(toolErr)}`);
         }
       }
     }
 
-    console.log(`[GROQ_AGENT] total_tools_executed=${toolsEjecutados.length} text_length=${respuestaFinal.trim().length}`);
+    console.log(`[GROQ_AGENT] total_tools_executed=${toolsEjecutados.length} text_length=${respuestaFinal.trim().length} results=${JSON.stringify(toolResults)}`);
 
     // Si Groq solo ejecutó tools sin text, genera fallback contextual
     if (!respuestaFinal.trim()) {
-      if (toolsEjecutados.includes("guardar_actualizar_lead")) {
-        // Groq guardó el lead: reconocer y preguntar más
+      const guardoLead = toolResults["guardar_actualizar_lead"] === true;
+
+      if (guardoLead) {
+        // Groq guardó el lead exitosamente: reconocer y preguntar más
         respuestaFinal = "Perfecto, entendí. Cuéntame más: ¿qué proceso manual que realizan hoy les gustaría mejorar?";
+      } else if (toolsEjecutados.includes("guardar_actualizar_lead") && !guardoLead) {
+        // Intentó guardar pero falló: aún así preguntar (datos se guardaron parcialmente)
+        respuestaFinal = "Entiendo. Cuéntame: ¿a qué se dedican y cuál es tu principal desafío ahora?";
       } else if (toolsEjecutados.length > 0) {
-        // Ejecutó otros tools
+        // Ejecutó otros tools (no guardar_lead)
         respuestaFinal = "Gracias por compartir eso. ¿Qué desafío específico enfrentan ahora?";
       } else {
-        // No ejecutó nada: pregunta genérica
-        respuestaFinal = "Cuéntame sobre tu negocio: ¿a qué se dedican y qué proceso o servicio les gustaría mejorar?";
+        // No ejecutó nada: pregunta agresiva
+        respuestaFinal = "¡Hola! Para poder ayudarte mejor: ¿a qué se dedica tu negocio y qué proceso o servicio les gustaría automatizar o mejorar?";
       }
     }
 
