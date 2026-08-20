@@ -118,6 +118,9 @@ export default function RegistroPage() {
           phone: formState.phone || undefined,
           eventId: data.event_id,
           ticketClassId: data.ticket_class_id,
+          utmSource: data.utm_source,
+          utmMedium: data.utm_medium,
+          utmCampaign: data.utm_campaign,
         }),
       });
 

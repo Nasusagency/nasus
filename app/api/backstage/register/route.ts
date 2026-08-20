@@ -7,6 +7,9 @@ interface RegisterRequest {
   phone?: string;
   eventId: string;
   ticketClassId: string;
+  utmSource?: string;
+  utmMedium?: string;
+  utmCampaign?: string;
 }
 
 interface ZohoAccessTokenResponse {
@@ -64,10 +67,30 @@ async function createBackstageOrder(
   firstName: string,
   lastName: string,
   email: string,
-  phone?: string
+  phone?: string,
+  utmSource?: string,
+  utmMedium?: string,
+  utmCampaign?: string
 ): Promise<ZohoOrderResponse> {
   const apiDomain = process.env.ZOHO_API_DOMAIN || "https://zohoapis.com";
   const orderUrl = `${apiDomain}/backstage/v3/portals/${portalId}/events/${eventId}/orders`;
+
+  const ticketData: Record<string, string> = {
+    first_name: firstName,
+    last_name: lastName,
+    email: email,
+    ...(phone && { mobile_no: phone }),
+  };
+
+  if (utmSource) {
+    ticketData.UTM_Source = utmSource;
+  }
+  if (utmMedium) {
+    ticketData.UTM_Medium = utmMedium;
+  }
+  if (utmCampaign) {
+    ticketData.UTM_Campaign = utmCampaign;
+  }
 
   const payload = {
     buyer_details: {
@@ -79,12 +102,7 @@ async function createBackstageOrder(
     tickets: [
       {
         ticketclass_id: ticketClassId,
-        data: {
-          first_name: firstName,
-          last_name: lastName,
-          email: email,
-          ...(phone && { mobile_no: phone }),
-        },
+        data: ticketData,
       },
     ],
   };
@@ -148,7 +166,10 @@ export async function POST(request: NextRequest) {
       body.firstName,
       body.lastName,
       body.email,
-      body.phone
+      body.phone,
+      body.utmSource,
+      body.utmMedium,
+      body.utmCampaign
     );
 
     return NextResponse.json({
