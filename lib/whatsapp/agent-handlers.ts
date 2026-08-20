@@ -3,10 +3,9 @@
  *
  * Cada handler es llamado cuando Groq selecciona esa tool.
  * El backend valida y ejecuta; Groq NO tiene acceso directo a BD/email.
- *
- * FASE 1: Estructura definida. Algunos handlers aún sin lógica completa.
  */
 
+import { createServiceClient } from "@/lib/supabase/service";
 import type {
   ToolName,
   ConsultarContextoContactoInput,
@@ -15,7 +14,6 @@ import type {
   GuardarActualizarLeadInput,
   RegistrarRequerimientoInput,
   NotificarHumanoInput,
-  ToolInput,
 } from "@/lib/llm/tools";
 
 import type {
@@ -33,18 +31,111 @@ import type {
 async function handleConsultarContextoContacto(
   input: ConsultarContextoContactoInput
 ): Promise<ConsultarContextoContactoResult> {
-  // TODO: Implementar
-  // 1. Buscar en whatsapp_clientes si existe (activo=true)
-  // 2. Buscar en whatsapp_leads si existe
-  // 3. Obtener últimos 3-5 mensajes de whatsapp_mensajes
-  // 4. Compilar resultado
+  const supabase = createServiceClient();
+  if (!supabase) {
+    return {
+      encontrado: false,
+      es_cliente: false,
+      es_lead: false,
+      razon: "Servicio de base de datos no disponible",
+    };
+  }
 
-  return {
-    encontrado: false,
-    es_cliente: false,
-    es_lead: false,
-    razon: "[STUB] Handler no implementado aún",
-  };
+  try {
+    const { numero, buscar_lead = true, buscar_cliente = true } = input;
+
+    // Validar número (básico)
+    if (!numero || !numero.match(/^\d{10,15}$/)) {
+      return {
+        encontrado: false,
+        es_cliente: false,
+        es_lead: false,
+        razon: "Número de teléfono inválido",
+      };
+    }
+
+    const result: ConsultarContextoContactoResult = {
+      encontrado: false,
+      es_cliente: false,
+      es_lead: false,
+    };
+
+    // Buscar cliente
+    if (buscar_cliente) {
+      const { data: cliente } = await supabase
+        .from("whatsapp_clientes")
+        .select("numero_whatsapp, nombre_negocio, contexto_negocio")
+        .eq("numero_whatsapp", numero)
+        .eq("activo", true)
+        .maybeSingle();
+
+      if (cliente) {
+        result.es_cliente = true;
+        result.encontrado = true;
+        result.cliente = {
+          numero: cliente.numero_whatsapp,
+          nombre_negocio: cliente.nombre_negocio,
+          contexto_negocio: cliente.contexto_negocio,
+        };
+      }
+    }
+
+    // Buscar lead
+    if (buscar_lead) {
+      const { data: lead } = await supabase
+        .from("whatsapp_leads")
+        .select(
+          "numero, nombre_contacto, nombre_empresa, stage, problema_descrito, servicio_probable, resumen, requiere_humano"
+        )
+        .eq("numero", numero)
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (lead) {
+        result.es_lead = true;
+        result.encontrado = true;
+        result.lead = {
+          numero: lead.numero,
+          nombre_contacto: lead.nombre_contacto || undefined,
+          nombre_empresa: lead.nombre_empresa || undefined,
+          stage: lead.stage,
+          problema_descrito: lead.problema_descrito || undefined,
+          servicio_probable: lead.servicio_probable || undefined,
+          resumen: lead.resumen || undefined,
+          requiere_humano: lead.requiere_humano,
+        };
+      }
+    }
+
+    // Obtener últimos 3 mensajes
+    const { data: mensajes } = await supabase
+      .from("whatsapp_mensajes")
+      .select("direccion, contenido, created_at")
+      .eq("numero", numero)
+      .order("created_at", { ascending: false })
+      .limit(3);
+
+    if (mensajes && mensajes.length > 0) {
+      result.mensajes_recientes = mensajes.reverse().map((m: any) => ({
+        direccion: m.direccion,
+        contenido: m.contenido,
+        created_at: m.created_at,
+      }));
+    }
+
+    return result;
+  } catch (err) {
+    console.error("[agent-handlers] error en consultar_contexto_contacto:", err);
+    return {
+      encontrado: false,
+      es_cliente: false,
+      es_lead: false,
+      razon:
+        err instanceof Error ? err.message : "Error al consultar contexto",
+      mensaje: "Error interno al consultar información",
+    };
+  }
 }
 
 // ─── Handler 2: Consultar Servicios ────────────────────────────────────────
@@ -134,19 +225,87 @@ async function handleConsultarPortafolio(
 async function handleGuardarActualizarLead(
   input: GuardarActualizarLeadInput
 ): Promise<GuardarActualizarLeadResult> {
-  // TODO: Implementar
-  // 1. Validar numero (formato)
-  // 2. Buscar lead existente por numero
-  // 3. Crear o actualizar en whatsapp_leads
-  // 4. Actualizar timestamps
+  const supabase = createServiceClient();
+  if (!supabase) {
+    return {
+      exito: false,
+      lead_id: "",
+      operacion: "creado",
+      mensaje: "Servicio de base de datos no disponible",
+      error: "No se pudo acceder a Supabase",
+    };
+  }
 
-  return {
-    exito: false,
-    lead_id: "",
-    operacion: "creado",
-    mensaje: "[STUB] Handler no implementado aún",
-    error: "Handler en desarrollo",
-  };
+  try {
+    const { numero, stage, ...data } = input;
+
+    if (!numero || !numero.match(/^\d{10,15}$/)) {
+      return {
+        exito: false,
+        lead_id: "",
+        operacion: "creado",
+        mensaje: "Número de teléfono inválido",
+        error: "Formato inválido",
+      };
+    }
+
+    const { data: existing } = await supabase
+      .from("whatsapp_leads")
+      .select("id")
+      .eq("numero", numero)
+      .maybeSingle();
+
+    if (existing) {
+      const { data: updated, error } = await supabase
+        .from("whatsapp_leads")
+        .update({
+          ...data,
+          stage,
+          updated_at: new Date().toISOString(),
+          ultima_interaccion: new Date().toISOString(),
+        })
+        .eq("numero", numero)
+        .select("id")
+        .single();
+
+      if (error) throw error;
+
+      return {
+        exito: true,
+        lead_id: updated.id,
+        operacion: "actualizado",
+        mensaje: `Lead ${numero} actualizado exitosamente`,
+      };
+    } else {
+      const { data: created, error } = await supabase
+        .from("whatsapp_leads")
+        .insert({
+          numero,
+          stage,
+          ...data,
+        })
+        .select("id")
+        .single();
+
+      if (error) throw error;
+
+      return {
+        exito: true,
+        lead_id: created.id,
+        operacion: "creado",
+        mensaje: `Lead ${numero} creado exitosamente`,
+      };
+    }
+  } catch (err) {
+    console.error("[agent-handlers] error en guardar_actualizar_lead:", err);
+    return {
+      exito: false,
+      lead_id: "",
+      operacion: "creado",
+      mensaje: "Error al guardar lead",
+      error: err instanceof Error ? err.message : "Error desconocido",
+    };
+  }
 }
 
 // ─── Handler 5: Registrar Requerimiento ───────────────────────────────────
@@ -154,19 +313,79 @@ async function handleGuardarActualizarLead(
 async function handleRegistrarRequerimiento(
   input: RegistrarRequerimientoInput
 ): Promise<RegistrarRequerimientoResult> {
-  // TODO: Implementar
-  // 1. Validar inputs
-  // 2. Crear en whatsapp_requerimientos
-  // 3. Opcionalmente enviar email (Resend)
-  // 4. Retornar ID del requerimiento creado
+  const supabase = createServiceClient();
+  if (!supabase) {
+    return {
+      exito: false,
+      requerimiento_id: "",
+      mensaje: "Servicio de base de datos no disponible",
+      guardado_en_bd: false,
+      error: "No se pudo acceder a Supabase",
+    };
+  }
 
-  return {
-    exito: false,
-    requerimiento_id: "",
-    mensaje: "[STUB] Handler no implementado aún",
-    guardado_en_bd: false,
-    error: "Handler en desarrollo",
-  };
+  try {
+    const {
+      numero_contacto,
+      tipo,
+      descripcion_original,
+      resumen,
+      prioridad = "media",
+      ...data
+    } = input;
+
+    if (!numero_contacto || !numero_contacto.match(/^\d{10,15}$/)) {
+      return {
+        exito: false,
+        requerimiento_id: "",
+        mensaje: "Número de teléfono inválido",
+        guardado_en_bd: false,
+        error: "Formato inválido",
+      };
+    }
+
+    if (!tipo || !descripcion_original) {
+      return {
+        exito: false,
+        requerimiento_id: "",
+        mensaje: "Campos requeridos: tipo, descripcion_original",
+        guardado_en_bd: false,
+        error: "Datos incompletos",
+      };
+    }
+
+    const { data: created, error } = await supabase
+      .from("whatsapp_requerimientos")
+      .insert({
+        numero_contacto,
+        tipo,
+        descripcion_original,
+        resumen: resumen || descripcion_original.slice(0, 300),
+        prioridad,
+        estado: "abierto",
+        ...data,
+      })
+      .select("id")
+      .single();
+
+    if (error) throw error;
+
+    return {
+      exito: true,
+      requerimiento_id: created.id,
+      mensaje: `Requerimiento registrado exitosamente (${tipo})`,
+      guardado_en_bd: true,
+    };
+  } catch (err) {
+    console.error("[agent-handlers] error en registrar_requerimiento:", err);
+    return {
+      exito: false,
+      requerimiento_id: "",
+      mensaje: "Error al registrar requerimiento",
+      guardado_en_bd: false,
+      error: err instanceof Error ? err.message : "Error desconocido",
+    };
+  }
 }
 
 // ─── Handler 6: Notificar Humano ──────────────────────────────────────────
@@ -174,18 +393,75 @@ async function handleRegistrarRequerimiento(
 async function handleNotificarHumano(
   input: NotificarHumanoInput
 ): Promise<NotificarHumanoResult> {
-  // TODO: Implementar
-  // 1. Validar inputs (no enviar PII innecesaria)
-  // 2. Usar Resend API para enviar email
-  // 3. Registrar intento en logs
-  // 4. Retornar éxito/fallo
+  try {
+    const { asunto, cuerpo, numero_contacto, nombre_contacto, tipo = "otro" } = input;
 
-  return {
-    exito: false,
-    mensaje: "[STUB] Handler no implementado aún",
-    email_enviado: false,
-    motivo_fallo: "Handler en desarrollo",
-  };
+    if (!asunto || !cuerpo) {
+      return {
+        exito: false,
+        mensaje: "Campos requeridos: asunto, cuerpo",
+        email_enviado: false,
+        motivo_fallo: "Datos incompletos",
+      };
+    }
+
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) {
+      console.warn("[agent-handlers] RESEND_API_KEY sin configurar: notificación no enviada");
+      return {
+        exito: false,
+        mensaje: "Servicio de notificación no configurado",
+        email_enviado: false,
+        motivo_fallo: "RESEND_API_KEY falta",
+      };
+    }
+
+    const cuerpoConContexto = [
+      `[${tipo.toUpperCase()}]`,
+      "",
+      cuerpo,
+      ...(numero_contacto ? [`\nNúmero: +${numero_contacto}`] : []),
+      ...(nombre_contacto ? [`Nombre: ${nombre_contacto}`] : []),
+      `\nFecha: ${new Date().toISOString()}`,
+    ].join("\n");
+
+    const from = process.env.NOTIFY_FROM || "Nasus Agency <onboarding@resend.dev>";
+    const to = "nasusagency@gmail.com";
+
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${apiKey}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        from,
+        to: [to],
+        subject: asunto,
+        text: cuerpoConContexto,
+      }),
+      signal: AbortSignal.timeout(10_000),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`resend_failed:${res.status}:${errText.slice(0, 100)}`);
+    }
+
+    return {
+      exito: true,
+      mensaje: `Notificación enviada a ${to}`,
+      email_enviado: true,
+    };
+  } catch (err) {
+    console.error("[agent-handlers] error en notificar_humano:", err);
+    return {
+      exito: false,
+      mensaje: "Error al enviar notificación",
+      email_enviado: false,
+      motivo_fallo: err instanceof Error ? err.message : "Error desconocido",
+    };
+  }
 }
 
 // ─── Dispatcher ────────────────────────────────────────────────────────────
