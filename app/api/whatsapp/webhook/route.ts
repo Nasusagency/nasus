@@ -371,7 +371,7 @@ async function callGroqAgent(
     const systemPrompt = [
       {
         type: "text",
-        text: buildSystemPrompt(null), // Groq Agent: sin contexto de cliente específico
+        text: buildSystemPrompt(null, true), // Groq Agent: prompt específico + sin contexto de cliente
         cache_control: { type: "ephemeral" },
       },
     ];
@@ -387,6 +387,7 @@ async function callGroqAgent(
 
     // Procesar respuesta
     let respuestaFinal = "";
+    const toolsEjecutados: string[] = [];
 
     for (const block of response.content) {
       if (block.type === "text") {
@@ -394,6 +395,7 @@ async function callGroqAgent(
       }
 
       if (block.type === "tool_use") {
+        toolsEjecutados.push(block.name);
         // Ejecutar tool y capturar resultado
         try {
           const result = await executeToolCall(block.name as any, block.input);
@@ -407,9 +409,18 @@ async function callGroqAgent(
       }
     }
 
-    // Si Groq solo ejecutó tools sin text, retorna fallback
+    // Si Groq solo ejecutó tools sin text, genera fallback contextual
     if (!respuestaFinal.trim()) {
-      respuestaFinal = "Gracias por tu mensaje. ¿En qué más puedo ayudarte?";
+      if (toolsEjecutados.includes("guardar_actualizar_lead")) {
+        // Groq guardó el lead: reconocer y preguntar más
+        respuestaFinal = "Perfecto, entendí. Cuéntame más: ¿qué proceso manual que realizan hoy les gustaría mejorar?";
+      } else if (toolsEjecutados.length > 0) {
+        // Ejecutó otros tools
+        respuestaFinal = "Gracias por compartir eso. ¿Qué desafío específico enfrentan ahora?";
+      } else {
+        // No ejecutó nada: pregunta genérica
+        respuestaFinal = "Cuéntame sobre tu negocio: ¿a qué se dedican y qué proceso o servicio les gustaría mejorar?";
+      }
     }
 
     return respuestaFinal.trim();
