@@ -352,6 +352,31 @@ async function enviarTicketDeSolicitud(params: {
  *
  * Si Groq falla, `callLLM` automáticamente usa Claude.
  */
+/**
+ * Detecta si el texto es razonamiento interno que NO debe enviarse al usuario.
+ */
+function isInternalReasoning(text: string): boolean {
+  const reasoning = text.toLowerCase();
+  const internalMarkers = [
+    "voy a responder",
+    "voy a analizar",
+    "voy a revisar",
+    "veo que hay",
+    "he visto",
+    "el usuario",
+    "el cliente",
+    "el prospecto",
+    "debo",
+    "necesito",
+    "voy a",
+    "parece que",
+    "notar que",
+    "repetición en el historial",
+  ];
+
+  return internalMarkers.some((marker) => reasoning.includes(marker));
+}
+
 async function callGroqAgent(
   text: string,
   historial: StoredMessage[],
@@ -361,15 +386,54 @@ async function callGroqAgent(
   const MAX_TOOL_ROUNDS = 3;
 
   try {
+    console.log(`[GROQ_AGENT] iniciando | numero=${numero.slice(0, 2)}***${numero.slice(-3)}`);
+
+    // PREFLIGHT: consultar contexto del contacto
+    console.log(`[GROQ_AGENT] preflight_context_lookup`);
+    let contextResult: any = null;
+    try {
+      contextResult = await executeToolCall("consultar_contexto_contacto", {
+        numero,
+        buscar_cliente: true,
+        buscar_lead: true,
+      } as unknown as Record<string, unknown>);
+    } catch (err) {
+      console.warn(`[GROQ_AGENT] preflight error:`, err);
+    }
+
+    const esCliente = contextResult?.es_cliente || false;
+    const esLead = contextResult?.es_lead || false;
+    console.log(`[GROQ_AGENT] context es_cliente=${esCliente} es_lead=${esLead}`);
+
     const base =
       historial.length > 1
         ? `Conversación hasta ahora:\n${formatearHistorial(historial)}\n\nResponde al último mensaje del cliente.`
         : text || "(el cliente envió una imagen sin texto)";
 
-    // Inicializar conversación con el mensaje del usuario
-    const messages: LLMMessage[] = [
-      { role: "user", content: base },
-    ];
+    // Inicializar conversación
+    const messages: LLMMessage[] = [];
+
+    // Si el contexto existe, agregarlo como contexto inicial
+    if (contextResult && (esCliente || esLead)) {
+      messages.push({
+        role: "user",
+        content: `[CONTEXTO PREVIO DEL CONTACTO]:\n${JSON.stringify({
+          es_cliente: contextResult.es_cliente,
+          es_lead: contextResult.es_lead,
+          cliente: contextResult.cliente ? { nombre_negocio: contextResult.cliente.nombre_negocio } : null,
+          lead: contextResult.lead ? {
+            stage: contextResult.lead.stage,
+            nombre_empresa: contextResult.lead.nombre_empresa,
+            problema_descrito: contextResult.lead.problema_descrito,
+          } : null,
+        }).slice(0, 200)}\n\nAhora, ${text}`,
+      });
+    } else {
+      messages.push({
+        role: "user",
+        content: base,
+      });
+    }
 
     const systemPrompt = [
       {
@@ -384,18 +448,10 @@ async function callGroqAgent(
     const toolsEjecutados: string[] = [];
     const toolResults: Record<string, boolean> = {};
 
-    console.log(`[GROQ_AGENT] iniciando loop agentico | numero=${numero.slice(0, 2)}***${numero.slice(-3)}`);
-
-    // Loop agentico: hasta 3 rondas o hasta obtener respuesta textual
+    // Loop agentico: máximo 3 rondas
     while (ronda < MAX_TOOL_ROUNDS) {
       ronda++;
-
-      // Ronda 1: tool_choice="required" para forzar ejecución de tool
-      // Rondas 2+: tool_choice="auto" para permitir que genere texto
-      const isFirstRound = ronda === 1;
-      const toolChoice = isFirstRound ? { type: "required" as const } : { type: "auto" as const };
-
-      console.log(`[GROQ_AGENT] round=${ronda} tool_choice=${toolChoice.type}`);
+      console.log(`[GROQ_AGENT] round=${ronda} tool_choice=auto`);
 
       const response = await callLLM({
         model: "openai/gpt-oss-120b",
@@ -403,18 +459,12 @@ async function callGroqAgent(
         system: systemPrompt as any,
         messages,
         tools: ALL_TOOLS,
-        tool_choice: toolChoice,
+        tool_choice: { type: "auto" },
       });
 
-      // Validar que hubo respuesta (especialmente importante si tool_choice=required)
       if (!response.content || response.content.length === 0) {
-        if (isFirstRound) {
-          console.error(`[GROQ_AGENT] round=${ronda} empty_response_required_failed fallback_to_claude`);
-          throw new Error("groq_empty_response_with_required_tools");
-        } else {
-          console.log(`[GROQ_AGENT] round=${ronda} empty_response continuing`);
-          break;
-        }
+        console.log(`[GROQ_AGENT] round=${ronda} empty_response breaking`);
+        break;
       }
 
       let hasToolCalls = false;
@@ -424,7 +474,7 @@ async function callGroqAgent(
       for (const block of response.content) {
         if (block.type === "text") {
           respuestaFinal += block.text + " ";
-          console.log(`[GROQ_AGENT] round=${ronda} text_generated=${block.text.slice(0, 40)}...`);
+          console.log(`[GROQ_AGENT] round=${ronda} text: ${block.text.slice(0, 40)}...`);
         }
 
         if (block.type === "tool_use") {
@@ -439,18 +489,15 @@ async function callGroqAgent(
         }
       }
 
-      // Ejecutar tools de esta ronda y agregar resultados a messages
+      // Ejecutar tools de esta ronda
       if (hasToolCalls) {
-        // Agregar la respuesta del asistente (con tools) a messages
-        const assistantContent = toolCallsThisRound
-          .map((tc) => `[tool_use: ${tc.name} | id: ${tc.id}]`)
-          .join(" ");
         messages.push({
           role: "assistant",
-          content: assistantContent,
+          content: toolCallsThisRound
+            .map((tc) => `[tool_use: ${tc.name}]`)
+            .join(" "),
         });
 
-        // Ejecutar cada tool y agregar resultados
         const toolResultsContent: string[] = [];
 
         for (const toolCall of toolCallsThisRound) {
@@ -460,63 +507,71 @@ async function callGroqAgent(
             toolResults[toolCall.name] = exito;
 
             const resultStr = JSON.stringify(result).slice(0, 80);
-            console.log(`[GROQ_AGENT] round=${ronda} tool=${toolCall.name} result=success exito=${exito}`);
+            console.log(`[GROQ_AGENT] round=${ronda} tool=${toolCall.name} exito=${exito}`);
             toolResultsContent.push(
               `[${toolCall.id}] ${toolCall.name}: ${exito ? "✓" : "✗"} ${resultStr}...`
             );
           } catch (toolErr) {
             toolResults[toolCall.name] = false;
-            console.error(
-              `[GROQ_AGENT] round=${ronda} tool=${toolCall.name} result=error msg=${
-                toolErr instanceof Error ? toolErr.message : String(toolErr)
-              }`
-            );
+            console.error(`[GROQ_AGENT] round=${ronda} tool=${toolCall.name} error`);
             toolResultsContent.push(
-              `[${toolCall.id}] ${toolCall.name}: error - ${toolErr instanceof Error ? toolErr.message : "unknown"}`
+              `[${toolCall.id}] ${toolCall.name}: error`
             );
           }
         }
 
-        // Agregar resultados de tools como mensaje de usuario para siguiente ronda
         messages.push({
           role: "user",
           content: `Tool results:\n${toolResultsContent.join("\n")}`,
         });
 
-        // Si tenemos texto final, salir
         if (respuestaFinal.trim()) {
-          console.log(`[GROQ_AGENT] round=${ronda} breaking: texto final obtenido`);
+          console.log(`[GROQ_AGENT] round=${ronda} breaking: texto obtenido`);
           break;
         }
-
-        // Si no hay texto, continuar loop para siguiente ronda
       } else {
-        // Sin tool calls, salir del loop
         console.log(`[GROQ_AGENT] round=${ronda} breaking: sin tool calls`);
         break;
       }
     }
 
-    console.log(
-      `[GROQ_AGENT] completed rounds=${ronda} tools_executed=${toolsEjecutados.length} text_length=${respuestaFinal.trim().length}`
-    );
-
-    // Si no hay respuesta textual, genera fallback
-    if (!respuestaFinal.trim()) {
-      const guardoLead = toolResults["guardar_actualizar_lead"] === true;
-
-      if (guardoLead) {
-        respuestaFinal = "Perfecto, entendí. Cuéntame más: ¿qué proceso manual que realizan hoy les gustaría mejorar?";
-      } else if (toolsEjecutados.includes("guardar_actualizar_lead") && !guardoLead) {
-        respuestaFinal = "Entiendo. Cuéntame: ¿a qué se dedican y cuál es tu principal desafío ahora?";
-      } else if (toolsEjecutados.length > 0) {
-        respuestaFinal = "Gracias por compartir eso. ¿Qué desafío específico enfrentan ahora?";
-      } else {
-        respuestaFinal = "¡Hola! Para poder ayudarte mejor: ¿a qué se dedica tu negocio y qué proceso o servicio les gustaría automatizar o mejorar?";
+    // Fallback determinista: si no se guardó el lead, hacerlo ahora
+    if (!esCliente && !esLead && !toolsEjecutados.includes("guardar_actualizar_lead")) {
+      console.log(`[GROQ_AGENT] fallback_persist_lead=exploring`);
+      try {
+        await executeToolCall("guardar_actualizar_lead", {
+          numero,
+          stage: "exploring",
+          problema_descrito: text?.slice(0, 150) || "Prospecto nuevo",
+        } as unknown as Record<string, unknown>);
+        toolResults["guardar_actualizar_lead"] = true;
+      } catch (err) {
+        console.error(`[GROQ_AGENT] fallback_persist_lead error:`, err);
       }
     }
 
-    return respuestaFinal.trim();
+    console.log(
+      `[GROQ_AGENT] completed rounds=${ronda} tools=${toolsEjecutados.length} text=${respuestaFinal.trim().length}c`
+    );
+
+    // Si no hay respuesta o es razonamiento interno, generar fallback
+    let finalResponse = respuestaFinal.trim();
+
+    if (!finalResponse || isInternalReasoning(finalResponse)) {
+      console.log(`[GROQ_AGENT] respuesta_invalid sanitizing`);
+      const guardoLead = toolResults["guardar_actualizar_lead"] === true;
+
+      if (guardoLead) {
+        finalResponse = "Perfecto, entendí. Cuéntame más: ¿qué proceso manual que realizan hoy les gustaría mejorar?";
+      } else if (toolsEjecutados.length > 0) {
+        finalResponse = "Gracias por compartir eso. ¿Qué desafío específico enfrentan ahora?";
+      } else {
+        finalResponse = "Cuéntame sobre tu negocio: ¿a qué se dedican y qué proceso o servicio les gustaría mejorar?";
+      }
+    }
+
+    console.log(`[GROQ_AGENT] final_response_ready`);
+    return finalResponse;
   } catch (err) {
     logError("groq_agent error", err);
     throw err;
