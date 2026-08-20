@@ -389,7 +389,13 @@ async function callGroqAgent(
     // Loop agentico: hasta 3 rondas o hasta obtener respuesta textual
     while (ronda < MAX_TOOL_ROUNDS) {
       ronda++;
-      console.log(`[GROQ_AGENT] round=${ronda}`);
+
+      // Ronda 1: tool_choice="required" para forzar ejecución de tool
+      // Rondas 2+: tool_choice="auto" para permitir que genere texto
+      const isFirstRound = ronda === 1;
+      const toolChoice = isFirstRound ? { type: "required" as const } : { type: "auto" as const };
+
+      console.log(`[GROQ_AGENT] round=${ronda} tool_choice=${toolChoice.type}`);
 
       const response = await callLLM({
         model: "openai/gpt-oss-120b",
@@ -397,8 +403,19 @@ async function callGroqAgent(
         system: systemPrompt as any,
         messages,
         tools: ALL_TOOLS,
-        tool_choice: { type: "auto" },
+        tool_choice: toolChoice,
       });
+
+      // Validar que hubo respuesta (especialmente importante si tool_choice=required)
+      if (!response.content || response.content.length === 0) {
+        if (isFirstRound) {
+          console.error(`[GROQ_AGENT] round=${ronda} empty_response_required_failed fallback_to_claude`);
+          throw new Error("groq_empty_response_with_required_tools");
+        } else {
+          console.log(`[GROQ_AGENT] round=${ronda} empty_response continuing`);
+          break;
+        }
+      }
 
       let hasToolCalls = false;
       const toolCallsThisRound: Array<{ id: string; name: string; input: Record<string, unknown> }> = [];

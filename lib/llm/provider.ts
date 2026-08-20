@@ -65,7 +65,7 @@ export interface LLMCreateParams {
   }>;
   messages: LLMMessage[];
   tools?: LLMToolDefinition[];
-  tool_choice?: { type: "tool"; name: string } | { type: "auto" };
+  tool_choice?: { type: "tool"; name: string } | { type: "auto" } | { type: "required" };
 }
 
 let anthropicClient: Anthropic | null = null;
@@ -117,7 +117,9 @@ async function callGroq(params: LLMCreateParams): Promise<LLMResponse> {
   const groqToolChoice = params.tool_choice
     ? params.tool_choice.type === "tool"
       ? { type: "function", function: { name: params.tool_choice.name } }
-      : "auto"
+      : params.tool_choice.type === "required"
+        ? "required"
+        : "auto"
     : undefined;
 
   const url = "https://api.groq.com/openai/v1/chat/completions";
