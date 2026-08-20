@@ -358,12 +358,15 @@ async function callGroqAgent(
   numero: string,
   profileName?: string,
 ): Promise<string> {
+  const MAX_TOOL_ROUNDS = 3;
+
   try {
     const base =
       historial.length > 1
         ? `Conversación hasta ahora:\n${formatearHistorial(historial)}\n\nResponde al último mensaje del cliente.`
         : text || "(el cliente envió una imagen sin texto)";
 
+    // Inicializar conversación con el mensaje del usuario
     const messages: LLMMessage[] = [
       { role: "user", content: base },
     ];
@@ -371,67 +374,127 @@ async function callGroqAgent(
     const systemPrompt = [
       {
         type: "text",
-        text: buildSystemPrompt(null, true), // Groq Agent: prompt específico + sin contexto de cliente
+        text: buildSystemPrompt(null, true),
         cache_control: { type: "ephemeral" },
       },
     ];
 
-    const response = await callLLM({
-      model: "openai/gpt-oss-120b", // Groq
-      max_tokens: WHATSAPP_MAX_TOKENS,
-      system: systemPrompt as any,
-      messages,
-      tools: ALL_TOOLS,
-      tool_choice: { type: "auto" },
-    });
-
-    // Procesar respuesta
     let respuestaFinal = "";
+    let ronda = 0;
     const toolsEjecutados: string[] = [];
-    const toolResults: Record<string, boolean> = {}; // Capturar éxito de cada tool
+    const toolResults: Record<string, boolean> = {};
 
-    console.log(`[GROQ_AGENT] processing ${response.content.length} blocks`);
+    console.log(`[GROQ_AGENT] iniciando loop agentico | numero=${numero.slice(0, 2)}***${numero.slice(-3)}`);
 
-    for (const block of response.content) {
-      if (block.type === "text") {
-        respuestaFinal += block.text + " ";
-        console.log(`[GROQ_AGENT] text_block: ${block.text.slice(0, 50)}...`);
+    // Loop agentico: hasta 3 rondas o hasta obtener respuesta textual
+    while (ronda < MAX_TOOL_ROUNDS) {
+      ronda++;
+      console.log(`[GROQ_AGENT] round=${ronda}`);
+
+      const response = await callLLM({
+        model: "openai/gpt-oss-120b",
+        max_tokens: WHATSAPP_MAX_TOKENS,
+        system: systemPrompt as any,
+        messages,
+        tools: ALL_TOOLS,
+        tool_choice: { type: "auto" },
+      });
+
+      let hasToolCalls = false;
+      const toolCallsThisRound: Array<{ id: string; name: string; input: Record<string, unknown> }> = [];
+
+      // Procesar bloques de respuesta
+      for (const block of response.content) {
+        if (block.type === "text") {
+          respuestaFinal += block.text + " ";
+          console.log(`[GROQ_AGENT] round=${ronda} text_generated=${block.text.slice(0, 40)}...`);
+        }
+
+        if (block.type === "tool_use") {
+          hasToolCalls = true;
+          toolCallsThisRound.push({
+            id: block.id,
+            name: block.name,
+            input: block.input,
+          });
+          toolsEjecutados.push(block.name);
+          console.log(`[GROQ_AGENT] round=${ronda} tool_requested=${block.name}`);
+        }
       }
 
-      if (block.type === "tool_use") {
-        toolsEjecutados.push(block.name);
-        console.log(`[GROQ_AGENT] tool_requested: ${block.name}`);
-        // Ejecutar tool y capturar resultado
-        try {
-          const result = await executeToolCall(block.name as any, block.input);
-          const resultStr = JSON.stringify(result).slice(0, 100);
-          const exito = (result as any)?.exito === true;
-          toolResults[block.name] = exito;
-          console.log(`[GROQ_AGENT] tool_result: ${block.name} → exito=${exito} | ${resultStr}...`);
-        } catch (toolErr) {
-          toolResults[block.name] = false;
-          console.error(`[GROQ_AGENT] tool_error: ${block.name} → ${toolErr instanceof Error ? toolErr.message : String(toolErr)}`);
+      // Ejecutar tools de esta ronda y agregar resultados a messages
+      if (hasToolCalls) {
+        // Agregar la respuesta del asistente (con tools) a messages
+        const assistantContent = toolCallsThisRound
+          .map((tc) => `[tool_use: ${tc.name} | id: ${tc.id}]`)
+          .join(" ");
+        messages.push({
+          role: "assistant",
+          content: assistantContent,
+        });
+
+        // Ejecutar cada tool y agregar resultados
+        const toolResultsContent: string[] = [];
+
+        for (const toolCall of toolCallsThisRound) {
+          try {
+            const result = await executeToolCall(toolCall.name as any, toolCall.input);
+            const exito = (result as any)?.exito === true;
+            toolResults[toolCall.name] = exito;
+
+            const resultStr = JSON.stringify(result).slice(0, 80);
+            console.log(`[GROQ_AGENT] round=${ronda} tool=${toolCall.name} result=success exito=${exito}`);
+            toolResultsContent.push(
+              `[${toolCall.id}] ${toolCall.name}: ${exito ? "✓" : "✗"} ${resultStr}...`
+            );
+          } catch (toolErr) {
+            toolResults[toolCall.name] = false;
+            console.error(
+              `[GROQ_AGENT] round=${ronda} tool=${toolCall.name} result=error msg=${
+                toolErr instanceof Error ? toolErr.message : String(toolErr)
+              }`
+            );
+            toolResultsContent.push(
+              `[${toolCall.id}] ${toolCall.name}: error - ${toolErr instanceof Error ? toolErr.message : "unknown"}`
+            );
+          }
         }
+
+        // Agregar resultados de tools como mensaje de usuario para siguiente ronda
+        messages.push({
+          role: "user",
+          content: `Tool results:\n${toolResultsContent.join("\n")}`,
+        });
+
+        // Si tenemos texto final, salir
+        if (respuestaFinal.trim()) {
+          console.log(`[GROQ_AGENT] round=${ronda} breaking: texto final obtenido`);
+          break;
+        }
+
+        // Si no hay texto, continuar loop para siguiente ronda
+      } else {
+        // Sin tool calls, salir del loop
+        console.log(`[GROQ_AGENT] round=${ronda} breaking: sin tool calls`);
+        break;
       }
     }
 
-    console.log(`[GROQ_AGENT] total_tools_executed=${toolsEjecutados.length} text_length=${respuestaFinal.trim().length} results=${JSON.stringify(toolResults)}`);
+    console.log(
+      `[GROQ_AGENT] completed rounds=${ronda} tools_executed=${toolsEjecutados.length} text_length=${respuestaFinal.trim().length}`
+    );
 
-    // Si Groq solo ejecutó tools sin text, genera fallback contextual
+    // Si no hay respuesta textual, genera fallback
     if (!respuestaFinal.trim()) {
       const guardoLead = toolResults["guardar_actualizar_lead"] === true;
 
       if (guardoLead) {
-        // Groq guardó el lead exitosamente: reconocer y preguntar más
         respuestaFinal = "Perfecto, entendí. Cuéntame más: ¿qué proceso manual que realizan hoy les gustaría mejorar?";
       } else if (toolsEjecutados.includes("guardar_actualizar_lead") && !guardoLead) {
-        // Intentó guardar pero falló: aún así preguntar (datos se guardaron parcialmente)
         respuestaFinal = "Entiendo. Cuéntame: ¿a qué se dedican y cuál es tu principal desafío ahora?";
       } else if (toolsEjecutados.length > 0) {
-        // Ejecutó otros tools (no guardar_lead)
         respuestaFinal = "Gracias por compartir eso. ¿Qué desafío específico enfrentan ahora?";
       } else {
-        // No ejecutó nada: pregunta agresiva
         respuestaFinal = "¡Hola! Para poder ayudarte mejor: ¿a qué se dedica tu negocio y qué proceso o servicio les gustaría automatizar o mejorar?";
       }
     }
@@ -439,7 +502,6 @@ async function callGroqAgent(
     return respuestaFinal.trim();
   } catch (err) {
     logError("groq_agent error", err);
-    // Fallback a Claude si Groq falla (callLLM ya lo hace internamente)
     throw err;
   }
 }
