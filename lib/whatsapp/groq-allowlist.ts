@@ -7,12 +7,31 @@
 
 /**
  * Normaliza un número de teléfono para comparación.
- * - Elimina `+`, espacios, guiones
- * - Solo dígitos
+ * - Elimina caracteres no numéricos (excepto +)
+ * - Para México: normaliza 521XXXXXXXXXX → 52XXXXXXXXXX
+ * - Mantiene el formato sin caracteres especiales: solo dígitos
  */
 export function normalizePhoneNumber(numero: string): string {
   if (!numero) return "";
-  return numero.replace(/[^\d]/g, "");
+
+  // Paso 1: Eliminar espacios, guiones, paréntesis, puntos
+  let cleaned = numero.replace(/[^\d+]/g, "");
+
+  // Paso 2: Eliminar el + al inicio si existe
+  if (cleaned.startsWith("+")) {
+    cleaned = cleaned.substring(1);
+  }
+
+  // Paso 3: Regla específica para México
+  // WhatsApp puede entregar números mexicanos como:
+  // - 5213331002790 (52 + 1 + 10 dígitos nacionales) → normalizar a 523331002790
+  // - 523331002790 (52 + 10 dígitos nacionales) → mantener igual
+  // Indicador: 13 dígitos empezando con 521 = mexicano con lada de 1
+  if (cleaned.startsWith("521") && cleaned.length === 13) {
+    cleaned = "52" + cleaned.substring(3);
+  }
+
+  return cleaned;
 }
 
 /**
