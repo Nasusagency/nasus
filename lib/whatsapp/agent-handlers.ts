@@ -26,6 +26,45 @@ import type {
   ToolResult,
 } from "@/lib/llm/tool-results";
 
+// ─── Deduplicación Mínima (ventana 5 minutos) ────────────────────────────────
+
+interface DedupeEntry {
+  hash: string;
+  timestamp: number;
+}
+
+const requerImientoDedupe: Map<string, DedupeEntry> = new Map();
+const emailDedupe: Map<string, DedupeEntry> = new Map();
+
+function cleanOldEntries(map: Map<string, DedupeEntry>) {
+  const now = Date.now();
+  const fiveMinutes = 5 * 60 * 1000;
+  for (const [key, entry] of map.entries()) {
+    if (now - entry.timestamp > fiveMinutes) {
+      map.delete(key);
+    }
+  }
+}
+
+function isDeduped(map: Map<string, DedupeEntry>, hash: string): boolean {
+  cleanOldEntries(map);
+  return map.has(hash);
+}
+
+function markDeduped(map: Map<string, DedupeEntry>, hash: string) {
+  map.set(hash, { hash, timestamp: Date.now() });
+}
+
+function hashContent(content: string): string {
+  let hash = 0;
+  for (let i = 0; i < content.length; i++) {
+    const char = content.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash = hash & hash;
+  }
+  return Math.abs(hash).toString(36);
+}
+
 // ─── Handler 1: Consultar Contexto Contacto ─────────────────────────────────
 
 async function handleConsultarContextoContacto(
@@ -143,39 +182,36 @@ async function handleConsultarContextoContacto(
 async function handleConsultarServicios(
   input: ConsultarServiciosInput
 ): Promise<ConsultarServiciosResult> {
-  // TODO: Implementar
-  // Por ahora, retornar lista de servicios hardcoded de Nasus
-  // Futuros cambios pueden venir de base de datos
-
+  // Servicios aprobados de Nasus Agency (sin precios ni inventos)
   const servicios = [
     {
-      nombre: "Validador de Documentos",
-      descripcion: "Valida documentos oficiales mexicanos (INE, CURP, RFC, etc.)",
-      categoria: "validacion",
-    },
-    {
-      nombre: "Extractor de Facturas",
-      descripcion: "Extrae datos estructurados de PDFs de facturas en Excel",
-      categoria: "validacion",
-    },
-    {
-      nombre: "Validador de Fotografías",
-      descripcion: "Valida fotos para requisitos institucionales (pasaportes, visas, etc.)",
-      categoria: "validacion",
-    },
-    {
-      nombre: "Desarrollo Web/Apps",
-      descripcion: "Desarrollo a medida de páginas web y aplicaciones",
+      nombre: "Páginas Web",
+      descripcion: "Diseño y desarrollo de sitios web profesionales",
       categoria: "desarrollo",
     },
     {
-      nombre: "Automatización de Procesos",
-      descripcion: "Automatiza workflows y procesos con IA",
+      nombre: "Apps Web y Móviles",
+      descripcion: "Aplicaciones escalables con tecnologías modernas",
+      categoria: "desarrollo",
+    },
+    {
+      nombre: "IA Aplicada a Procesos",
+      descripcion: "Integración de inteligencia artificial en workflows existentes",
       categoria: "automatizacion",
     },
     {
-      nombre: "Ecosistemas de Marketing",
-      descripcion: "Integración de herramientas de marketing y CRM",
+      nombre: "Automatización de Procesos",
+      descripcion: "Reducción de tareas manuales mediante software",
+      categoria: "automatizacion",
+    },
+    {
+      nombre: "CRM y Gestión",
+      descripcion: "Sistemas de gestión de relaciones y datos de clientes",
+      categoria: "gestion",
+    },
+    {
+      nombre: "Ecosistemas de Marketing Digital",
+      descripcion: "Integración de herramientas y estrategias de marketing",
       categoria: "marketing",
     },
   ];
@@ -195,22 +231,15 @@ async function handleConsultarServicios(
 async function handleConsultarPortafolio(
   input: ConsultarPortafolioInput
 ): Promise<ConsultarPortafolioResult> {
-  // TODO: Implementar
-  // Por ahora, retornar lista de proyectos públicos de ejemplo
-  // Futuros cambios pueden venir de base de datos o CLAUDE.md
-
+  // Portafolio v1: Únicamente proyectos confirmados y en producción/avanzado
   const proyectos = [
     {
-      nombre: "Universidad Autónoma de Guadalajara (UAG)",
-      descripcion: "Sistema de validación de documentos para admisión",
+      nombre: "Sistema de Validación de Documentos (Universidad Autónoma de Guadalajara)",
+      descripcion:
+        "Plataforma de validación de documentos oficiales para procesos de admisión",
       cliente: "UAG",
-      resultado: "API v1.0 lista, validadores configurados",
-    },
-    {
-      nombre: "Automatización de Facturas",
-      descripcion: "Extractor de facturas PDF → Excel con Claude",
-      cliente: "Clientes B2B",
-      resultado: "Herramienta en producción",
+      resultado:
+        "API v1.0 en fase de integración. Validación de certificados, actas, fotografías.",
     },
   ];
 
@@ -354,6 +383,21 @@ async function handleRegistrarRequerimiento(
       };
     }
 
+    // Deduplicación: evitar duplicados en 5 minutos
+    const dedupeKey = `${numero_contacto}:${tipo}`;
+    const contentHash = hashContent(descripcion_original);
+    const dedupeHash = `${dedupeKey}:${contentHash}`;
+
+    if (isDeduped(requerImientoDedupe, dedupeHash)) {
+      return {
+        exito: false,
+        requerimiento_id: "",
+        mensaje: "Requerimiento duplicado detectado (enviado hace <5 min)",
+        guardado_en_bd: false,
+        error: "Requerimiento duplicado",
+      };
+    }
+
     const { data: created, error } = await supabase
       .from("whatsapp_requerimientos")
       .insert({
@@ -369,6 +413,9 @@ async function handleRegistrarRequerimiento(
       .single();
 
     if (error) throw error;
+
+    // Marcar como deduped solo si la inserción fue exitosa
+    markDeduped(requerImientoDedupe, dedupeHash);
 
     return {
       exito: true,
@@ -402,6 +449,23 @@ async function handleNotificarHumano(
         mensaje: "Campos requeridos: asunto, cuerpo",
         email_enviado: false,
         motivo_fallo: "Datos incompletos",
+      };
+    }
+
+    // Deduplicación: evitar enviar mismo email dos veces en 5 minutos
+    const contentHash = hashContent(`${asunto}:${cuerpo}`);
+    const dedupeKey = numero_contacto ? `${numero_contacto}:${contentHash}` : contentHash;
+
+    if (isDeduped(emailDedupe, dedupeKey)) {
+      console.warn(
+        "[agent-handlers] Email duplicado detectado en ventana 5min:",
+        asunto
+      );
+      return {
+        exito: false,
+        mensaje: "Email duplicado detectado (enviado hace <5 min)",
+        email_enviado: false,
+        motivo_fallo: "Email duplicado",
       };
     }
 
@@ -447,6 +511,9 @@ async function handleNotificarHumano(
       const errText = await res.text();
       throw new Error(`resend_failed:${res.status}:${errText.slice(0, 100)}`);
     }
+
+    // Marcar como enviado solo si fue exitoso
+    markDeduped(emailDedupe, dedupeKey);
 
     return {
       exito: true,
