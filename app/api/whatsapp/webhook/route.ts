@@ -15,6 +15,7 @@ import { construirTicket, detectarSolicitud, formatearHistorial } from "@/lib/wh
 import { callLLM } from "@/lib/llm/provider";
 import { ALL_TOOLS } from "@/lib/llm/tools";
 import { executeToolCall } from "@/lib/whatsapp/agent-handlers";
+import { selectProvider, maskPhoneNumber } from "@/lib/whatsapp/groq-allowlist";
 import type {
   ClienteContexto,
   DeteccionSolicitud,
@@ -201,18 +202,36 @@ async function procesarMensaje(mensaje: IncomingMessage): Promise<void> {
       return;
     }
 
-    // Feature flag: elegir entre Groq Agent (nuevo) o Claude (actual)
-    const agentProvider = (process.env.WHATSAPP_AGENT_PROVIDER || "claude").toLowerCase();
+    // Allowlist controlada: elegir entre Groq (solo números autorizados) o Claude
+    const provider = selectProvider(
+      from,
+      process.env.WHATSAPP_AGENT_PROVIDER,
+      process.env.WHATSAPP_GROQ_TEST_NUMBERS
+    );
+
+    const maskedNumber = maskPhoneNumber(from);
 
     let respuesta: string;
+    let fallbackUsed = false;
 
-    if (agentProvider === "groq") {
-      // Nuevo: Groq Agent con tools
+    if (provider === "groq") {
+      // Groq Agent con tools (número autorizado)
+      const startTime = Date.now();
+
       try {
+        console.log(`[whatsapp] ${maskedNumber} → Groq Agent (autorizado)`);
         respuesta = await callGroqAgent(text, historial, from, profileName);
+        const latency = Date.now() - startTime;
+
+        console.log(
+          `[whatsapp] ${maskedNumber} Groq completado ${latency}ms | ${provider} | ${cliente ? "cliente" : "prospecto"}`
+        );
       } catch (groqErr) {
         // Fallback a Claude si Groq falla
-        logError("groq fallback a claude", groqErr);
+        fallbackUsed = true;
+        const latency = Date.now() - startTime;
+
+        logError(`groq fallback a claude (${latency}ms)`, groqErr);
 
         const deteccion = await detectarSolicitud({
           mensaje: text,
@@ -222,9 +241,15 @@ async function procesarMensaje(mensaje: IncomingMessage): Promise<void> {
         });
 
         respuesta = await responderConClaude(text, historial, cliente, deteccion);
+
+        console.log(
+          `[whatsapp] ${maskedNumber} Fallback a Claude | prospecto: ${cliente ? "cliente" : "sí"}`
+        );
       }
     } else {
-      // Default: Claude con detección clásica
+      // Claude con detección clásica (default o número no autorizado)
+      const startTime = Date.now();
+
       const deteccion = await detectarSolicitud({
         mensaje: text,
         historial,
@@ -233,6 +258,12 @@ async function procesarMensaje(mensaje: IncomingMessage): Promise<void> {
       });
 
       respuesta = await responderConClaude(text, historial, cliente, deteccion);
+
+      const latency = Date.now() - startTime;
+
+      console.log(
+        `[whatsapp] ${maskedNumber} Claude ${latency}ms | ${cliente ? "cliente" : "prospecto"} ${deteccion ? "| ticket" : ""}`
+      );
 
       // El ticket se manda antes de contestar: si la API de WhatsApp falla, el
       // equipo se entera igual de la solicitud.
