@@ -43,8 +43,14 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://nasus.lat"),
   alternates: { canonical: "/" },
   icons: {
-    icon: "/favicon.svg",
+    icon: [
+      {
+        url: "/favicon.svg",
+        type: "image/svg+xml",
+      },
+    ],
     shortcut: "/favicon.svg",
+    apple: "/favicon.svg",
   },
   openGraph: {
     title: "Nasus Agency — Desarrollo web, apps y soluciones tecnológicas a medida",
