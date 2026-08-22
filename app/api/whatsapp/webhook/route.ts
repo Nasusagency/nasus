@@ -535,23 +535,30 @@ async function callGroqAgent(
       }
     }
 
-    // Fallback determinista: si no se guardó el lead, hacerlo ahora
-    if (!esCliente && !esLead && !toolsEjecutados.includes("guardar_actualizar_lead")) {
-      console.log(`[GROQ_AGENT] fallback_persist_lead=exploring`);
+    // Fallback determinista: actualizar lead si Groq no lo hizo pero hay contexto relevante
+    if (!esCliente && !toolsEjecutados.includes("guardar_actualizar_lead")) {
+      console.log(`[GROQ_AGENT] fallback_persist_lead`);
       try {
-        await executeToolCall("guardar_actualizar_lead", {
-          numero,
-          stage: "exploring",
-          problema_descrito: text?.slice(0, 150) || "Prospecto nuevo",
-        } as unknown as Record<string, unknown>);
-        toolResults["guardar_actualizar_lead"] = true;
+        // Prospecto nuevo: crear con exploring
+        if (!esLead) {
+          console.log(`[GROQ_AGENT] fallback_create_lead=exploring`);
+          await executeToolCall("guardar_actualizar_lead", {
+            numero,
+            stage: "exploring",
+            problema_descrito: text?.slice(0, 150) || "Prospecto nuevo",
+          } as unknown as Record<string, unknown>);
+          toolResults["guardar_actualizar_lead"] = true;
+        }
+        // Prospecto existente: permitir que Groq haya actualizado, si no → no forzar
+        // (confiar en que Groq tuvo oportunidad)
       } catch (err) {
-        console.error(`[GROQ_AGENT] fallback_persist_lead error:`, err);
+        console.error(`[GROQ_AGENT] fallback_persist error:`, err);
       }
     }
 
+    const guardoLead = toolResults["guardar_actualizar_lead"] === true;
     console.log(
-      `[GROQ_AGENT] completed rounds=${ronda} tools=${toolsEjecutados.length} text=${respuestaFinal.trim().length}c`
+      `[GROQ_AGENT] completed rounds=${ronda} tools=${toolsEjecutados.length} lead_updated=${guardoLead} text_length=${respuestaFinal.trim().length}`
     );
 
     // Si no hay respuesta o es razonamiento interno, generar fallback
@@ -559,12 +566,14 @@ async function callGroqAgent(
 
     if (!finalResponse || isInternalReasoning(finalResponse)) {
       console.log(`[GROQ_AGENT] respuesta_invalid sanitizing`);
-      const guardoLead = toolResults["guardar_actualizar_lead"] === true;
 
       if (guardoLead) {
-        finalResponse = "Perfecto, entendí. Cuéntame más: ¿qué proceso manual que realizan hoy les gustaría mejorar?";
+        finalResponse = "Perfecto, entendí. Cuéntame más sobre tu negocio para poder ayudarte mejor.";
+      } else if (esLead && contextResult?.lead?.stage) {
+        // Ya tenemos contexto del lead, ser más específico
+        finalResponse = "Gracias por compartir eso. ¿Hay algo más que debería saber sobre tu negocio?";
       } else if (toolsEjecutados.length > 0) {
-        finalResponse = "Gracias por compartir eso. ¿Qué desafío específico enfrentan ahora?";
+        finalResponse = "Gracias por compartir eso. Cuéntame más: ¿qué desafío específico enfrentan?";
       } else {
         finalResponse = "Cuéntame sobre tu negocio: ¿a qué se dedican y qué proceso o servicio les gustaría mejorar?";
       }
