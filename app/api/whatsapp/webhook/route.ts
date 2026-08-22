@@ -415,18 +415,27 @@ async function callGroqAgent(
 
     // Si el contexto existe, agregarlo como contexto inicial
     if (contextResult && (esCliente || esLead)) {
+      const leadStage = contextResult.lead?.stage;
+      const contextoObj: Record<string, unknown> = {
+        es_cliente: contextResult.es_cliente,
+        es_lead: contextResult.es_lead,
+        cliente: contextResult.cliente ? { nombre_negocio: contextResult.cliente.nombre_negocio } : null,
+        lead: contextResult.lead ? {
+          stage: contextResult.lead.stage,
+          nombre_empresa: contextResult.lead.nombre_empresa,
+          problema_descrito: contextResult.lead.problema_descrito,
+        } : null,
+      };
+
+      // Si ya está en high_intent, agregar nota para Groq
+      if (leadStage === "high_intent" && !esCliente) {
+        contextoObj.nota_importante =
+          "El prospecto ya fue escalado a high_intent. El equipo de Nasus ya fue notificado. NO vuelvas a ejecutar notificar_humano. Responde brevemente reconociendo su mensaje. El contexto ya fue preservado.";
+      }
+
       messages.push({
         role: "user",
-        content: `[CONTEXTO PREVIO DEL CONTACTO]:\n${JSON.stringify({
-          es_cliente: contextResult.es_cliente,
-          es_lead: contextResult.es_lead,
-          cliente: contextResult.cliente ? { nombre_negocio: contextResult.cliente.nombre_negocio } : null,
-          lead: contextResult.lead ? {
-            stage: contextResult.lead.stage,
-            nombre_empresa: contextResult.lead.nombre_empresa,
-            problema_descrito: contextResult.lead.problema_descrito,
-          } : null,
-        }).slice(0, 200)}\n\nAhora, ${text}`,
+        content: `[CONTEXTO PREVIO DEL CONTACTO]:\n${JSON.stringify(contextoObj).slice(0, 300)}\n\nAhora, ${text}`,
       });
     } else {
       messages.push({
