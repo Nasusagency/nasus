@@ -43,12 +43,7 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://nasus.lat"),
   alternates: { canonical: "/" },
   icons: {
-    icon: [
-      {
-        url: "/favicon.svg",
-        type: "image/svg+xml",
-      },
-    ],
+    icon: "/favicon.svg",
     shortcut: "/favicon.svg",
     apple: "/favicon.svg",
   },
