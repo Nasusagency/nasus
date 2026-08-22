@@ -39,7 +39,7 @@ const EYEBROW = `${GOLD} text-xs font-mono tracking-[0.3em] uppercase mb-6`;
    scrollea — y el dissolve quedaba inerte (animación adjunta, progreso fijo).
    `clip` recorta igual pero no crea scroll container. */
 const SECTION =
-  "relative chapter-seam py-32 md:py-36 px-6 scroll-mt-16 overflow-clip";
+  "relative chapter-seam py-24 md:py-36 px-6 scroll-mt-16 overflow-clip";
 /* ─────────────────────────────────────────────────────────────────────────
    DOS números de WhatsApp, separados a propósito. No intercambiar.
 
@@ -400,10 +400,10 @@ function ProductCard({
   return (
     <div
       className={`border rounded-2xl ${cardClass} ${
-        esFlagship ? "p-6 sm:p-10 md:p-12" : "p-6 sm:p-8"
+        esFlagship ? "p-5 sm:p-8 md:p-12" : "p-5 sm:p-6 md:p-8"
       }`}
     >
-      <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
+      <div className="flex flex-wrap items-start justify-between gap-3 md:gap-4 mb-4 md:mb-6">
         <div>
           {/* Etiqueta de infraestructura: solo desktop. */}
           {meta && (
@@ -413,35 +413,35 @@ function ProductCard({
           )}
           <h3
             className={`text-white font-bold ${
-              esFlagship ? "text-2xl sm:text-3xl md:text-4xl" : "text-lg sm:text-xl"
+              esFlagship ? "text-xl sm:text-2xl md:text-4xl" : "text-base sm:text-lg md:text-xl"
             }`}
           >
             {title}
           </h3>
         </div>
-        <span className={`text-xs font-bold px-3 py-1 rounded-full font-mono tracking-wide flex-shrink-0 ${badgeClass}`}>
+        <span className={`text-[10px] md:text-xs font-bold px-2 md:px-3 py-0.5 md:py-1 rounded-full font-mono tracking-wide flex-shrink-0 ${badgeClass}`}>
           {badge}
         </span>
       </div>
 
-      <div className={Demo ? "grid md:grid-cols-2 gap-8" : ""}>
+      <div className={Demo ? "grid md:grid-cols-2 gap-6 md:gap-8" : ""}>
         <div>
-          <p className={`${CYAN} font-mono mb-3 ${esFlagship ? "text-base sm:text-lg" : "text-sm"}`}>
+          <p className={`${CYAN} font-mono mb-2 md:mb-3 ${esFlagship ? "text-sm md:text-lg" : "text-xs md:text-sm"}`}>
             {tagline}
           </p>
-          <p className={`text-zinc-300 leading-relaxed mb-5 ${esFlagship ? "sm:text-lg" : "text-sm sm:text-base"}`}>
+          <p className={`text-zinc-300 leading-relaxed mb-4 md:mb-5 ${esFlagship ? "text-sm md:text-lg" : "text-xs md:text-base"}`}>
             {desc}
           </p>
           {features.length > 0 && (
-            <div className="flex flex-col gap-2 max-md:gap-2.5 mb-6">
+            <div className="flex flex-col gap-1.5 md:gap-2 mb-5 md:mb-6">
               {features.slice(0, visibles).map((f, i) => (
                 <div
                   key={f}
-                  className={`flex items-start gap-2 text-sm text-zinc-400 ${
+                  className={`flex items-start gap-2 text-xs md:text-sm text-zinc-400 ${
                     i >= MOBILE_VISIBLE_FEATURES ? "max-md:hidden" : ""
                   }`}
                 >
-                  <span className={`${GOLD} text-xs font-mono flex-shrink-0 pt-1`}>✓</span>
+                  <span className={`${GOLD} text-xs font-mono flex-shrink-0 pt-0.5 md:pt-1`}>✓</span>
                   {f}
                 </div>
               ))}
@@ -463,7 +463,7 @@ function ProductCard({
             href={ctaHref ?? WHATSAPP_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-sm font-mono font-bold text-[#050508] bg-[#c4a882] hover:bg-[#d4b892] px-5 py-2.5 rounded-lg transition-colors"
+            className="inline-flex items-center gap-2 text-xs md:text-sm font-mono font-bold text-[#050508] bg-[#c4a882] hover:bg-[#d4b892] px-4 md:px-5 py-2 md:py-2.5 rounded-lg transition-colors"
           >
             {ctaText}
           </a>
@@ -541,7 +541,7 @@ export default function LandingPage() {
           una animación de carga escalonada, no de viewport. Ver globals.css. */}
       <section
         data-hero
-        className="relative min-h-[92svh] flex flex-col justify-center px-6 md:px-[5vw] py-24 overflow-clip"
+        className="relative min-h-[65svh] md:min-h-[92svh] flex flex-col justify-center px-6 md:px-[5vw] py-16 md:py-24 overflow-clip"
       >
         {/* Glow cian sutil. Estático: sigue al scroll natural, sin listener.
             Es el único elemento ambiental que sobrevive completo en móvil,
@@ -598,7 +598,7 @@ export default function LandingPage() {
           <div
             data-reveal
             style={{ ["--reveal-delay" as string]: "0.3s" }}
-            className="mt-12 max-md:mt-14 flex flex-wrap items-center gap-4"
+            className="mt-10 max-md:mt-8 flex flex-wrap items-center gap-3 max-md:gap-2"
           >
             <a
               href="#contacto"
@@ -656,7 +656,7 @@ export default function LandingPage() {
               demo dentro (600–900px). El fundido tardaría cientos de píxeles
               de scroll en resolverse y se leería como contenido a medio cargar.
               El dissolve se aplica a bloques de altura de párrafo o de fila. */}
-          <div className="flex flex-col gap-8 max-md:gap-12">
+          <div className="flex flex-col gap-8 max-md:gap-10">
             <ProductCard tool={FLAGSHIP} variant="flagship" />
 
             {/* El validador va solo en su fila porque lleva demo y necesita las
@@ -666,7 +666,7 @@ export default function LandingPage() {
                 <ProductCard key={tool.id} tool={tool} variant="compact" />
               ) : null,
             )}
-            <div className="grid md:grid-cols-2 gap-8 max-md:gap-12">
+            <div className="grid md:grid-cols-2 gap-6 max-md:gap-8">
               {COMPACT.filter((tool) => !tool.Demo).map((tool) => (
                 <ProductCard key={tool.id} tool={tool} variant="compact" />
               ))}
@@ -683,9 +683,9 @@ export default function LandingPage() {
           <h2 data-dissolve className="text-3xl md:text-4xl font-bold text-white mb-16 max-w-xl text-balance">
             Tu equipo técnico está saturado. Los proyectos se acumulan.
           </h2>
-          <div data-reveal-group className="grid md:grid-cols-3 gap-6">
+          <div data-reveal-group className="grid md:grid-cols-3 gap-6 max-md:gap-4">
             {painPoints.map((p) => (
-              <div data-reveal key={p.n} className={`${BORDER} p-8 rounded-xl`}>
+              <div data-reveal key={p.n} className={`${BORDER} p-6 md:p-8 rounded-xl`}>
                 <div className={`${GOLD} text-3xl font-bold font-mono mb-5`}>{p.n}</div>
                 <h3 className="text-white font-semibold text-lg mb-3">{p.title}</h3>
                 <p className="text-zinc-400 leading-relaxed">{p.desc}</p>
@@ -708,15 +708,15 @@ export default function LandingPage() {
               <div
                 data-reveal
                 key={n}
-                className="grid md:grid-cols-[1.1fr_1fr] gap-x-12 gap-y-3 py-10 border-b border-zinc-900 transition-[padding-left,border-color] duration-500 hover:pl-4 hover:border-[#00f2ff]/40"
+                className="grid md:grid-cols-[1.1fr_1fr] gap-x-12 gap-y-3 py-8 md:py-10 border-b border-zinc-900 transition-[padding-left,border-color] duration-500 hover:pl-4 hover:border-[#00f2ff]/40"
               >
-                <div className="flex items-baseline gap-5">
+                <div className="flex items-baseline gap-3 md:gap-5">
                   <span className={`${GOLD} font-mono text-sm flex-shrink-0`}>{n}</span>
-                  <h3 className="text-white text-2xl md:text-3xl font-bold leading-tight">
+                  <h3 className="text-white text-xl md:text-3xl font-bold leading-tight">
                     {title}
                   </h3>
                 </div>
-                <p className="text-zinc-400 leading-relaxed md:pt-2 pl-10 md:pl-0">
+                <p className="text-zinc-400 leading-relaxed text-sm md:text-base md:pt-2 pl-10 md:pl-0">
                   {desc}
                 </p>
               </div>
@@ -737,11 +737,11 @@ export default function LandingPage() {
             Sistemas que diseñamos, construimos y lanzamos.
           </p>
 
-          <div className="flex flex-col gap-24 md:gap-20">
+          <div className="flex flex-col gap-16 md:gap-20">
             {cases.map((c, i) => (
               <article
                 key={c.id}
-                className="grid md:grid-cols-2 gap-8 md:gap-12 items-center"
+                className="grid md:grid-cols-2 gap-6 md:gap-12 items-center"
               >
                 {/* Visual */}
                 <div
@@ -837,14 +837,14 @@ export default function LandingPage() {
               <div
                 data-dissolve
                 key={s.n}
-                className="flex gap-6 sm:gap-8 py-8 border-b border-zinc-900 items-start"
+                className="flex gap-4 md:gap-6 py-6 md:py-8 border-b border-zinc-900 items-start"
               >
-                <span className={`${GOLD} font-mono text-xl font-bold flex-shrink-0 w-10 pt-0.5`}>
+                <span className={`${GOLD} font-mono text-lg md:text-xl font-bold flex-shrink-0 w-8 md:w-10 pt-0.5`}>
                   {s.n}
                 </span>
                 <div>
-                  <h3 className="text-white font-semibold text-lg mb-2">{s.title}</h3>
-                  <p className="text-zinc-400 leading-relaxed">{s.desc}</p>
+                  <h3 className="text-white font-semibold text-base md:text-lg mb-1 md:mb-2">{s.title}</h3>
+                  <p className="text-zinc-400 leading-relaxed text-sm md:text-base">{s.desc}</p>
                 </div>
               </div>
             ))}
@@ -860,12 +860,12 @@ export default function LandingPage() {
           <h2 data-dissolve className="text-3xl md:text-4xl font-bold text-white mb-16 text-balance">
             Diseñamos. Construimos. Integramos.
           </h2>
-          <div className="grid md:grid-cols-3 gap-10">
+          <div className="grid md:grid-cols-3 gap-8 max-md:gap-6">
             {differentiators.map((d) => (
               <div data-dissolve key={d.title}>
-                <div className={`${GOLD} text-2xl font-bold mb-5`}>→</div>
-                <h3 className="text-white font-semibold text-lg mb-3">{d.title}</h3>
-                <p className="text-zinc-400 leading-relaxed">{d.desc}</p>
+                <div className={`${GOLD} text-2xl font-bold mb-4 md:mb-5`}>→</div>
+                <h3 className="text-white font-semibold text-base md:text-lg mb-2 md:mb-3">{d.title}</h3>
+                <p className="text-zinc-400 leading-relaxed text-sm md:text-base">{d.desc}</p>
               </div>
             ))}
           </div>
@@ -891,7 +891,7 @@ export default function LandingPage() {
           <h2
             data-reveal
             style={{ ["--reveal-delay" as string]: "0.1s" }}
-            className="font-display font-bold text-white leading-[1.15] text-[clamp(38px,6.5vw,76px)] max-md:text-[clamp(30px,8.5vw,44px)] mb-6 max-md:mb-8"
+            className="font-display font-bold text-white leading-[1.15] text-[clamp(38px,6.5vw,76px)] max-md:text-[clamp(28px,8vw,40px)] mb-5 max-md:mb-6"
           >
             <span className="block">Tu problema.</span>
             <span className={`block ${CYAN}`}>Nuestro código.</span>
@@ -899,7 +899,7 @@ export default function LandingPage() {
           <p
             data-reveal
             style={{ ["--reveal-delay" as string]: "0.2s" }}
-            className="font-mono text-[15px] max-md:text-[14px] text-white/60 mb-12 max-md:mb-14"
+            className="font-mono text-[15px] max-md:text-[13px] text-white/60 mb-10 max-md:mb-12"
           >
             Cuéntanos el problema. Nosotros vemos la parte técnica.
           </p>
@@ -920,21 +920,49 @@ export default function LandingPage() {
 
       {/* ── Footer ─────────────────────────────────────────────────── */}
       {/* pb extra en móvil para que el asistente flotante no tape el contenido. */}
-      <footer className="py-10 pb-28 md:pb-10 px-6 border-t border-zinc-900">
-        <div className="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-          <span className={`${GOLD} font-mono font-bold`}>Nasus Agency</span>
-          <span className="text-zinc-600 text-sm text-center">
-            Diseñamos, construimos e integramos
-          </span>
-          <SocialIcons />
-          <a
-            href={WHATSAPP_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-zinc-500 text-sm hover:text-[#c4a882] transition-colors"
-          >
-            Hablar con Nasus
-          </a>
+      <footer className="py-10 pb-20 md:pb-10 px-6 border-t border-zinc-900">
+        <div className="max-w-5xl mx-auto">
+          {/* Sección principal: Nasus + contacto */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 mb-8 pb-8 border-b border-zinc-900/50">
+            <div>
+              <span className={`${GOLD} font-mono font-bold text-sm`}>NASUS AGENCY</span>
+              <p className="text-zinc-600 text-xs mt-2">
+                Diseñamos, construimos e integramos
+              </p>
+            </div>
+            <div className="flex flex-col gap-4">
+              <a
+                href={WHATSAPP_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-zinc-400 text-sm hover:text-[#c4a882] transition-colors font-mono"
+              >
+                Hablar con Nasus →
+              </a>
+              <a
+                href="mailto:contacto@nasus.lat"
+                className="text-zinc-600 text-xs hover:text-zinc-400 transition-colors font-mono"
+              >
+                contacto@nasus.lat
+              </a>
+            </div>
+          </div>
+
+          {/* Sección secundaria: Intelligence World + redes */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <a
+              href="https://mundo.nasus.lat"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group"
+            >
+              <p className="text-xs font-mono text-zinc-600 mb-1">NASUS INTELLIGENCE</p>
+              <p className={`${GOLD} text-sm font-mono group-hover:text-[#00f2ff] transition-colors`}>
+                Entrar al mundo →
+              </p>
+            </a>
+            <SocialIcons />
+          </div>
         </div>
       </footer>
     </div>

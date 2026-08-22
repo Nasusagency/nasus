@@ -344,10 +344,11 @@ export default function VoiceAssistant() {
   const color = activo || estado === "speaking" ? CYAN : GOLD;
 
   return (
-    <div className="fixed bottom-6 left-4 sm:left-6 z-50 flex flex-col items-start gap-2 max-w-[calc(100vw-2rem)]">
+    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2 max-w-[calc(100vw-3rem)]">
+      {/* Tooltip/respuesta: visible arriba del botón en mobile, o a la izquierda en desktop */}
       {(respuesta || mensajeError) && (
         <div
-          className="max-w-[18rem] sm:max-w-xs rounded-lg border border-zinc-800 bg-[#050508]/95 px-3 py-2 text-xs leading-relaxed shadow-lg shadow-black/50 backdrop-blur"
+          className="max-w-xs rounded-lg border border-zinc-800 bg-[#050508]/95 px-3 py-2 text-xs leading-relaxed shadow-lg shadow-black/50 backdrop-blur"
           style={{ color: mensajeError ? "#f87171" : "#e4e4e7" }}
           role="status"
           aria-live="polite"
@@ -356,17 +357,19 @@ export default function VoiceAssistant() {
         </div>
       )}
 
+      {/* FAB: circular compacto en mobile, expandible a pill en desktop */}
       <button
         id={ASSISTANT_BUTTON_ID}
         type="button"
         onClick={alHacerClick}
         disabled={estado === "processing"}
         aria-label={ETIQUETAS[estado]}
-        className="group flex items-center gap-2 rounded-full border bg-[#050508]/90 py-2 pl-2 pr-3 sm:pr-4 shadow-lg shadow-black/50 backdrop-blur transition-transform hover:scale-105 disabled:cursor-wait disabled:hover:scale-100"
+        className="md:group flex items-center gap-2 rounded-full border bg-[#050508]/90 md:py-2 md:pl-2 md:pr-4 py-3 px-3 md:px-4 shadow-lg shadow-black/50 backdrop-blur transition-transform hover:scale-105 disabled:cursor-wait disabled:hover:scale-100"
         style={{ borderColor: color }}
+        title={estado === "idle" ? ETIQUETAS[estado] : undefined}
       >
         <span
-          className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+          className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full md:h-10 md:w-10"
           style={{ backgroundColor: `${color}1a` }}
         >
           {activo && (
@@ -440,8 +443,9 @@ export default function VoiceAssistant() {
           )}
         </span>
 
+        {/* Texto solo visible en desktop o cuando se expande */}
         <span
-          className="font-mono text-[11px] sm:text-xs tracking-wide whitespace-nowrap"
+          className="hidden md:inline font-mono text-[11px] sm:text-xs tracking-wide whitespace-nowrap"
           style={{ color }}
         >
           {ETIQUETAS[estado]}
