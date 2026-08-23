@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { captureFirstTouch } from "@/lib/acquisition/attribution";
+import { completeTrackedWhatsAppClick } from "@/lib/acquisition/whatsapp-click";
 
 const STORAGE_KEY = "nasus_first_touch_v1";
 const SESSION_KEY = "nasus_session_v1";
@@ -37,13 +38,10 @@ async function track(eventType: string, metadata: Record<string, string> = {}) {
 
 export async function openTrackedWhatsApp(url: string, destinationType: "humano" | "demo", ctaLocation: string) {
   const pending = window.open("about:blank", "_blank");
-  const result = await track("whatsapp_click", { destination_type: destinationType, cta_location: ctaLocation }).catch(() => ({ attributionId: null }));
-  const target = new URL(url);
-  if (destinationType === "demo" && result.attributionId) {
-    const existing = target.searchParams.get("text") || "Hola, quiero conocer el asistente de Nasus.";
-    target.searchParams.set("text", `${existing}\n\n[N:${result.attributionId}]`);
-  }
-  if (pending) pending.location.href = target.toString(); else window.location.href = target.toString();
+  await completeTrackedWhatsAppClick(url, destinationType, {
+    trackInternal: () => track("whatsapp_click", { destination_type: destinationType, cta_location: ctaLocation }),
+    navigate: target => { if (pending) pending.location.href = target; else window.location.href = target; },
+  });
 }
 
 export default function AcquisitionTracker() {
