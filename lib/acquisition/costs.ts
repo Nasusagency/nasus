@@ -1,4 +1,11 @@
 export type NullableNumber = number | null;
+export const CAMPAIGN_IMPRESSIONS_LABEL = "Impresiones de la campaña";
+
+export function campaignMetricRange(rows: Array<{ metric_date: string }>): { start: string; end: string } | null {
+  if (!rows.length) return null;
+  const dates = rows.map(row => row.metric_date).sort();
+  return { start: dates[0], end: dates[dates.length - 1] };
+}
 
 export function sumKnown(values: NullableNumber[]): NullableNumber {
   const known = values.filter((value): value is number => value !== null);
@@ -23,6 +30,23 @@ export function calculateCampaignEfficiency(input: {
     costPerWhatsappClick: divideCost(input.spend, input.whatsappClicks),
     costPerConversation: divideCost(input.spend, input.conversations),
     costPerLead: divideCost(input.spend, input.leads),
+    costPerQualified: divideCost(input.spend, input.qualified),
+    costPerHighIntent: divideCost(input.spend, input.highIntent),
+  };
+}
+
+export function calculateLeadAcquisitionCosts(input: {
+  spend: NullableNumber; adClicks: NullableNumber; leads: NullableNumber;
+  qualified: NullableNumber; highIntent: NullableNumber; hasPaidCampaign: boolean;
+}) {
+  if (!input.hasPaidCampaign || input.spend === null) {
+    return { averageCampaignCpc: null, estimatedEntryCost: null, allocatedCostPerLead: null, costPerQualified: null, costPerHighIntent: null };
+  }
+  const averageCampaignCpc = divideCost(input.spend, input.adClicks);
+  return {
+    averageCampaignCpc,
+    estimatedEntryCost: averageCampaignCpc,
+    allocatedCostPerLead: divideCost(input.spend, input.leads),
     costPerQualified: divideCost(input.spend, input.qualified),
     costPerHighIntent: divideCost(input.spend, input.highIntent),
   };
