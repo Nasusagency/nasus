@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Playfair_Display, Space_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import VoiceAssistant from "./_components/VoiceAssistant";
+import AcquisitionTracker from "./_components/AcquisitionTracker";
+import { Suspense } from "react";
 import "./globals.css";
 
 export const dynamic = "force-dynamic";
@@ -75,6 +77,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-[#050508] text-white">
         {children}
+        <Suspense fallback={null}><AcquisitionTracker /></Suspense>
         {/* Única acción flotante permanente: el asistente IA. */}
         <VoiceAssistant />
         <Analytics />

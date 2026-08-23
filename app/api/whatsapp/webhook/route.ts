@@ -24,6 +24,8 @@ import type {
   WhatsAppWebhookPayload,
 } from "@/lib/whatsapp/types";
 import type { LLMMessage } from "@/lib/llm/provider";
+import { extractAttributionToken } from "@/lib/acquisition/attribution";
+import { resolveAndAssociateAttribution } from "@/lib/acquisition/server";
 
 export const maxDuration = 30;
 
@@ -160,7 +162,8 @@ function extractMessages(payload: WhatsAppWebhookPayload): IncomingMessage[] {
 // ─── Procesamiento ────────────────────────────────────────────────────────────
 
 async function procesarMensaje(mensaje: IncomingMessage): Promise<void> {
-  const { messageId, from, text, profileName, mediaId, mediaMime } = mensaje;
+  const { messageId, from, profileName, mediaId, mediaMime } = mensaje;
+  const { cleanText: text, attributionId } = extractAttributionToken(mensaje.text);
 
   if (!markMessageSeen(messageId)) return;
 
@@ -280,6 +283,11 @@ async function procesarMensaje(mensaje: IncomingMessage): Promise<void> {
     }
 
     await responder(conversationId, from, respuesta);
+    // El tool de Groq ya creó/actualizó el lead. La asociación es best-effort:
+    // una atribución ausente o una migración pendiente nunca rompe el webhook.
+    if (attributionId && !cliente) {
+      await resolveAndAssociateAttribution(attributionId, from);
+    }
   } catch (err) {
     // Sin contenido del mensaje ni número completo en el log.
     logError("error procesando mensaje", err);

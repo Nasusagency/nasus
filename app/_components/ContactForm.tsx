@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { openTrackedWhatsApp } from "./AcquisitionTracker";
 
 export default function ContactForm() {
   const [form, setForm] = useState({ name: "", company: "", problem: "" });
@@ -10,7 +11,7 @@ export default function ContactForm() {
     const message = encodeURIComponent(
       `Hola, soy ${form.name} de ${form.company}.\n\nProblema:\n${form.problem}`
     );
-    window.open(`https://wa.me/523329142391?text=${message}`, "_blank");
+    void openTrackedWhatsApp(`https://wa.me/523329142391?text=${message}`, "humano", "contact_form");
   };
 
   const inputClass =
