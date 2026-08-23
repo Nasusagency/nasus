@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Playfair_Display, Space_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
+import Script from "next/script";
 import VoiceAssistant from "./_components/VoiceAssistant";
 import AcquisitionTracker from "./_components/AcquisitionTracker";
 import { Suspense } from "react";
@@ -82,6 +83,16 @@ export default function RootLayout({
         <VoiceAssistant />
         <Analytics />
       </body>
+      <Script
+        src="https://www.googletagmanager.com/gtag/js?id=AW-18354242244"
+        strategy="afterInteractive"
+      />
+      <Script id="google-ads-tag" strategy="afterInteractive">
+        {`window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'AW-18354242244');`}
+      </Script>
     </html>
   );
 }
