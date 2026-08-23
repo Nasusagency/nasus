@@ -1,5 +1,71 @@
-# Acquisition: métricas externas (fase futura)
+# Sincronización de adquisición publicitaria
 
-El MVP separa métricas propias (`page_view`, `whatsapp_click`, conversaciones y stages de leads) de métricas publicitarias externas. Impresiones, clics de anuncio, spend, CPC y CTR se muestran como **Sincronización no configurada** hasta contar con una API oficial y credenciales server-side.
+## Arquitectura
 
-La tabla `acquisition_campaign_metrics` es la capa común. La captura del admin escribe `source_type=manual`; una integración futura debe implementar un adaptador server-side por proveedor (Google Ads o ChatGPT Ads) que escriba métricas diarias en esa misma tabla con `source_type=synced`. No se deben estimar valores, hacer scraping ni exponer credenciales al navegador. Los campos desconocidos permanecen `NULL`; un cero se reserva para un cero real reportado por la plataforma.
+`acquisition_campaign_metrics` es la capa común para métricas externas. La captura del admin escribe filas `manual`; Google Ads escribe filas `synced`. Para cada combinación de plataforma, campaña y fecha, reporting elige `synced` cuando existe y usa `manual` sólo como fallback. Las filas manuales nunca se borran ni se sobrescriben.
+
+El flujo automático es:
+
+1. Vercel Cron llama `GET /api/internal/google-ads/sync` con `Authorization: Bearer CRON_SECRET`.
+2. El endpoint valida el secreto, obtiene OAuth mediante la service account y scope `https://www.googleapis.com/auth/adwords`.
+3. Consulta `GoogleAdsService.SearchStream` por los últimos tres días y obtiene la moneda de la cuenta.
+4. Convierte `cost_micros / 1_000_000` y hace upsert con `platform=google` y `source_type=synced`.
+5. El dashboard combina esas filas con eventos y leads owned.
+
+También puede ejecutarse manualmente con el botón discreto **Sincronizar Google Ads** dentro del admin. Esa llamada reutiliza la cookie JWT admin.
+
+## Variables
+
+Obligatorias en Vercel:
+
+```text
+GOOGLE_ADS_DEVELOPER_TOKEN
+GOOGLE_ADS_LOGIN_CUSTOMER_ID
+GOOGLE_ADS_CUSTOMER_ID
+GOOGLE_ADS_SERVICE_ACCOUNT_JSON
+CRON_SECRET
+```
+
+Los customer IDs pueden incluir guiones en configuración; el módulo los elimina antes de llamar a Google. `GOOGLE_ADS_SERVICE_ACCOUNT_JSON` contiene el JSON completo como string y nunca debe usar prefijo `NEXT_PUBLIC_`.
+
+Mapping opcional, no secreto:
+
+```text
+GOOGLE_ADS_CAMPAIGN_MAP={"123456789":"nasus_mundo_test"}
+```
+
+La clave es `campaign.id` y el valor es el `utm_campaign` usado por Nasus. Sin mapping se usa `campaign.name`, por lo que debe coincidir exactamente con `utm_campaign` para unir métricas externas y owned.
+
+## Consulta y frecuencia
+
+La consulta diaria usa campos de campaña, `segments.date`, impresiones, clics y costo en micros. Las fechas se generan internamente y se validan antes de construir GAQL; no se interpola texto libre.
+
+El cron corre a `09:15 UTC`, equivalente a las `03:15` de `America/Mexico_City` con la zona vigente del proyecto. Reprocesa tres días —incluido el actual— porque Google puede ajustar reportes recientes. El unique existente `(platform, campaign, metric_date, source_type)` mantiene la operación idempotente.
+
+Referencias oficiales: [autenticación y headers](https://developers.google.com/google-ads/api/rest/auth), [SearchStream REST](https://developers.google.com/google-ads/api/rest/common/search) y [service accounts](https://developers.google.com/google-ads/api/docs/oauth/service-accounts).
+
+## Ejecución y diagnóstico
+
+Desde el admin, usar **Sincronizar Google Ads**. La respuesta visible sólo contiene el número de filas; nunca tokens o detalles de la credencial.
+
+Smoke test local de sólo lectura:
+
+```bash
+npm run google-ads:smoke
+```
+
+Consulta como máximo tres días y muestra campaña, fecha, impresiones, clics y gasto. Si no existen variables locales, termina correctamente como omitido. No escribe en Supabase.
+
+Errores controlados:
+
+- `not_configured`: falta una variable o el mapping opcional es JSON inválido.
+- `invalid_credentials`: JSON inválido, llave inválida o token OAuth no obtenido.
+- `permission_denied`: la service account no tiene acceso a la cuenta/MCC.
+- `invalid_customer`: customer ID incorrecto.
+- `api_not_enabled`: Google Ads API no habilitada en el proyecto.
+- `rate_limited`: cuota temporal de Google.
+- `timeout`: Google no respondió en 25 segundos.
+
+Para revocar acceso, quitar el correo de la service account en **Google Ads → Admin → Access and security**, deshabilitar o eliminar la clave en Google Cloud IAM y reemplazar/eliminar `GOOGLE_ADS_SERVICE_ACCOUNT_JSON` en Vercel. Si el developer token se comprometió, revocarlo desde el API Center del MCC.
+
+ChatGPT Ads permanece fuera de alcance.

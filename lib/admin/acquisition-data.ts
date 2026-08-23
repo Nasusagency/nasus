@@ -1,6 +1,7 @@
 import "server-only";
 import { createServiceClient } from "@/lib/supabase/service";
 import { calculateCampaignEfficiency, campaignMetricRange, sumKnown, type NullableNumber } from "@/lib/acquisition/costs";
+import { selectPreferredMetricRows } from "@/lib/acquisition/campaign-metrics";
 
 export type DashboardFilters = { days: number; source?: string; campaign?: string; stage?: string; human?: boolean };
 export type AdminLead = {
@@ -14,7 +15,7 @@ const since = (days: number) => new Date(Date.now() - Math.max(1, Math.min(days,
 
 export async function getAcquisitionDashboard(filters: DashboardFilters) {
   const supabase = createServiceClient();
-  const empty = { configured: false, visits: 0, whatsappClicks: 0, conversations: 0, leads: 0, qualified: 0, highIntent: 0, campaigns: [] as string[], recentLeads: [] as AdminLead[], allLeads: [] as AdminLead[], impressions: null as NullableNumber, adClicks: null as NullableNumber, spend: null as NullableNumber, currency: null as string | null, campaignPerformance: [] as any[] };
+  const empty = { configured: false, visits: 0, whatsappClicks: 0, conversations: 0, leads: 0, qualified: 0, highIntent: 0, campaigns: [] as string[], recentLeads: [] as AdminLead[], allLeads: [] as AdminLead[], impressions: null as NullableNumber, adClicks: null as NullableNumber, spend: null as NullableNumber, currency: null as string | null, campaignPerformance: [] as any[], manualMetricRows: [] as any[] };
   if (!supabase) return empty;
   const from = since(filters.days);
   const [eventsResult, leadsResult, messagesResult, metricsResult] = await Promise.all([
@@ -32,7 +33,8 @@ export async function getAcquisitionDashboard(filters: DashboardFilters) {
   }).filter((lead) => (!filters.source || lead.source === filters.source) && (!filters.campaign || lead.campaign === filters.campaign));
   const attributedNumbers = new Set(leads.map((lead) => lead.numero));
   const conversations = new Set((messagesResult.data ?? []).filter((m) => !filters.source && !filters.campaign || attributedNumbers.has(m.numero)).map((m) => m.conversation_id)).size;
-  const metricRows = (metricsResult.data ?? []).filter((row) => (!filters.source || row.platform === filters.source) && (!filters.campaign || row.campaign === filters.campaign));
+  const allMetricRows = (metricsResult.data ?? []).filter((row) => (!filters.source || row.platform === filters.source) && (!filters.campaign || row.campaign === filters.campaign));
+  const metricRows = selectPreferredMetricRows(allMetricRows);
   const keys = new Set<string>();
   metricRows.forEach(row => keys.add(`${row.platform}::${row.campaign}::${row.currency}`));
   events.filter(e => e.campaign).forEach(e => keys.add(`${e.source ?? "otros"}::${e.campaign}::${metricRows.find(r => r.platform === e.source && r.campaign === e.campaign)?.currency ?? "MXN"}`));
@@ -63,6 +65,7 @@ export async function getAcquisitionDashboard(filters: DashboardFilters) {
     campaigns: [...new Set([...(allEvents.map((e) => e.campaign).filter(Boolean) as string[]), ...((metricsResult.data ?? []).map(row => row.campaign))])].sort(),
     recentLeads: leads.slice(0, 8),
     allLeads: leads,
+    manualMetricRows: allMetricRows.filter(row => row.source_type === "manual"),
     impressions: sumKnown(metricRows.map(r => r.impressions === null ? null : Number(r.impressions))),
     adClicks: sumKnown(metricRows.map(r => r.ad_clicks === null ? null : Number(r.ad_clicks))),
     spend: currencies.size <= 1 ? sumKnown(metricRows.map(r => r.spend === null ? null : Number(r.spend))) : null,
@@ -91,7 +94,7 @@ export async function getAdminLead(id: string) {
     attribution?.session_id ? supabase.from("acquisition_events").select("event_type,session_id,created_at").eq("session_id", attribution.session_id).order("created_at", { ascending: true }).limit(10000) : Promise.resolve({ data: [] }),
     attribution?.source && attribution?.campaign ? supabase.from("acquisition_campaign_metrics").select("platform,campaign,metric_date,impressions,ad_clicks,spend,currency,source_type").eq("platform", attribution.source).eq("campaign", attribution.campaign).order("metric_date", { ascending: true }).limit(5000) : Promise.resolve({ data: [] }),
   ]);
-  const rows: any[] = metricRows.data ?? [];
+  const rows: any[] = selectPreferredMetricRows(metricRows.data ?? []);
   let campaignPerformance = null;
   if (rows.length > 0 && attribution?.source && attribution?.campaign) {
     const metricRange = campaignMetricRange(rows)!;
