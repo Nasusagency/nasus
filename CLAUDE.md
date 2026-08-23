@@ -5,19 +5,24 @@
 
 ### 1. Descripción del Proyecto
 
-**Nasus Agency** es una agencia mexicana de soluciones tecnológicas artesanales. Este repositorio es el sistema operativo completo de la agencia: productos de IA para clientes B2B + infraestructura administrativa interna.
+**Nasus Agency** es una agencia mexicana de soluciones tecnológicas artesanales. Este repositorio es el sistema operativo completo de la agencia: sitio principal, productos de IA para clientes B2B + infraestructura administrativa interna.
 
-**Productos activos:**
-- **Validador de documentos** — Valida documentos oficiales mexicanos (INE, CURP, RFC, actas, pasaportes, certificados) mediante visión artificial.
-- **Extractor de facturas** — Extrae datos estructurados de PDFs de facturas y genera Excel.
-- **Validador de fotografías** — Valida fotos para requisitos institucionales (UAG, pasaportes, visas).
+**Sitio principal:**
+- `https://nasus.lat` — Landing comercial con portafolio de casos (CEEMI, Theia, WhatsApp Assistant) y servicios.
+- Mensaje: _"Soluciones tecnológicas artesanales para empresas en escala. Implementamos IA directamente en tus sistemas."_
+- Asistente de voz integrado (ElevenLabs TTS, Web Speech API).
+
+**Productos activos (destacados en nasus.lat):**
+- **Nasus WhatsApp Assistant** — Sistema conectado a WhatsApp Cloud API que distingue prospectos de clientes, responde con contexto de negocio, detecta solicitudes formales y genera tickets. Dos números separados:
+  - Demo/Prospecto (`+52 33 2962 1602`) — Connectado a Groq Agent + Claude (fallback).
+  - Humano (`+52 33 2914 2391`) — Línea de atención directa, no es automatizada.
+- **Validador de documentos** — Unifica validación de documentos de identidad (INE, CURP, RFC, actas, pasaportes), académicos (títulos, cédulas) y facturas de Google/Meta Ads → Excel.
+- **Asistente de voz** — Interfaz de voz clonada en el sitio principal, contacto vía WhatsApp.
 
 **Sistema admin interno (privado):**
-- CRM de clientes con fases y seguimiento
-- Generador de propuestas con Claude
-- Control de cambios por cliente
-- Paneles de estado para clientes (`/cliente/[slug]`)
-- Páginas de propuesta profesional (`/propuesta/[slug]`)
+- Panel de leads con calificación progresiva (exploring → opportunity → qualified → high_intent).
+- Control de requerimientos/tickets de clientes.
+- En construcción: Dashboard unificado (ver Roadmap).
 
 **URL de producción:** `https://nasus.lat`
 **Repo:** `github.com/Nasusagency/nasus`
@@ -71,13 +76,16 @@
 
 | Capa | Tecnología |
 |------|-----------|
-| Frontend | Next.js 14 (App Router) + Tailwind CSS v4 + TypeScript |
+| Frontend | Next.js 16.2.4 (App Router) + Tailwind CSS v4 + TypeScript |
 | Auth usuarios | Supabase Auth (SSR, cookies) |
 | Auth admin | JWT propio con Web Crypto API (httpOnly cookie) |
 | Base de datos | Supabase (PostgreSQL) |
-| IA | Anthropic Claude (`claude-sonnet-4-6`) — visión + generación |
+| IA — LLM principal | Claude Haiku 4.5 (`claude-haiku-4-5-20251001`) — visión, generación, WhatsApp |
+| IA — Agent (Groq) | Groq Agent (modelo `openai/gpt-oss-120b`) — calificación leads, tool use, fallback a Claude |
 | Voz | Web Speech API (STT, navegador) + ElevenLabs TTS (voz clonada) |
+| WhatsApp | Meta Cloud API (webhook, mensajes) |
 | Verificación ext. | Didit API (validación CURP en base de datos oficial) |
+| Eventos/Ticketing | Zoho Backstage (OAuth, crear órdenes con UTM tracking) — experimento rápido |
 | Despliegue | Vercel (Edge + Node.js runtime según ruta) |
 | Exports | SheetJS (XLSX) |
 
@@ -89,7 +97,70 @@
 
 ---
 
-### 4. Clientes Activos
+### 4. Nasus WhatsApp Assistant — Arquitectura Groq Agent v1
+
+**Propósito:** Calificar prospectos automáticamente, preservar contexto, detectar oportunidades reales y escalar a humano cuando sea necesario.
+
+**Flujo general:**
+```
+Meta WhatsApp webhook
+  ↓ (número entra)
+  → preflight: consultar contexto (¿cliente?, ¿lead existente?)
+  → selectProvider: ¿Groq (allowlist) o Claude?
+  → [Groq Agent] o [Claude clásico]
+  → detectarSolicitud / guardar_actualizar_lead
+  → responder en WhatsApp
+  → escalación a humano si high_intent
+```
+
+**Modelo + Provider:**
+- **Principal:** Groq Agent, modelo `openai/gpt-oss-120b` (números autorizados solo, vía `WHATSAPP_GROQ_TEST_NUMBERS`)
+- **Fallback:** Claude Haiku 4.5 (`claude-haiku-4-5-20251001`) — para toda la población por defecto
+
+**Stages del Lead (calificación progresiva):**
+
+| Stage | Descripción | Acción del Agente |
+|---|---|---|
+| `exploring` | Interés general, pocos datos | Preguntar sector, negocio |
+| `opportunity` | Problema concreto, Nasus puede ayudar | Preguntar contexto: volumen, proceso actual |
+| `qualified` | Contexto suficiente (sector, problema, volumen) | Estar listo para handoff |
+| `high_intent` | Señal explícita ("quiero cotizar", "asesor", "empezar") | Marcar `requiere_humano=true`, notificar equipo, responder brevemente |
+
+**6 Tools disponibles (Groq Agent):**
+
+1. **`consultar_contexto_contacto`** — Obtener cliente/lead existente, historial, notas
+2. **`consultar_servicios`** — Servicios que Nasus ofrece
+3. **`consultar_portafolio`** — Casos públicos (CEEMI, Theia, WhatsApp Assistant)
+4. **`guardar_actualizar_lead`** — Crear/actualizar lead con nueva info, cambiar stage (MANDATORIO en cada mensaje)
+5. **`registrar_requerimiento`** — Formalizar solicitud/ticket de cliente
+6. **`notificar_humano`** — Enviar correo a equipo cuando `high_intent`
+
+**Tablas de Supabase (privadas, RLS activo, solo service role):**
+
+- `whatsapp_clientes` — Clientes registrados, contexto de negocio
+- `whatsapp_leads` — Prospectos en pipeline: stage, problema_descrito, nombre_empresa, resumen
+- `whatsapp_mensajes` — Conversaciones persistidas (numero, contenido, direction, mediaId)
+- `whatsapp_requerimientos` — Tickets formales (tipo, descripción, prioridad, estado)
+- `idempotency_keys` — Prevenir duplicados en operaciones sensibles (notificar_humano, guardar_lead)
+
+**Rate Limit:**
+- Clientes registrados: 100 msg/hora
+- Números desconocidos: 10 msg/hora
+
+**Números de WhatsApp (separados intencionalmente):**
+
+| Número | Propósito | Qué es |
+|---|---|---|
+| `+52 33 2962 1602` | Demo/Prospecto | Groq Agent + Claude, ticket si hay solicitud formal |
+| `+52 33 2914 2391` | Atención humana | WhatsApp Business, atiende persona real |
+
+**Prompt caching:**
+- Prompts de WhatsApp miden ~160 tokens: **no cachean nada** (están bajo el mínimo de ~4096 tokens en Haiku 4.5)
+- Se deja `cache_control: { type: "ephemeral" }` marcado para modo cliente, donde el contexto sí puede rebasar el mínimo
+
+---
+
+### 5. Clientes Activos
 
 #### UAG — Universidad Autónoma de Guadalajara
 - **Fase:** Propuesta
@@ -104,7 +175,7 @@
 
 ---
 
-### 5. Reglas de Desarrollo
+### 6. Reglas de Desarrollo
 
 1. **Cambios en producción:** Nunca desplegar cambios que afecten a un cliente sin registrarlos primero en `/admin/cambios` con estado aprobado.
 
@@ -142,7 +213,7 @@
 
 ---
 
-### 6. Estructura de Módulos Clave
+### 7. Estructura de Módulos Clave
 
 ```
 lib/
@@ -167,25 +238,114 @@ lib/
 
 ---
 
-### 7. Agentes Disponibles
+### 8. Agentes Disponibles
 
 - **Agente de Seguridad:** `.cloud/agents/security.md` — audita privacidad, OWASP, manejo de PII antes de deploy.
 - **Arquitectura extensible:** Para agregar un nuevo tipo de documento, crear `lib/documents/config/[tipo].config.ts` siguiendo el patrón existente. Para nuevo cliente B2B, crear `app/api/[cliente]/validate/route.ts` + `lib/[cliente]/`.
 
 ---
 
-### 8. Variables de Entorno Requeridas
+### 9. Variables de Entorno Requeridas
 
+#### Core
 ```
 ANTHROPIC_API_KEY          — Claude API
 NEXT_PUBLIC_SUPABASE_URL   — Supabase proyecto
 NEXT_PUBLIC_SUPABASE_ANON_KEY
-DIDIT_API_KEY              — Verificación CURP externa
+SUPABASE_SERVICE_ROLE_KEY  — Acceso privilegiado (server-side solo)
+```
+
+#### WhatsApp + Groq
+```
+WHATSAPP_PHONE_ID          — ID del teléfono registrado en Meta
+WHATSAPP_BUSINESS_ACCOUNT_ID
+WHATSAPP_ACCESS_TOKEN      — Token de acceso a Meta Cloud API
+WHATSAPP_APP_SECRET        — Secret para validar firmas de webhook
+WHATSAPP_VERIFY_TOKEN      — Token de verificación del webhook
+WHATSAPP_AGENT_PROVIDER    — "groq" o "claude" (default: "claude")
+WHATSAPP_GROQ_TEST_NUMBERS — CSV de números autorizados para Groq
+```
+
+#### Integración externa
+```
+DIDIT_API_KEY              — Verificación CURP en base oficial
 UAG_API_KEY                — API key del cliente UAG
-ADMIN_EMAIL                — Email de acceso al admin
-ADMIN_PASSWORD             — Contraseña del admin
-ADMIN_JWT_SECRET           — Secret para firmar tokens JWT del admin
 ELEVENLABS_API_KEY         — Text-to-speech del asistente de voz
 ELEVENLABS_VOICE_ID        — ID de la voz clonada de Nasus
 ELEVENLABS_MODEL_ID        — Opcional (default: eleven_multilingual_v2)
+ZOHO_CLIENT_ID             — OAuth Zoho Backstage
+ZOHO_CLIENT_SECRET
+ZOHO_BACKSTAGE_REFRESH_TOKEN
+ZOHO_BACKSTAGE_PORTAL_ID
+ZOHO_ACCOUNTS_DOMAIN       — Opcional (default: https://accounts.zoho.com)
+ZOHO_API_DOMAIN            — Opcional (default: https://zohoapis.com)
 ```
+
+#### Admin
+```
+ADMIN_EMAIL                — Email de acceso al panel admin
+ADMIN_PASSWORD             — Contraseña del panel admin
+ADMIN_JWT_SECRET           — Secret para firmar tokens JWT httpOnly
+```
+
+---
+
+### 10. Nasus Intelligence World
+
+**URL:** `https://mundo.nasus.lat`
+
+**Definición:** Subdominio independiente que funciona como experiencia interactiva / laboratorio digital de Nasus. Demuestra capacidades de IA, automatización, WhatsApp y ecosistemas de datos en una interfaz visual/interactiva única. No es una landing comercial tradicional.
+
+**Repo:** Probablemente separado (no está en este repositorio)
+
+**Integración:** Enlazado desde el footer de nasus.lat como "Nasus Intelligence" → "Entrar al mundo".
+
+---
+
+### 11. Experimento Rápido: Zoho Backstage
+
+**Estado:** Integración rápida para captura de origen de marketing (UTM tracking)
+
+**Propósito:** Capturar utm_source, utm_medium, utm_campaign en registros de eventos/ticketing de Zoho Backstage
+
+**Endpoint:** `POST /api/backstage/register`
+
+**Flujo:**
+1. Formulario de registro (landing/evento) captura UTMs
+2. Request a `/api/backstage/register` con firstName, lastName, email, eventId, ticketClassId, utm_*
+3. Backend autentica con OAuth (refresh token) y crea orden en Zoho Backstage
+4. UTMs se mapean a campos personalizados en el ticket
+
+**Observación:** Es un experimento/POC. No es parte de la arquitectura productiva central de Nasus. Ruta separada en `app/api/backstage/`.
+
+---
+
+### 12. Roadmap Inmediato
+
+#### A. Admin Nasus Interno — SIGUIENTE
+**Objetivo:** Capa visual privada sobre leads, requerimientos y contexto de prospecto.
+
+**MVP esperado:**
+- Autenticación (reutilizar JWT admin existente)
+- Dashboard inicial (stats, leads recientes, high_intent)
+- Lista de leads filtrable por stage
+- Detalle de lead: contexto, problema_descrito, mensajes recientes, requerimientos asociados
+- Estados básicos de seguimiento (marcado como contactado, en progreso, etc.)
+
+**No es:** CRM completo todavía. Solo un panel operativo sobre los datos de WhatsApp.
+
+#### B. Revisión del Validador — DESPUÉS DEL ADMIN
+**Objetivo:** Auditoría completa del flujo de documentos, facturas y fotografías.
+
+**Alcance esperado:**
+- UX/UI actual
+- Flujo de usuario
+- Arquitectura y modularidad
+- Procesamiento de IA
+- Capacidades (documentos soportados)
+- Estado mobile
+- Integración/presentación dentro de nasus.lat
+
+**Entregable:** Documento de recomendaciones o trabajo de mejora (sin comprometer en esta tarea).
+
+---
