@@ -4,6 +4,8 @@
 
 `acquisition_campaign_metrics` es la capa común para métricas externas. La captura del admin escribe filas `manual`; Google Ads escribe filas `synced`. Para cada combinación de plataforma, campaña y fecha, reporting elige `synced` cuando existe y usa `manual` sólo como fallback. Las filas manuales nunca se borran ni se sobrescriben.
 
+`acquisition_ads_sync_status` conserva por fuente el último intento, la última sincronización exitosa y el estado (`pending`, `synced` o `error`). El admin presenta estas fechas con `America/Mexico_City`; un error nuevo no borra la fecha del último éxito.
+
 El flujo automático es:
 
 1. Vercel Cron llama `GET /api/internal/google-ads/sync` con `Authorization: Bearer CRON_SECRET`.
@@ -67,5 +69,11 @@ Errores controlados:
 - `timeout`: Google no respondió en 25 segundos.
 
 Para revocar acceso, quitar el correo de la service account en **Google Ads → Admin → Access and security**, deshabilitar o eliminar la clave en Google Cloud IAM y reemplazar/eliminar `GOOGLE_ADS_SERVICE_ACCOUNT_JSON` en Vercel. Si el developer token se comprometió, revocarlo desde el API Center del MCC.
+
+## ChatGPT Ads
+
+Al 22 de agosto de 2026, la referencia pública oficial de OpenAI no documenta endpoints de Ads Manager para campañas ni reporting de `impressions`, `clicks`, `spend`, `CTR`, `CPC` o `CPM`. La API de Usage/Costs documentada corresponde al consumo de modelos de OpenAI, no a gasto publicitario. Por eso `OPENAI_ADS_API_KEY` no se consume todavía y no existe cron ni botón de sincronización ChatGPT Ads.
+
+La fuente `chatgpt` queda preparada en la misma capa: captura `manual`, prioridad futura de filas `synced`, columna `synced_at` y estado inicial `pending`. Para activar sincronización faltan documentación oficial del endpoint, autenticación/alcances, identificador de cuenta, esquema de respuesta, paginación, unidades monetarias y semántica de zona horaria/fechas.
 
 ChatGPT Ads permanece fuera de alcance.

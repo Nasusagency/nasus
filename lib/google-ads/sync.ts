@@ -1,6 +1,7 @@
 import { GoogleAuth } from "google-auth-library";
 import { createServiceClient } from "@/lib/supabase/service";
 import { GOOGLE_ADS_API_VERSION, GOOGLE_ADS_SCOPE, GoogleAdsSyncError, buildCampaignMetricsGaql, parseCampaignMapping, parseServiceAccountJson, syncDateRange, toSyncedMetricRows, transformGoogleAdsResults } from "@/lib/google-ads/core";
+import { writeAdsSyncStatus } from "@/lib/acquisition/sync-status-server";
 
 function cleanCustomerId(value: string | undefined): string {
   const id = value?.replace(/-/g, "").trim(); if (!id || !/^\d{10}$/.test(id)) throw new GoogleAdsSyncError("not_configured"); return id;
@@ -39,13 +40,24 @@ export async function fetchGoogleAdsMetrics(params: { days?: number; yesterday?:
 }
 
 export async function syncGoogleAds(params: { days?: number; yesterday?: boolean; dryRun?: boolean; fetcher?: typeof fetch } = {}) {
-  const fetched = await fetchGoogleAdsMetrics(params);
-  if (!params.dryRun && fetched.metrics.length) {
-    const supabase = createServiceClient(); if (!supabase) throw new GoogleAdsSyncError("database_error");
-    const { error } = await supabase.from("acquisition_campaign_metrics").upsert(toSyncedMetricRows(fetched.metrics, fetched.currency).map(row => ({ ...row, updated_at: new Date().toISOString() })), { onConflict: "platform,campaign,metric_date,source_type" });
-    if (error) throw new GoogleAdsSyncError("database_error");
+  const attemptAt = new Date().toISOString();
+  if (!params.dryRun && !await writeAdsSyncStatus("google", { status: "pending", lastAttemptAt: attemptAt, lastErrorCode: null })) throw new GoogleAdsSyncError("database_error");
+  try {
+    const fetched = await fetchGoogleAdsMetrics(params);
+    if (!params.dryRun && fetched.metrics.length) {
+      const supabase = createServiceClient(); if (!supabase) throw new GoogleAdsSyncError("database_error");
+      const syncedAt = new Date().toISOString();
+      const { error } = await supabase.from("acquisition_campaign_metrics").upsert(toSyncedMetricRows(fetched.metrics, fetched.currency).map(row => ({ ...row, synced_at: syncedAt, updated_at: syncedAt })), { onConflict: "platform,campaign,metric_date,source_type" });
+      if (error) throw new GoogleAdsSyncError("database_error");
+    }
+    const completedAt = new Date().toISOString();
+    if (!params.dryRun && !await writeAdsSyncStatus("google", { status: "synced", lastSuccessAt: completedAt, lastAttemptAt: attemptAt, lastErrorCode: null })) throw new GoogleAdsSyncError("database_error");
+    const campaigns = new Set(fetched.metrics.map(metric => metric.campaignName));
+    console.info(`[google-ads-sync] synced ${fetched.range.days} days, ${campaigns.size} campaigns, ${fetched.metrics.length} rows`);
+    return { synced_days: fetched.range.days, campaigns: campaigns.size, rows_upserted: params.dryRun ? 0 : fetched.metrics.length, dry_run: Boolean(params.dryRun), metrics: params.dryRun ? fetched.metrics : undefined };
+  } catch (error) {
+    const syncError = error instanceof GoogleAdsSyncError ? error : new GoogleAdsSyncError("api_error");
+    if (!params.dryRun) await writeAdsSyncStatus("google", { status: "error", lastAttemptAt: attemptAt, lastErrorCode: syncError.code });
+    throw syncError;
   }
-  const campaigns = new Set(fetched.metrics.map(metric => metric.campaignName));
-  console.info(`[google-ads-sync] synced ${fetched.range.days} days, ${campaigns.size} campaigns, ${fetched.metrics.length} rows`);
-  return { synced_days: fetched.range.days, campaigns: campaigns.size, rows_upserted: params.dryRun ? 0 : fetched.metrics.length, dry_run: Boolean(params.dryRun), metrics: params.dryRun ? fetched.metrics : undefined };
 }

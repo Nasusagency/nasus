@@ -2,6 +2,7 @@ import "server-only";
 import { createServiceClient } from "@/lib/supabase/service";
 import { calculateCampaignEfficiency, campaignMetricRange, sumKnown, type NullableNumber } from "@/lib/acquisition/costs";
 import { selectPreferredMetricRows } from "@/lib/acquisition/campaign-metrics";
+import { defaultAdsSyncStatuses, type AdsPlatform, type AdsSyncState } from "@/lib/acquisition/sync-status";
 
 export type DashboardFilters = { days: number; source?: string; campaign?: string; stage?: string; human?: boolean };
 export type AdminLead = {
@@ -15,14 +16,15 @@ const since = (days: number) => new Date(Date.now() - Math.max(1, Math.min(days,
 
 export async function getAcquisitionDashboard(filters: DashboardFilters) {
   const supabase = createServiceClient();
-  const empty = { configured: false, visits: 0, whatsappClicks: 0, conversations: 0, leads: 0, qualified: 0, highIntent: 0, campaigns: [] as string[], recentLeads: [] as AdminLead[], allLeads: [] as AdminLead[], impressions: null as NullableNumber, adClicks: null as NullableNumber, spend: null as NullableNumber, currency: null as string | null, campaignPerformance: [] as any[], manualMetricRows: [] as any[] };
+  const empty = { configured: false, visits: 0, whatsappClicks: 0, conversations: 0, leads: 0, qualified: 0, highIntent: 0, campaigns: [] as string[], recentLeads: [] as AdminLead[], allLeads: [] as AdminLead[], impressions: null as NullableNumber, adClicks: null as NullableNumber, spend: null as NullableNumber, currency: null as string | null, campaignPerformance: [] as any[], manualMetricRows: [] as any[], adsSyncStatuses: defaultAdsSyncStatuses() };
   if (!supabase) return empty;
   const from = since(filters.days);
-  const [eventsResult, leadsResult, messagesResult, metricsResult] = await Promise.all([
+  const [eventsResult, leadsResult, messagesResult, metricsResult, syncStatusesResult] = await Promise.all([
     supabase.from("acquisition_events").select("event_type,session_id,source,campaign").gte("created_at", from).limit(10000),
     supabase.from("whatsapp_leads").select("id,numero,nombre_contacto,nombre_empresa,sector,stage,problema_descrito,servicio_probable,resumen,requiere_humano,ultima_interaccion,acquisition_event_id,acquisition_events(source,medium,campaign)").gte("ultima_interaccion", from).order("ultima_interaccion", { ascending: false }).limit(1000),
     supabase.from("whatsapp_mensajes").select("conversation_id,numero").eq("direccion", "entrante").gte("created_at", from).limit(10000),
     supabase.from("acquisition_campaign_metrics").select("id,platform,campaign,metric_date,impressions,ad_clicks,spend,currency,daily_budget,total_budget,source_type").gte("metric_date", from.slice(0, 10)).order("metric_date", { ascending: false }).limit(5000),
+    supabase.from("acquisition_ads_sync_status").select("platform,status,last_success_at,last_attempt_at,last_error_code").in("platform", ["google", "chatgpt"]),
   ]);
   if (eventsResult.error || leadsResult.error || messagesResult.error || metricsResult.error) return empty;
   const allEvents = eventsResult.data ?? [];
@@ -54,6 +56,11 @@ export async function getAcquisitionDashboard(filters: DashboardFilters) {
     return { platform, campaign: campaignName, currency, rows, ...owned, ...external, ...calculateCampaignEfficiency({ ...external, ...owned }) };
   }).sort((a, b) => (b.spend ?? -1) - (a.spend ?? -1));
   const currencies = new Set(metricRows.filter(r => r.spend !== null).map(r => r.currency));
+  const statusRows = syncStatusesResult.data ?? [];
+  const adsSyncStatuses = defaultAdsSyncStatuses().map(fallback => {
+    const row = statusRows.find(item => item.platform === fallback.platform);
+    return row ? { platform: row.platform as AdsPlatform, status: row.status as AdsSyncState, lastSuccessAt: row.last_success_at, lastAttemptAt: row.last_attempt_at, lastErrorCode: row.last_error_code } : fallback;
+  });
   return {
     configured: true,
     visits: new Set(events.filter((e) => e.event_type === "page_view").map((e) => e.session_id)).size,
@@ -71,6 +78,7 @@ export async function getAcquisitionDashboard(filters: DashboardFilters) {
     spend: currencies.size <= 1 ? sumKnown(metricRows.map(r => r.spend === null ? null : Number(r.spend))) : null,
     currency: currencies.size === 1 ? [...currencies][0] : null,
     campaignPerformance,
+    adsSyncStatuses,
   };
 }
 
