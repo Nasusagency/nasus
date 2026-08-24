@@ -17,7 +17,10 @@ async function run(request: NextRequest, days: number, yesterday = false) {
     return NextResponse.json({ synced_days: result.synced_days, campaigns: result.campaigns, rows_upserted: result.rows_upserted });
   } catch (error) {
     const safe = error instanceof GoogleAdsSyncError ? error : new GoogleAdsSyncError("api_error");
-    return NextResponse.json({ error: MESSAGES[safe.code], code: safe.code }, { status: STATUS[safe.code] });
+    const message = safe.code === "not_configured" && safe.missingVariables.length > 0
+      ? `Falta configurar en Vercel: ${safe.missingVariables.join(", ")}`
+      : MESSAGES[safe.code];
+    return NextResponse.json({ error: message, code: safe.code, ...(safe.missingVariables.length > 0 ? { missing_variables: safe.missingVariables } : {}) }, { status: STATUS[safe.code] });
   }
 }
 

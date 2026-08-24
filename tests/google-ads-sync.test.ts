@@ -3,9 +3,13 @@ import { describe, test } from "node:test";
 import { signAdminToken } from "@/lib/admin/auth";
 import { selectPreferredMetricRows } from "@/lib/acquisition/campaign-metrics";
 import { authorizeGoogleAdsSync } from "@/lib/google-ads/endpoint-auth";
-import { GoogleAdsSyncError, buildCampaignMetricsGaql, microsToCurrency, parseServiceAccountJson, publicGoogleAdsError, resolveCampaignKey, syncDateRange, toSyncedMetricRows, transformGoogleAdsResults } from "@/lib/google-ads/core";
+import { GoogleAdsSyncError, assertGoogleAdsConfigured, buildCampaignMetricsGaql, microsToCurrency, parseServiceAccountJson, publicGoogleAdsError, resolveCampaignKey, syncDateRange, toSyncedMetricRows, transformGoogleAdsResults } from "@/lib/google-ads/core";
 
 describe("Google Ads sync", () => {
+  test("configuration preflight reports missing variable names", () => {
+    assert.throws(() => assertGoogleAdsConfigured({ GOOGLE_ADS_DEVELOPER_TOKEN: "set" }), (error: unknown) => error instanceof GoogleAdsSyncError && error.missingVariables.includes("GOOGLE_ADS_CUSTOMER_ID"));
+    assert.doesNotThrow(() => assertGoogleAdsConfigured({ GOOGLE_ADS_DEVELOPER_TOKEN: "set", GOOGLE_ADS_LOGIN_CUSTOMER_ID: "1234567890", GOOGLE_ADS_CUSTOMER_ID: "0987654321", GOOGLE_ADS_SERVICE_ACCOUNT_JSON: "{json}" }));
+  });
   test("parsea service account JSON válido y rechaza JSON inválido", () => {
     const input = JSON.stringify({ type: "service_account", client_email: "sync@example.iam.gserviceaccount.com", private_key: "-----BEGIN PRIVATE KEY-----\nmock\n-----END PRIVATE KEY-----", project_id: "demo" });
     assert.equal(parseServiceAccountJson(input).client_email, "sync@example.iam.gserviceaccount.com");

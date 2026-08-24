@@ -1,10 +1,13 @@
 import { GoogleAuth } from "google-auth-library";
 import { createServiceClient } from "@/lib/supabase/service";
-import { GOOGLE_ADS_API_VERSION, GOOGLE_ADS_SCOPE, GoogleAdsSyncError, buildCampaignMetricsGaql, parseCampaignMapping, parseServiceAccountJson, syncDateRange, toSyncedMetricRows, transformGoogleAdsResults } from "@/lib/google-ads/core";
+import { GOOGLE_ADS_API_VERSION, GOOGLE_ADS_SCOPE, GoogleAdsSyncError, assertGoogleAdsConfigured, buildCampaignMetricsGaql, parseCampaignMapping, parseServiceAccountJson, syncDateRange, toSyncedMetricRows, transformGoogleAdsResults } from "@/lib/google-ads/core";
 import { writeAdsSyncStatus } from "@/lib/acquisition/sync-status-server";
 
 function cleanCustomerId(value: string | undefined): string {
-  const id = value?.replace(/-/g, "").trim(); if (!id || !/^\d{10}$/.test(id)) throw new GoogleAdsSyncError("not_configured"); return id;
+  const id = value?.replace(/-/g, "").trim();
+  if (!id) throw new GoogleAdsSyncError("not_configured");
+  if (!/^\d{10}$/.test(id)) throw new GoogleAdsSyncError("invalid_customer");
+  return id;
 }
 
 function classifyApiError(status: number, body: string): GoogleAdsSyncError {
@@ -40,6 +43,7 @@ export async function fetchGoogleAdsMetrics(params: { days?: number; yesterday?:
 }
 
 export async function syncGoogleAds(params: { days?: number; yesterday?: boolean; dryRun?: boolean; fetcher?: typeof fetch } = {}) {
+  assertGoogleAdsConfigured();
   const attemptAt = new Date().toISOString();
   if (!params.dryRun && !await writeAdsSyncStatus("google", { status: "pending", lastAttemptAt: attemptAt, lastErrorCode: null })) throw new GoogleAdsSyncError("database_error");
   try {

@@ -1,7 +1,28 @@
 export const GOOGLE_ADS_SCOPE = "https://www.googleapis.com/auth/adwords";
 export const GOOGLE_ADS_API_VERSION = "v25";
 export type GoogleAdsErrorCode = "not_configured" | "invalid_credentials" | "permission_denied" | "invalid_customer" | "api_not_enabled" | "rate_limited" | "timeout" | "api_error" | "database_error";
-export class GoogleAdsSyncError extends Error { constructor(public readonly code: GoogleAdsErrorCode) { super(code); } }
+export class GoogleAdsSyncError extends Error {
+  constructor(
+    public readonly code: GoogleAdsErrorCode,
+    public readonly missingVariables: string[] = []
+  ) {
+    super(code);
+  }
+}
+
+export const REQUIRED_GOOGLE_ADS_ENV = [
+  "GOOGLE_ADS_DEVELOPER_TOKEN",
+  "GOOGLE_ADS_LOGIN_CUSTOMER_ID",
+  "GOOGLE_ADS_CUSTOMER_ID",
+  "GOOGLE_ADS_SERVICE_ACCOUNT_JSON",
+] as const;
+
+export function assertGoogleAdsConfigured(
+  env: Record<string, string | undefined> = process.env
+): void {
+  const missing = REQUIRED_GOOGLE_ADS_ENV.filter((name) => !env[name]?.trim());
+  if (missing.length > 0) throw new GoogleAdsSyncError("not_configured", [...missing]);
+}
 export type ServiceAccountCredentials = { client_email: string; private_key: string; project_id?: string };
 export type GoogleAdsDailyMetric = { campaignId: string; campaignName: string; campaignStatus: string; date: string; impressions: number; clicks: number; spend: number };
 export function parseServiceAccountJson(value: string | undefined): ServiceAccountCredentials {
