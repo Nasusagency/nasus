@@ -45,7 +45,11 @@ export async function fetchGoogleAdsMetrics(params: { days?: number; yesterday?:
 export async function syncGoogleAds(params: { days?: number; yesterday?: boolean; dryRun?: boolean; fetcher?: typeof fetch } = {}) {
   assertGoogleAdsConfigured();
   const attemptAt = new Date().toISOString();
-  if (!params.dryRun && !await writeAdsSyncStatus("google", { status: "pending", lastAttemptAt: attemptAt, lastErrorCode: null })) throw new GoogleAdsSyncError("database_error");
+  // Sync-status is observability only. A missing/outdated status table must not
+  // prevent fetching Google Ads or persisting the actual campaign metrics.
+  if (!params.dryRun) {
+    await writeAdsSyncStatus("google", { status: "pending", lastAttemptAt: attemptAt, lastErrorCode: null });
+  }
   try {
     const fetched = await fetchGoogleAdsMetrics(params);
     if (!params.dryRun && fetched.metrics.length) {
@@ -55,7 +59,9 @@ export async function syncGoogleAds(params: { days?: number; yesterday?: boolean
       if (error) throw new GoogleAdsSyncError("database_error");
     }
     const completedAt = new Date().toISOString();
-    if (!params.dryRun && !await writeAdsSyncStatus("google", { status: "synced", lastSuccessAt: completedAt, lastAttemptAt: attemptAt, lastErrorCode: null })) throw new GoogleAdsSyncError("database_error");
+    if (!params.dryRun) {
+      await writeAdsSyncStatus("google", { status: "synced", lastSuccessAt: completedAt, lastAttemptAt: attemptAt, lastErrorCode: null });
+    }
     const campaigns = new Set(fetched.metrics.map(metric => metric.campaignName));
     console.info(`[google-ads-sync] synced ${fetched.range.days} days, ${campaigns.size} campaigns, ${fetched.metrics.length} rows`);
     return { synced_days: fetched.range.days, campaigns: campaigns.size, rows_upserted: params.dryRun ? 0 : fetched.metrics.length, dry_run: Boolean(params.dryRun), metrics: params.dryRun ? fetched.metrics : undefined };

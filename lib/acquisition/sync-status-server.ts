@@ -15,5 +15,8 @@ export async function writeAdsSyncStatus(platform: AdsPlatform, values: {
   if (values.lastAttemptAt !== undefined) row.last_attempt_at = values.lastAttemptAt;
   if (values.lastErrorCode !== undefined) row.last_error_code = values.lastErrorCode;
   const { error } = await supabase.from("acquisition_ads_sync_status").upsert(row, { onConflict: "platform" });
+  if (error) {
+    console.warn(`[ads-sync-status] ${platform} write failed`, error.code ?? "unknown");
+  }
   return !error;
 }
