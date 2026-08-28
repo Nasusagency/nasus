@@ -330,61 +330,41 @@ async function handleGuardarActualizarLead(
       throw checkError;
     }
 
-    if (existing) {
-      console.log(`[GROQ_TOOL] guardar_actualizar_lead updating existing lead | id=${existing.id}`);
-      const updatePayload = {
-        ...data,
-        stage,
-        updated_at: new Date().toISOString(),
-        ultima_interaccion: new Date().toISOString(),
-      };
+    const operacion = existing ? "actualizado" : "creado";
+    const now = new Date().toISOString();
+    console.log(
+      `[GROQ_TOOL] guardar_actualizar_lead ${existing ? `updating existing lead | id=${existing.id}` : "creating new lead"}`,
+    );
 
-      const { data: updated, error } = await supabase
-        .from("whatsapp_leads")
-        .update(updatePayload)
-        .eq("numero", numero)
-        .select("id")
-        .single();
+    // El índice único por numero hace atómica la decisión insert/update.
+    // Sin esto, dos invocaciones concurrentes podían crear leads duplicados.
+    const { data: persisted, error } = await supabase
+      .from("whatsapp_leads")
+      .upsert(
+        {
+          numero,
+          stage,
+          ...data,
+          updated_at: now,
+          ultima_interaccion: now,
+        },
+        { onConflict: "numero" },
+      )
+      .select("id")
+      .single();
 
-      if (error) {
-        console.error(`[GROQ_TOOL] guardar_actualizar_lead error=update_failed | code=${error.code} message=${error.message?.slice(0, 100)}`);
-        throw error;
-      }
-
-      console.log(`[GROQ_TOOL] guardar_actualizar_lead success=actualizado | id=${updated.id}`);
-      return {
-        exito: true,
-        lead_id: updated.id,
-        operacion: "actualizado",
-        mensaje: `Lead actualizado exitosamente`,
-      };
-    } else {
-      console.log(`[GROQ_TOOL] guardar_actualizar_lead creating new lead`);
-      const insertPayload = {
-        numero,
-        stage,
-        ...data,
-      };
-
-      const { data: created, error } = await supabase
-        .from("whatsapp_leads")
-        .insert(insertPayload)
-        .select("id")
-        .single();
-
-      if (error) {
-        console.error(`[GROQ_TOOL] guardar_actualizar_lead error=insert_failed | code=${error.code} message=${error.message?.slice(0, 100)}`);
-        throw error;
-      }
-
-      console.log(`[GROQ_TOOL] guardar_actualizar_lead success=creado | id=${created.id}`);
-      return {
-        exito: true,
-        lead_id: created.id,
-        operacion: "creado",
-        mensaje: `Lead creado exitosamente`,
-      };
+    if (error) {
+      console.error(`[GROQ_TOOL] guardar_actualizar_lead error=upsert_failed | code=${error.code} message=${error.message?.slice(0, 100)}`);
+      throw error;
     }
+
+    console.log(`[GROQ_TOOL] guardar_actualizar_lead success=${operacion} | id=${persisted.id}`);
+    return {
+      exito: true,
+      lead_id: persisted.id,
+      operacion,
+      mensaje: `Lead ${operacion} exitosamente`,
+    };
   } catch (err) {
     console.error(`[GROQ_TOOL] guardar_actualizar_lead exception | error=${err instanceof Error ? err.message : String(err)}`);
     return {

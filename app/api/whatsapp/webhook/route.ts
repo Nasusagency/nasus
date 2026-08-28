@@ -23,7 +23,9 @@ import type {
   StoredMessage,
   WhatsAppWebhookPayload,
 } from "@/lib/whatsapp/types";
-import type { LLMMessage } from "@/lib/llm/provider";
+import type { LLMCreateParams, LLMMessage, LLMResponse } from "@/lib/llm/provider";
+import type { ToolName } from "@/lib/llm/tools";
+import type { ToolResult } from "@/lib/llm/tool-results";
 import { extractAttributionToken } from "@/lib/acquisition/attribution";
 import { resolveAndAssociateAttribution } from "@/lib/acquisition/server";
 
@@ -385,11 +387,20 @@ function isInternalReasoning(text: string): boolean {
   return internalMarkers.some((marker) => reasoning.includes(marker));
 }
 
-async function callGroqAgent(
+export interface GroqAgentDependencies {
+  callLLM: (params: LLMCreateParams) => Promise<LLMResponse>;
+  executeToolCall: (
+    toolName: ToolName,
+    toolInput: Record<string, unknown>,
+  ) => Promise<ToolResult>;
+}
+
+export async function callGroqAgent(
   text: string,
   historial: StoredMessage[],
   numero: string,
   profileName?: string,
+  dependencies: GroqAgentDependencies = { callLLM, executeToolCall },
 ): Promise<string> {
   const MAX_TOOL_ROUNDS = 3;
 
@@ -400,7 +411,7 @@ async function callGroqAgent(
     console.log(`[GROQ_AGENT] preflight_context_lookup`);
     let contextResult: any = null;
     try {
-      contextResult = await executeToolCall("consultar_contexto_contacto", {
+      contextResult = await dependencies.executeToolCall("consultar_contexto_contacto", {
         numero,
         buscar_cliente: true,
         buscar_lead: true,
@@ -464,13 +475,28 @@ async function callGroqAgent(
     let ronda = 0;
     const toolsEjecutados: string[] = [];
     const toolResults: Record<string, boolean> = {};
+    let ultimoLeadInput: Record<string, unknown> | null = null;
+
+    const persistirLead = async (
+      input: Record<string, unknown>,
+      scope: "tool" | "fallback",
+    ): Promise<boolean> => {
+      const result = await dependencies.executeToolCall("guardar_actualizar_lead", input);
+      const exito = "exito" in result && result.exito === true;
+      toolResults.guardar_actualizar_lead = exito;
+      const leadId = "lead_id" in result ? result.lead_id : "";
+      console.log(
+        `[GROQ_AGENT] lead_persist scope=${scope} exito=${exito} stage=${String(input.stage ?? "unknown")} lead_id=${leadId || "none"}`,
+      );
+      return exito;
+    };
 
     // Loop agentico: máximo 3 rondas
     while (ronda < MAX_TOOL_ROUNDS) {
       ronda++;
       console.log(`[GROQ_AGENT] round=${ronda} tool_choice=auto`);
 
-      const response = await callLLM({
+      const response = await dependencies.callLLM({
         model: "openai/gpt-oss-120b",
         max_tokens: WHATSAPP_MAX_TOKENS,
         system: systemPrompt as any,
@@ -501,7 +527,6 @@ async function callGroqAgent(
             name: block.name,
             input: block.input,
           });
-          toolsEjecutados.push(block.name);
           console.log(`[GROQ_AGENT] round=${ronda} tool_requested=${block.name}`);
         }
       }
@@ -517,9 +542,64 @@ async function callGroqAgent(
 
         const toolResultsContent: string[] = [];
 
+        // Persistencia primero: una notificación humana nunca debe adelantarse
+        // al lead aunque el modelo devuelva las tools en otro orden.
+        toolCallsThisRound.sort((a, b) => {
+          if (a.name === "guardar_actualizar_lead") return -1;
+          if (b.name === "guardar_actualizar_lead") return 1;
+          return 0;
+        });
+
         for (const toolCall of toolCallsThisRound) {
           try {
-            const result = await executeToolCall(toolCall.name as any, toolCall.input);
+            toolsEjecutados.push(toolCall.name);
+            let result: ToolResult;
+
+            if (toolCall.name === "guardar_actualizar_lead") {
+              ultimoLeadInput = toolCall.input;
+              const exito = await persistirLead(toolCall.input, "tool");
+              result = {
+                exito,
+                lead_id: "",
+                operacion: "actualizado",
+                mensaje: exito ? "Lead persistido" : "No se pudo persistir el lead",
+              };
+            } else {
+              if (
+                toolCall.name === "notificar_humano" &&
+                !esCliente &&
+                toolResults.guardar_actualizar_lead !== true
+              ) {
+                const inputGarantia: Record<string, unknown> = ultimoLeadInput ?? {
+                  numero,
+                  nombre_contacto: profileName,
+                  stage: "high_intent",
+                  requiere_humano: true,
+                  razon_handoff: "Notificación humana solicitada por el agente",
+                  problema_descrito: text?.slice(0, 150) || "Prospecto nuevo",
+                };
+                ultimoLeadInput = inputGarantia;
+                const persisted = await persistirLead(inputGarantia, "fallback");
+                if (!persisted) {
+                  result = {
+                    exito: false,
+                    mensaje: "Notificación bloqueada: el lead no fue persistido",
+                    email_enviado: false,
+                    motivo_fallo: "lead_persistence_required",
+                  };
+                } else {
+                  result = await dependencies.executeToolCall(
+                    toolCall.name as ToolName,
+                    toolCall.input,
+                  );
+                }
+              } else {
+                result = await dependencies.executeToolCall(
+                  toolCall.name as ToolName,
+                  toolCall.input,
+                );
+              }
+            }
             const exito = (result as any)?.exito === true;
             toolResults[toolCall.name] = exito;
 
@@ -552,22 +632,19 @@ async function callGroqAgent(
       }
     }
 
-    // Fallback determinista: actualizar lead si Groq no lo hizo pero hay contexto relevante
-    if (!esCliente && !toolsEjecutados.includes("guardar_actualizar_lead")) {
+    // Fallback determinista basado en éxito real, no en que Groq haya pedido la tool.
+    if (!esCliente && toolResults.guardar_actualizar_lead !== true) {
       console.log(`[GROQ_AGENT] fallback_persist_lead`);
       try {
-        // Prospecto nuevo: crear con exploring
-        if (!esLead) {
-          console.log(`[GROQ_AGENT] fallback_create_lead=exploring`);
-          await executeToolCall("guardar_actualizar_lead", {
-            numero,
-            stage: "exploring",
-            problema_descrito: text?.slice(0, 150) || "Prospecto nuevo",
-          } as unknown as Record<string, unknown>);
-          toolResults["guardar_actualizar_lead"] = true;
-        }
-        // Prospecto existente: permitir que Groq haya actualizado, si no → no forzar
-        // (confiar en que Groq tuvo oportunidad)
+        const fallbackInput = ultimoLeadInput ?? {
+          numero,
+          nombre_contacto: profileName,
+          stage: contextResult?.lead?.stage ?? "exploring",
+          ...(!esLead
+            ? { problema_descrito: text?.slice(0, 150) || "Prospecto nuevo" }
+            : {}),
+        };
+        await persistirLead(fallbackInput, "fallback");
       } catch (err) {
         console.error(`[GROQ_AGENT] fallback_persist error:`, err);
       }
