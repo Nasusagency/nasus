@@ -296,31 +296,56 @@ const COMPACT_FEATURES = 3;
 const MOBILE_VISIBLE_FEATURES = 2;
 
 /**
- * Producto insignia. Se renderiza en una tarjeta a ancho completo, con acentos
- * cian y tipografía mayor: la jerarquía sale de tamaño y densidad, no de
- * elementos nuevos.
+ * Productos insignia. Se renderizan en tarjetas a ancho completo, con
+ * tipografía mayor: la jerarquía sale de tamaño y densidad, no de elementos
+ * nuevos. Dos insignias en vez de una: WhatsApp y CRM Agentic son las dos
+ * soluciones que Nasus presenta como oferta concreta, no como integraciones
+ * técnicas sueltas. Acentos cian (WhatsApp) y dorado (CRM) para que se
+ * distingan entre sí sin salirse de la paleta de marca.
  */
-const FLAGSHIP: Tool = {
-  id: "whatsapp-assistant",
+const FLAGSHIP_WHATSAPP: Tool = {
+  id: "agentes-whatsapp",
   badge: "En producción",
   badgeClass: "bg-[#00f2ff] text-[#050508]",
   cardClass: "border-[#00f2ff]/40 bg-[#00f2ff]/[0.03]",
   meta: "// WHATSAPP CLOUD API",
-  title: "Nasus WhatsApp Assistant",
-  tagline: "Tu cliente escribe. El sistema entiende. Tu equipo recibe contexto.",
-  desc: "Asistente conectado a WhatsApp que distingue prospectos de clientes, usa el contexto específico de cada negocio y convierte solicitudes reales en trabajo estructurado.",
+  title: "Agentes IA para WhatsApp",
+  tagline: "No es un chatbot: es un agente que actúa.",
+  desc: "Convierte conversaciones en acciones: califican leads, registran oportunidades, crean requerimientos y escalan a una persona cuando hace falta.",
   features: [
-    "Distingue prospecto de cliente registrado en cada mensaje",
-    "Carga el contexto del negocio del cliente antes de responder",
-    "Detecta cuándo un mensaje es una solicitud concreta y cuándo no",
-    "Formaliza la solicitud y la envía por correo con resumen y urgencia",
-    "Acusa recibo dentro de la misma conversación, sin cortar el tono",
-    "Conversaciones persistidas con acceso restringido por RLS",
+    "Entiende el contexto del negocio antes de responder, no solo el último mensaje",
+    "Distingue prospecto de cliente registrado y responde distinto según su historial",
+    "Califica leads y avanza su etapa comercial con cada mensaje",
+    "Crea requerimientos y los deja relacionados con el contacto",
+    "Escala a una persona cuando detecta intención real de compra",
+    "Conserva el historial completo de la conversación, con acceso restringido por RLS",
   ],
   moreNoun: "capacidades más",
-  ctaText: "Probar asistente →",
+  ctaText: "Hablar con el agente →",
   ctaHref: WHATSAPP_ASSISTANT,
 };
+
+const FLAGSHIP_CRM: Tool = {
+  id: "crm-agentic",
+  badge: "Arquitectura activa",
+  badgeClass: "bg-[#c4a882] text-[#050508]",
+  cardClass: "border-[#c4a882]/40 bg-[#c4a882]/[0.03]",
+  title: "CRM Agentic",
+  tagline: "Se alimenta solo con lo que ya pasa en tu negocio.",
+  desc: "Un CRM que se alimenta solo. Cada conversación, propuesta y cambio comercial actualiza automáticamente el estado del cliente y su historial.",
+  features: [
+    "Cada conversación de WhatsApp actualiza el estado del contacto automáticamente",
+    "Los leads avanzan de etapa solo cuando hay señales reales, no por captura manual",
+    "Propuestas y requerimientos quedan relacionados con el contacto, no sueltos",
+    "Bitácora de actividad: cada cambio de etapa y decisión queda registrado",
+    "Lifecycle (prospecto, cliente, ex-cliente) y etapa comercial se controlan por separado",
+    "La IA sugiere decisiones sensibles; la conversión a cliente la confirma una persona",
+  ],
+  moreNoun: "capacidades más",
+  ctaText: "Ver cómo funciona →",
+};
+
+const FLAGSHIPS: Tool[] = [FLAGSHIP_WHATSAPP, FLAGSHIP_CRM];
 
 /**
  * Productos de apoyo: deliberadamente por debajo del flagship.
@@ -657,7 +682,9 @@ export default function LandingPage() {
               de scroll en resolverse y se leería como contenido a medio cargar.
               El dissolve se aplica a bloques de altura de párrafo o de fila. */}
           <div className="flex flex-col gap-8 max-md:gap-10">
-            <ProductCard tool={FLAGSHIP} variant="flagship" />
+            {FLAGSHIPS.map((tool) => (
+              <ProductCard key={tool.id} tool={tool} variant="flagship" />
+            ))}
 
             {/* El validador va solo en su fila porque lleva demo y necesita las
                 dos columnas; los otros dos comparten fila en desktop. */}
