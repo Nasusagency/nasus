@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAnthropic } from "@/lib/anthropic/client";
 import { verifyAdminToken, ADMIN_COOKIE } from "@/lib/admin/auth";
-import { getCliente } from "@/lib/admin/data";
+import { createServiceClient } from "@/lib/supabase/service";
+import { createCrmProposal } from "@/lib/crm/service";
 
 const MODEL = "claude-sonnet-4-6";
 
@@ -32,32 +33,31 @@ export async function POST(req: NextRequest) {
   }
 
   let contexto: string;
-  let clienteSlug: string | undefined;
+  let contactId: string | undefined;
   try {
-    const body = (await req.json()) as { contexto?: string; clienteSlug?: string };
+    const body = (await req.json()) as { contexto?: string; contactId?: string };
     contexto = body.contexto ?? "";
-    clienteSlug = body.clienteSlug;
+    contactId = body.contactId;
   } catch {
     return NextResponse.json({ error: "Cuerpo inválido." }, { status: 400 });
   }
 
   let userMessage = contexto.trim();
-  if (clienteSlug) {
-    const cliente = getCliente(clienteSlug);
+  if (contactId) {
+    const database = createServiceClient();
+    if (!database) return NextResponse.json({ error: "Base de datos no disponible." }, { status: 503 });
+    const { data: cliente } = await database.from("whatsapp_leads")
+      .select("nombre_contacto,nombre_empresa,sector,problema_descrito,servicio_probable,resumen,datos_estructurados,lifecycle,stage")
+      .eq("id", contactId).maybeSingle();
     if (cliente) {
       const meta = [
-        `Cliente: ${cliente.nombre}`,
-        `Contacto: ${cliente.contacto}`,
-        cliente.sistema ? `Sistema: ${cliente.sistema}` : "",
-        cliente.modalidad ? `Modalidad: ${cliente.modalidad}` : "",
-        cliente.modelo_cobro ? `Modelo de cobro: ${cliente.modelo_cobro}` : "",
-        cliente.documentos?.length
-          ? `Documentos a validar: ${cliente.documentos.join(", ")}`
-          : "",
-        cliente.endpoints?.length
-          ? `Endpoints disponibles: ${cliente.endpoints.map((e) => `${e.ruta} v${e.version} (${e.estado})`).join(", ")}`
-          : "",
-        cliente.notas ? `Notas internas: ${cliente.notas}` : "",
+        `Empresa: ${cliente.nombre_empresa || "Sin empresa"}`,
+        `Contacto: ${cliente.nombre_contacto || "Sin nombre"}`,
+        cliente.sector ? `Sector: ${cliente.sector}` : "",
+        cliente.problema_descrito ? `Problema: ${cliente.problema_descrito}` : "",
+        cliente.servicio_probable ? `Servicio probable: ${cliente.servicio_probable}` : "",
+        cliente.resumen ? `Resumen CRM: ${cliente.resumen}` : "",
+        `Lifecycle: ${cliente.lifecycle}; stage: ${cliente.stage}`,
         contexto ? `\nContexto adicional: ${contexto}` : "",
       ]
         .filter(Boolean)
@@ -82,18 +82,25 @@ export async function POST(req: NextRequest) {
   });
 
   const encoder = new TextEncoder();
+  const generatedSlug = contactId ? `proposal-${crypto.randomUUID()}` : "";
   const readable = new ReadableStream({
     async start(controller) {
+      let generatedContent = "";
       try {
         for await (const event of stream) {
           if (
             event.type === "content_block_delta" &&
             event.delta.type === "text_delta"
           ) {
+            generatedContent += event.delta.text;
             controller.enqueue(encoder.encode(event.delta.text));
           }
         }
       } finally {
+        if (contactId && generatedContent.trim()) {
+          const firstLine = generatedContent.split("\n").find(line => line.trim())?.replace(/^#+\s*/, "").trim();
+          await createCrmProposal({ contactId, slug: generatedSlug, title: firstLine || "Propuesta generada", content: generatedContent, actorUserId: process.env.ADMIN_ACTOR || "admin" });
+        }
         controller.close();
       }
     },
@@ -107,6 +114,7 @@ export async function POST(req: NextRequest) {
       "Content-Type": "text/plain; charset=utf-8",
       "X-Accel-Buffering": "no",
       "Cache-Control": "no-cache",
+      ...(generatedSlug ? { "X-Proposal-Slug": generatedSlug } : {}),
     },
   });
 }

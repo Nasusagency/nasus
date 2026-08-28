@@ -120,7 +120,7 @@ describe("persistencia del lead en el flujo Groq", () => {
           type: "tool_use",
           id: "lead-second",
           name: "guardar_actualizar_lead",
-          input: { numero, stage: "high_intent", requiere_humano: true },
+          input: { numero, stage: "qualified", requiere_humano: true },
         },
         { type: "text", text: "El equipo te contactará." },
       ]),
@@ -159,7 +159,7 @@ describe("persistencia del lead en el flujo Groq", () => {
           type: "tool_use",
           id: "lead",
           name: "guardar_actualizar_lead",
-          input: { numero, stage: "high_intent", requiere_humano: true },
+          input: { numero, stage: "qualified", requiere_humano: true },
         },
         {
           type: "tool_use",

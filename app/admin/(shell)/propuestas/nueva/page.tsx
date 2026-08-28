@@ -1,9 +1,9 @@
 import { Suspense } from "react";
-import { getClientes } from "@/lib/admin/data";
+import { getCrmContactOptions } from "@/lib/admin/crm-data";
 import PropuestasNuevaForm from "./PropuestasNuevaForm";
 
-export default function NuevaPropuestaPage() {
-  const clientes = getClientes().map((c) => ({ slug: c.slug, nombre: c.nombre }));
+export default async function NuevaPropuestaPage() {
+  const clientes = (await getCrmContactOptions()).map((c) => ({ slug: c.id, nombre: c.nombre }));
 
   return (
     <Suspense>

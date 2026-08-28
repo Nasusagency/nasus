@@ -22,6 +22,7 @@ export type InboxLeadRow = {
   nombre_contacto?: string | null;
   nombre_empresa?: string | null;
   stage?: string | null;
+  high_intent_detected_at?: string | null;
   requiere_humano?: boolean;
   acquisition_events?: { source?: string | null; campaign?: string | null } | Array<{ source?: string | null; campaign?: string | null }> | null;
 };
@@ -34,6 +35,7 @@ export type ContactInboxItem = {
   lastMessage: string | null;
   stage: string | null;
   requiereHumano: boolean;
+  highIntent: boolean;
   mode: ConversationMode;
   status: ConversationStatus;
   unread: number;
@@ -76,6 +78,7 @@ export function buildContactInbox(
       lastMessage: latest.contenido,
       stage: lead?.stage ?? null,
       requiereHumano: Boolean(lead?.requiere_humano),
+      highIntent: Boolean(lead?.high_intent_detected_at),
       mode: latestState?.mode ?? "ai",
       status: latestState?.status ?? "open",
       unread,
@@ -85,4 +88,3 @@ export function buildContactInbox(
     };
   }).sort((a, b) => Date.parse(b.lastActivity) - Date.parse(a.lastActivity));
 }
-

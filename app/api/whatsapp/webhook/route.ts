@@ -213,6 +213,21 @@ async function procesarMensaje(mensaje: IncomingMessage): Promise<void> {
     }
 
     if (text && pideAsesor(text)) {
+      if (!cliente) {
+        const persisted = await executeToolCall("guardar_actualizar_lead", {
+          numero: from,
+          nombre_contacto: profileName,
+          stage: "qualified",
+          requiere_humano: true,
+          razon_handoff: "El prospecto pidió hablar con un asesor",
+          problema_descrito: text.slice(0, 150),
+        });
+        if (!("exito" in persisted) || persisted.exito !== true) {
+          console.error(`[whatsapp] ${maskPhoneNumber(from)} advisor_escalation_blocked lead_persistence_failed`);
+          await responder(conversationId, from, RESPUESTA_ERROR);
+          return;
+        }
+      }
       await escalarAAsesor(conversationId, from, profileName);
       return;
     }
@@ -450,21 +465,26 @@ export async function callGroqAgent(
         es_lead: contextResult.es_lead,
         cliente: contextResult.cliente ? { nombre_negocio: contextResult.cliente.nombre_negocio } : null,
         lead: contextResult.lead ? {
+          lifecycle: contextResult.lead.lifecycle,
           stage: contextResult.lead.stage,
+          high_intent: contextResult.lead.high_intent,
           nombre_empresa: contextResult.lead.nombre_empresa,
           problema_descrito: contextResult.lead.problema_descrito,
         } : null,
+        propuestas_activas: contextResult.propuestas_activas ?? [],
+        requerimientos_abiertos: contextResult.requerimientos_abiertos ?? [],
+        conversation_mode: contextResult.conversation_mode ?? "ai",
       };
 
-      // Si ya está en high_intent, agregar nota para Groq
-      if (leadStage === "high_intent" && !esCliente) {
+      // High intent es una señal; qualified sigue siendo el stage comercial.
+      if (contextResult.lead?.high_intent && !esCliente) {
         contextoObj.nota_importante =
-          "El prospecto ya fue escalado a high_intent. El equipo de Nasus ya fue notificado. NO vuelvas a ejecutar notificar_humano. Responde brevemente reconociendo su mensaje. El contexto ya fue preservado.";
+          "El prospecto ya fue marcado con alta intención y el equipo fue notificado. NO vuelvas a ejecutar notificar_humano. Responde brevemente; el contexto ya fue preservado.";
       }
 
       messages.push({
         role: "user",
-        content: `[CONTEXTO PREVIO DEL CONTACTO]:\n${JSON.stringify(contextoObj).slice(0, 300)}\n\nAhora, ${text}`,
+        content: `[CONTEXTO PREVIO DEL CONTACTO]:\n${JSON.stringify(contextoObj).slice(0, 1200)}\n\nAhora, ${text}`,
       });
     } else {
       messages.push({
@@ -476,7 +496,11 @@ export async function callGroqAgent(
     const systemPrompt = [
       {
         type: "text",
-        text: buildSystemPrompt(null, true),
+        text: buildSystemPrompt(esCliente ? {
+          numero_whatsapp: numero,
+          nombre_negocio: contextResult?.lead?.nombre_empresa || contextResult?.cliente?.nombre_negocio || "Cliente Nasus",
+          contexto_negocio: contextResult?.lead?.resumen || contextResult?.cliente?.contexto_negocio || "Cliente activo de Nasus",
+        } : null, true),
         cache_control: { type: "ephemeral" },
       },
     ];
@@ -583,7 +607,7 @@ export async function callGroqAgent(
                 const inputGarantia: Record<string, unknown> = ultimoLeadInput ?? {
                   numero,
                   nombre_contacto: profileName,
-                  stage: "high_intent",
+                  stage: "qualified",
                   requiere_humano: true,
                   razon_handoff: "Notificación humana solicitada por el agente",
                   problema_descrito: text?.slice(0, 150) || "Prospecto nuevo",

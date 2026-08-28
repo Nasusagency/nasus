@@ -104,12 +104,14 @@ export interface GuardarActualizarLeadInput {
   nombre_contacto?: string;
   nombre_empresa?: string;
   sector?: string;
-  stage: "exploring" | "opportunity" | "qualified" | "high_intent";
+  stage: "exploring" | "opportunity" | "qualified";
   problema_descrito?: string;
   servicio_probable?: string;
   resumen?: string;
   requiere_humano?: boolean;
   razon_handoff?: string;
+  sugerir_conversion?: boolean;
+  razon_sugerencia?: string;
   datos_estructurados?: Record<string, unknown>;
 }
 
@@ -138,9 +140,9 @@ export const guardarActualizarLeadTool: LLMToolDefinition = {
       },
       stage: {
         type: "string",
-        enum: ["exploring", "opportunity", "qualified", "high_intent"],
+        enum: ["exploring", "opportunity", "qualified"],
         description:
-          "Etapa del pipeline: exploring (primeros pasos) → opportunity (potencial) → qualified (validado) → high_intent (listo para vender)",
+          "Etapa automática: exploring → opportunity → qualified. La alta intención se expresa con requiere_humano; proposal/won/lost no los decide Groq.",
       },
       problema_descrito: {
         type: "string",
@@ -163,6 +165,14 @@ export const guardarActualizarLeadTool: LLMToolDefinition = {
       razon_handoff: {
         type: "string",
         description: "Razón por la que requiere humano (si requiere_humano=true).",
+      },
+      sugerir_conversion: {
+        type: "boolean",
+        description: "Solo si el contacto parece aceptar una propuesta. Crea una recomendación para revisión humana; nunca convierte al contacto.",
+      },
+      razon_sugerencia: {
+        type: "string",
+        description: "Razón breve y verificable para recomendar la conversión.",
       },
       datos_estructurados: {
         type: "object",

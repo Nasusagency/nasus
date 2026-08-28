@@ -48,7 +48,7 @@ export default function PropuestasNuevaForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contexto,
-          clienteSlug: mode === "cliente" ? clienteSlug : undefined,
+          contactId: mode === "cliente" ? clienteSlug : undefined,
         }),
       });
       if (!res.ok || !res.body) {
@@ -56,6 +56,8 @@ export default function PropuestasNuevaForm({
         setOutput(`Error: ${d.error ?? "No se pudo generar."}`);
         return;
       }
+      const generatedSlug = res.headers.get("X-Proposal-Slug");
+      if (generatedSlug) setSaveSlug(generatedSlug);
       const reader = res.body.getReader();
       const dec = new TextDecoder();
       while (true) {
@@ -87,7 +89,7 @@ export default function PropuestasNuevaForm({
         slug: finalSlug,
         titulo: t,
         contenido: output,
-        clienteSlug: mode === "cliente" ? clienteSlug : undefined,
+        contactId: mode === "cliente" ? clienteSlug : undefined,
       }),
     });
     if (res.ok) {
@@ -119,7 +121,7 @@ export default function PropuestasNuevaForm({
                   : "text-zinc-500 border border-zinc-800 hover:text-zinc-300"
               }`}
             >
-              {m === "libre" ? "Contexto libre" : "Desde cliente"}
+              {m === "libre" ? "Contexto libre" : "Desde CRM"}
             </button>
           ))}
         </div>
@@ -127,7 +129,7 @@ export default function PropuestasNuevaForm({
         {mode === "cliente" && (
           <div className="mb-3">
             <label className="text-xs text-zinc-400 font-mono block mb-1.5">
-              Cliente
+              Contacto CRM
             </label>
             <select
               value={clienteSlug}

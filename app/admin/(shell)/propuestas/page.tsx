@@ -1,0 +1,10 @@
+import Link from "next/link";
+import { getCrmProposals } from "@/lib/admin/crm-data";
+
+export default async function ProposalsPage() {
+  const proposals = await getCrmProposals();
+  return <div className="p-6 lg:p-8 max-w-6xl mx-auto">
+    <div className="flex items-center justify-between gap-4 mb-6"><div><p className="text-[10px] tracking-[.18em] text-[#8c6a3b]">COMERCIAL</p><h1 className="text-2xl font-semibold text-zinc-950">Propuestas</h1><p className="text-sm text-zinc-600">Bandeja de consulta alimentada por eventos reales.</p></div><Link href="/admin/propuestas/nueva" className="rounded-lg bg-[#8c6a3b] text-white px-4 py-2 text-xs font-semibold">Nueva propuesta</Link></div>
+    <div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white"><table className="w-full text-sm"><thead className="bg-zinc-50 text-zinc-600"><tr>{["Propuesta","Contacto","Estado","Valor","Generada","Enviada"].map(h => <th key={h} className="text-left px-4 py-3 font-medium">{h}</th>)}</tr></thead><tbody>{proposals.map(p => { const contact = Array.isArray(p.whatsapp_leads) ? p.whatsapp_leads[0] : p.whatsapp_leads; return <tr key={p.id} className="border-t border-zinc-100"><td className="px-4 py-3"><a className="font-medium text-[#76582f]" href={`/propuesta/${p.slug}`} target="_blank">{p.title}</a></td><td className="px-4 py-3 text-zinc-700">{contact?.nombre_empresa || contact?.nombre_contacto || contact?.numero}</td><td className="px-4 py-3"><span className="rounded-full bg-zinc-100 px-2 py-1 text-xs text-zinc-700">{p.status}</span></td><td className="px-4 py-3 text-zinc-600">{p.value == null ? "—" : `${p.currency || "MXN"} ${Number(p.value).toLocaleString("es-MX")}`}</td><td className="px-4 py-3 text-zinc-500">{new Date(p.generated_at).toLocaleDateString("es-MX")}</td><td className="px-4 py-3 text-zinc-500">{p.sent_at ? new Date(p.sent_at).toLocaleString("es-MX") : "—"}</td></tr>;})}</tbody></table>{!proposals.length && <p className="p-8 text-center text-sm text-zinc-500">Aún no hay propuestas persistidas.</p>}</div>
+  </div>;
+}

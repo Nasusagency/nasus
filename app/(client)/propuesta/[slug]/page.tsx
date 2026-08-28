@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getPropuesta } from "@/lib/admin/data";
+import { getCrmProposalBySlug } from "@/lib/admin/crm-data";
 
 export const metadata: Metadata = {
   robots: "noindex, nofollow",
@@ -66,7 +67,13 @@ export default async function PropuestaPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const propuesta = getPropuesta(slug);
+  const crmProposal: any = await getCrmProposalBySlug(slug);
+  const legacyProposal = getPropuesta(slug);
+  const propuesta = crmProposal ? {
+    contenido: crmProposal.content,
+    createdAt: crmProposal.created_at,
+    clienteSlug: (Array.isArray(crmProposal.whatsapp_leads) ? crmProposal.whatsapp_leads[0] : crmProposal.whatsapp_leads)?.nombre_empresa || null,
+  } : legacyProposal;
   if (!propuesta) notFound();
 
   const html = renderMarkdown(propuesta.contenido);

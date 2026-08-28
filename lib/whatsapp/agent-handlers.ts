@@ -25,6 +25,8 @@ import type {
   NotificarHumanoResult,
   ToolResult,
 } from "@/lib/llm/tool-results";
+import { isHighIntentRequest, resolveGroqStage } from "@/lib/crm/domain";
+import { recordCrmActivity, suggestClientConversion } from "@/lib/crm/service";
 
 // ─── Idempotencia Persistente (Supabase) ────────────────────────────────────
 
@@ -133,14 +135,19 @@ async function handleConsultarContextoContacto(
       es_lead: false,
     };
 
-    // Buscar cliente
+    // El lifecycle CRM es la fuente principal; la tabla histórica queda como fallback.
     if (buscar_cliente) {
-      const { data: cliente } = await supabase
-        .from("whatsapp_clientes")
-        .select("numero_whatsapp, nombre_negocio, contexto_negocio")
-        .eq("numero_whatsapp", numero)
-        .eq("activo", true)
-        .maybeSingle();
+      const { data: crmClient } = await supabase.from("whatsapp_leads")
+        .select("numero,nombre_empresa,resumen").eq("numero", numero)
+        .eq("lifecycle", "client").maybeSingle();
+      const { data: legacyClient } = crmClient ? { data: null } : await supabase
+        .from("whatsapp_clientes").select("numero_whatsapp,nombre_negocio,contexto_negocio")
+        .eq("numero_whatsapp", numero).eq("activo", true).maybeSingle();
+      const cliente = crmClient ? {
+        numero_whatsapp: crmClient.numero,
+        nombre_negocio: crmClient.nombre_empresa || "Cliente Nasus",
+        contexto_negocio: crmClient.resumen || "Cliente activo de Nasus",
+      } : legacyClient;
 
       if (cliente) {
         result.es_cliente = true;
@@ -153,12 +160,12 @@ async function handleConsultarContextoContacto(
       }
     }
 
-    // Buscar lead
+    let contactId: string | null = null;
     if (buscar_lead) {
       const { data: lead } = await supabase
         .from("whatsapp_leads")
         .select(
-          "numero, nombre_contacto, nombre_empresa, stage, problema_descrito, servicio_probable, resumen, requiere_humano"
+          "id, numero, nombre_contacto, nombre_empresa, lifecycle, stage, high_intent_detected_at, problema_descrito, servicio_probable, resumen, requiere_humano"
         )
         .eq("numero", numero)
         .order("updated_at", { ascending: false })
@@ -166,6 +173,7 @@ async function handleConsultarContextoContacto(
         .maybeSingle();
 
       if (lead) {
+        contactId = lead.id;
         result.es_lead = true;
         result.encontrado = true;
         result.lead = {
@@ -173,12 +181,25 @@ async function handleConsultarContextoContacto(
           nombre_contacto: lead.nombre_contacto || undefined,
           nombre_empresa: lead.nombre_empresa || undefined,
           stage: lead.stage,
+          lifecycle: lead.lifecycle,
+          high_intent: Boolean(lead.high_intent_detected_at),
           problema_descrito: lead.problema_descrito || undefined,
           servicio_probable: lead.servicio_probable || undefined,
           resumen: lead.resumen || undefined,
           requiere_humano: lead.requiere_humano,
         };
       }
+    }
+
+    if (contactId) {
+      const [proposals, requirements, conversation] = await Promise.all([
+        supabase.from("crm_proposals").select("id,status,title").eq("contact_id", contactId).in("status", ["draft", "sent"]).order("updated_at", { ascending: false }).limit(5),
+        supabase.from("whatsapp_requerimientos").select("id,tipo,estado").eq("contact_id", contactId).in("estado", ["abierto", "en_revision", "asignado"]).order("updated_at", { ascending: false }).limit(10),
+        supabase.from("whatsapp_conversations").select("mode").eq("numero", numero).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
+      ]);
+      result.propuestas_activas = proposals.data ?? [];
+      result.requerimientos_abiertos = requirements.data ?? [];
+      result.conversation_mode = conversation.data?.mode;
     }
 
     // Obtener últimos 3 mensajes
@@ -304,7 +325,7 @@ async function handleGuardarActualizarLead(
   }
 
   try {
-    const { numero, stage, ...data } = input;
+    const { numero, stage: requestedStage, sugerir_conversion, razon_sugerencia, ...data } = input;
 
     if (!numero || !numero.match(/^\d{10,15}$/)) {
       console.error(`[GROQ_TOOL] guardar_actualizar_lead error=invalid_number | numero=${numeroMasked}`);
@@ -317,11 +338,11 @@ async function handleGuardarActualizarLead(
       };
     }
 
-    console.log(`[GROQ_TOOL] guardar_actualizar_lead checking existing | payload_keys=${Object.keys({ ...data, stage }).join(',')}`);
+    console.log(`[GROQ_TOOL] guardar_actualizar_lead checking existing | payload_keys=${Object.keys({ ...data, stage: requestedStage }).join(',')}`);
 
     const { data: existing, error: checkError } = await supabase
       .from("whatsapp_leads")
-      .select("id")
+      .select("id,stage,lifecycle,high_intent_detected_at")
       .eq("numero", numero)
       .maybeSingle();
 
@@ -332,6 +353,8 @@ async function handleGuardarActualizarLead(
 
     const operacion = existing ? "actualizado" : "creado";
     const now = new Date().toISOString();
+    const highIntent = isHighIntentRequest(requestedStage, data.requiere_humano);
+    const stage = resolveGroqStage(existing?.stage, requestedStage, existing?.lifecycle ?? "lead");
     console.log(
       `[GROQ_TOOL] guardar_actualizar_lead ${existing ? `updating existing lead | id=${existing.id}` : "creating new lead"}`,
     );
@@ -345,12 +368,14 @@ async function handleGuardarActualizarLead(
           numero,
           stage,
           ...data,
+          lifecycle: existing?.lifecycle ?? "lead",
+          ...(highIntent ? { high_intent_detected_at: existing?.high_intent_detected_at ?? now, requiere_humano: true } : {}),
           updated_at: now,
           ultima_interaccion: now,
         },
         { onConflict: "numero" },
       )
-      .select("id")
+      .select("id,stage,lifecycle,high_intent_detected_at")
       .single();
 
     if (error) {
@@ -359,6 +384,18 @@ async function handleGuardarActualizarLead(
     }
 
     console.log(`[GROQ_TOOL] guardar_actualizar_lead success=${operacion} | id=${persisted.id}`);
+    if (!existing) {
+      await recordCrmActivity({ contactId: persisted.id, eventType: "lead_created", actor: "groq", newValue: { lifecycle: "lead", stage }, idempotencyKey: `lead-created:${persisted.id}` }, supabase);
+    } else if (existing.stage !== stage) {
+      await recordCrmActivity({ contactId: persisted.id, eventType: "stage_changed", actor: "groq", oldValue: { stage: existing.stage }, newValue: { stage }, idempotencyKey: `stage:${persisted.id}:${existing.stage}:${stage}` }, supabase);
+    }
+    if (highIntent && !existing?.high_intent_detected_at) {
+      await recordCrmActivity({ contactId: persisted.id, eventType: "high_intent_detected", actor: "groq", newValue: { high_intent: true }, idempotencyKey: `high-intent:${persisted.id}` }, supabase);
+    }
+    await recordCrmActivity({ contactId: persisted.id, eventType: "groq_action", actor: "groq", metadata: { action: "contact_upsert", operation: operacion }, idempotencyKey: `groq-upsert:${persisted.id}:${now}` }, supabase);
+    if (sugerir_conversion && razon_sugerencia) {
+      await suggestClientConversion({ contactId: persisted.id, reason: razon_sugerencia }, supabase);
+    }
     return {
       exito: true,
       lead_id: persisted.id,
@@ -445,6 +482,8 @@ async function handleRegistrarRequerimiento(
       };
     }
 
+    const { data: contact } = await supabase.from("whatsapp_leads")
+      .select("id").eq("numero", numero_contacto).maybeSingle();
     const { data: created, error } = await supabase
       .from("whatsapp_requerimientos")
       .insert({
@@ -454,12 +493,20 @@ async function handleRegistrarRequerimiento(
         resumen: resumen || descripcion_original.slice(0, 300),
         prioridad,
         estado: "abierto",
+        contact_id: contact?.id ?? null,
         ...data,
       })
-      .select("id")
+      .select("id,stage,lifecycle,high_intent_detected_at")
       .single();
 
     if (error) throw error;
+    if (contact) await recordCrmActivity({
+      contactId: contact.id,
+      eventType: "requirement_created",
+      actor: "groq",
+      metadata: { requirement_id: created.id, type: tipo },
+      idempotencyKey: `requirement-created:${created.id}`,
+    }, supabase);
 
     const successResult: RegistrarRequerimientoResult = {
       exito: true,

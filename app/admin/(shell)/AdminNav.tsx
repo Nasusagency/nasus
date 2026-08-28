@@ -5,12 +5,12 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 const NAV = [
-  { href: "/admin/whatsapp", label: "WhatsApp", icon: "◉" },
-  { href: "/admin/leads", label: "Leads", icon: "◎" },
   { href: "/admin", label: "Dashboard", icon: "◈" },
-  { href: "/admin/clientes", label: "Clientes", icon: "◉" },
-  { href: "/admin/propuestas/nueva", label: "Propuestas", icon: "◎" },
-  { href: "/admin/cambios", label: "Cambios", icon: "◌" },
+  { href: "/admin/whatsapp", label: "WhatsApp", icon: "◉" },
+  { href: "/admin/leads", label: "CRM / Leads", icon: "◎" },
+  { href: "/admin/propuestas", label: "Propuestas", icon: "◌" },
+  { href: "/admin/acquisition", label: "Adquisición", icon: "◇" },
+  { href: "/admin/configuracion", label: "Configuración", icon: "⊙" },
 ];
 
 export default function AdminNav() {

@@ -23,7 +23,9 @@ export interface ConsultarContextoContactoResult {
     numero: string;
     nombre_contacto?: string;
     nombre_empresa?: string;
-    stage: "exploring" | "opportunity" | "qualified" | "high_intent";
+    stage: "exploring" | "opportunity" | "qualified" | "proposal" | "won" | "lost";
+    lifecycle?: "lead" | "client" | "former_client";
+    high_intent?: boolean;
     problema_descrito?: string;
     servicio_probable?: string;
     resumen?: string;
@@ -35,6 +37,10 @@ export interface ConsultarContextoContactoResult {
     contenido?: string;
     created_at: string;
   }>;
+
+  propuestas_activas?: Array<{ id: string; status: string; title: string }>;
+  requerimientos_abiertos?: Array<{ id: string; tipo: string; estado: string }>;
+  conversation_mode?: "ai" | "human" | "paused";
 
   mensaje?: string;
   razon?: string;

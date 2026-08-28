@@ -13,6 +13,7 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import type { ClienteContexto, Direccion, StoredMessage } from "./types";
 import type { ConversationMode } from "./conversation-policy";
+import { recordCrmActivity } from "@/lib/crm/service";
 
 const TABLA_MENSAJES = "whatsapp_mensajes";
 const TABLA_CLIENTES = "whatsapp_clientes";
@@ -96,6 +97,10 @@ export async function saveMessage(params: {
     // 23505 = unique_violation sobre message_id: es un reintento de Meta que ya
     // se guardó. No es un fallo.
     if (error && error.code !== "23505") throw error;
+    if (!error && params.direccion === "entrante" && params.messageId) {
+      const { data: contact } = await supabase.from("whatsapp_leads").select("id").eq("numero", params.numero).maybeSingle();
+      if (contact) await recordCrmActivity({ contactId: contact.id, eventType: "whatsapp_reply", actor: "system", metadata: { conversation_id: params.conversationId }, idempotencyKey: `whatsapp-reply:${params.messageId}` }, supabase);
+    }
   } catch (err) {
     logError("saveMessage", err);
   }
@@ -158,6 +163,19 @@ export async function getCliente(numero: string): Promise<ClienteContexto | null
   if (!supabase) return null;
 
   try {
+    const { data: contact, error: contactError } = await supabase
+      .from("whatsapp_leads")
+      .select("numero,nombre_empresa,resumen")
+      .eq("numero", numero)
+      .eq("lifecycle", "client")
+      .maybeSingle();
+    if (contactError && !contactError.message?.includes("lifecycle")) throw contactError;
+    if (contact) return {
+      numero_whatsapp: contact.numero,
+      nombre_negocio: contact.nombre_empresa || "Cliente Nasus",
+      contexto_negocio: contact.resumen || "Cliente activo de Nasus",
+    };
+
     const { data, error } = await supabase
       .from(TABLA_CLIENTES)
       .select("numero_whatsapp, nombre_negocio, contexto_negocio")
