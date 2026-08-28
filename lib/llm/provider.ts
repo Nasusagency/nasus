@@ -6,8 +6,9 @@
  * de quién respondió.
  *
  * Estrategia:
- * 1. Intentar Groq
- * 2. Si falla (timeout, error técnico), usar Claude
+ * 1. Intentar Groq (máximo 2 intentos por mensaje, ver GroqCallBudget)
+ * 2. Si falla de forma no recuperable, o el segundo intento también falla,
+ *    usar Claude
  * 3. Registrar cuál respondió para auditoría
  */
 
@@ -80,6 +81,197 @@ function getAnthropicClient(): Anthropic {
   return (anthropicClient ??= new Anthropic({ apiKey }));
 }
 
+// ─── Rate limit / retry de Groq ─────────────────────────────────────────────
+//
+// app/api/whatsapp/webhook/route.ts declara `export const maxDuration = 30`
+// (30s reales en Vercel). Dentro de ese presupuesto, el webhook todavía tiene
+// que hacer: lookup de contexto en Supabase, hasta 3 rondas de agente (cada
+// una con su propia llamada a LLM + ejecución de tools), persistencia y el
+// envío final por WhatsApp. GROQ_RETRY_SAFE_BUDGET_MS es lo máximo que
+// estamos dispuestos a invertir en total (todas las rondas de UN mensaje
+// comparten el mismo GroqCallBudget) esperando por rate limits de Groq antes
+// de resignarnos a Claude — deja ~24s de margen para todo lo demás.
+export const GROQ_MAX_ATTEMPTS_PER_MESSAGE = 2;
+export const GROQ_RETRY_SAFE_BUDGET_MS = 6_000;
+// Tope duro por espera individual, independiente del budget restante: nunca
+// vale la pena dormir más que esto de una sola vez dentro de un webhook de 30s.
+const GROQ_MAX_SINGLE_WAIT_MS = 5_000;
+
+/**
+ * Presupuesto de reintentos de Groq para UN mensaje completo del webhook.
+ * Se crea una sola vez por mensaje (no por ronda del agente) y se comparte
+ * entre todas las llamadas a callLLM de ese mensaje, así nunca se disparan
+ * más de `maxAttempts` llamadas reales a Groq sin importar cuántas rondas
+ * de agente hagan falta.
+ */
+export interface GroqCallBudget {
+  attemptsUsed: number;
+  maxAttempts: number;
+  /** Date.now() timestamp: no programar una espera que cruce este límite. */
+  deadline: number;
+}
+
+export function createGroqCallBudget(safeBudgetMs: number = GROQ_RETRY_SAFE_BUDGET_MS): GroqCallBudget {
+  return {
+    attemptsUsed: 0,
+    maxAttempts: GROQ_MAX_ATTEMPTS_PER_MESSAGE,
+    deadline: Date.now() + safeBudgetMs,
+  };
+}
+
+/**
+ * Error estructurado de una respuesta HTTP de Groq. `callGroq` lo lanza con
+ * el status y los datos de rate-limit ya parseados, para que la capa de
+ * retry no tenga que volver a leer headers/cuerpo.
+ */
+export class GroqHttpError extends Error {
+  readonly status: number;
+  readonly retryAfterMs: number | null;
+  readonly dailyLimit: boolean;
+
+  constructor(status: number, message: string, opts: { retryAfterMs?: number | null; dailyLimit?: boolean } = {}) {
+    super(message);
+    this.name = "GroqHttpError";
+    this.status = status;
+    this.retryAfterMs = opts.retryAfterMs ?? null;
+    this.dailyLimit = opts.dailyLimit ?? false;
+  }
+}
+
+interface ClassifiedGroqError {
+  status: number | null;
+  retryable: boolean;
+  reason: string;
+  retryAfterMs: number | null;
+  dailyLimit: boolean;
+}
+
+/**
+ * Decide si un error de Groq amerita reintento y con qué metadatos.
+ * Acepta tanto GroqHttpError (la ruta real) como Error planos con mensajes
+ * conocidos (usados por tests y por errores no-HTTP como timeout/abort),
+ * para no exigirle a cada test construir un GroqHttpError completo.
+ */
+function classifyGroqError(err: unknown): ClassifiedGroqError {
+  if (err instanceof GroqHttpError) {
+    if (err.status === 429) {
+      if (err.dailyLimit) {
+        return { status: 429, retryable: false, reason: "rate_limit_daily", retryAfterMs: err.retryAfterMs, dailyLimit: true };
+      }
+      return {
+        status: 429,
+        retryable: err.retryAfterMs !== null,
+        reason: err.retryAfterMs !== null ? "rate_limit_short_window" : "rate_limit_unknown",
+        retryAfterMs: err.retryAfterMs,
+        dailyLimit: false,
+      };
+    }
+    if (err.status === 401 || err.status === 403) {
+      return { status: err.status, retryable: false, reason: "auth_error", retryAfterMs: null, dailyLimit: false };
+    }
+    if (err.status === 400) {
+      return { status: 400, retryable: false, reason: "invalid_tool_arguments_json", retryAfterMs: null, dailyLimit: false };
+    }
+    if (err.status >= 500) {
+      return { status: err.status, retryable: true, reason: "server_error", retryAfterMs: null, dailyLimit: false };
+    }
+    return { status: err.status, retryable: false, reason: "client_error", retryAfterMs: null, dailyLimit: false };
+  }
+
+  const message = err instanceof Error ? err.message : String(err);
+  if (/invalid_tool_arguments_json/i.test(message)) {
+    return { status: 400, retryable: false, reason: "invalid_tool_arguments_json", retryAfterMs: null, dailyLimit: false };
+  }
+  if (/groq_request_failed:401|groq_auth_error:401/.test(message)) {
+    return { status: 401, retryable: false, reason: "auth_error", retryAfterMs: null, dailyLimit: false };
+  }
+  if (/groq_request_failed:403|groq_auth_error:403/.test(message)) {
+    return { status: 403, retryable: false, reason: "auth_error", retryAfterMs: null, dailyLimit: false };
+  }
+  if (/groq_request_failed:429/.test(message)) {
+    // Mensaje plano sin Retry-After parseado: no se adivina cuánto esperar.
+    return { status: 429, retryable: false, reason: "rate_limit_unknown", retryAfterMs: null, dailyLimit: false };
+  }
+  if (/groq_request_failed:5\d\d/.test(message)) {
+    return { status: null, retryable: true, reason: "server_error", retryAfterMs: null, dailyLimit: false };
+  }
+  if (/timeout|aborterror/i.test(message)) {
+    return { status: null, retryable: true, reason: "timeout", retryAfterMs: null, dailyLimit: false };
+  }
+  return { status: null, retryable: false, reason: "unknown_error", retryAfterMs: null, dailyLimit: false };
+}
+
+/** Espera corta con jitter para 5xx/timeout: no depende de rate limit real. */
+function shortServerErrorWaitMs(): number {
+  const base = 400;
+  const jitter = Math.floor(Math.random() * 300);
+  return base + jitter;
+}
+
+/**
+ * Calcula cuánto esperar antes del segundo intento, o null si no se debe
+ * reintentar: límite diario, sin dato real de espera, la espera excede el
+ * tope duro, o no cabe en lo que queda del presupuesto del mensaje.
+ */
+function safeRetryWaitMs(classified: ClassifiedGroqError, budget: GroqCallBudget): number | null {
+  if (classified.dailyLimit) return null;
+
+  let waitMs: number;
+  if (classified.reason === "rate_limit_short_window") {
+    if (classified.retryAfterMs === null) return null;
+    waitMs = classified.retryAfterMs;
+  } else if (classified.reason === "server_error" || classified.reason === "timeout") {
+    waitMs = shortServerErrorWaitMs();
+  } else {
+    return null;
+  }
+
+  if (waitMs > GROQ_MAX_SINGLE_WAIT_MS) return null;
+  const remaining = budget.deadline - Date.now();
+  if (waitMs > remaining) return null;
+  return waitMs;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** "6m0s" / "1.5s" / "500ms" estilo Go duration, usado por los headers x-ratelimit-reset-* de Groq. */
+function parseGoDurationMs(value: string): number | null {
+  const match = value.trim().match(/^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+(?:\.\d+)?)s)?(?:(\d+)ms)?$/);
+  if (!match) return null;
+  const [, h, m, s, ms] = match;
+  if (!h && !m && !s && !ms) return null;
+  const totalMs =
+    (h ? Number(h) * 3_600_000 : 0) +
+    (m ? Number(m) * 60_000 : 0) +
+    (s ? Number(s) * 1_000 : 0) +
+    (ms ? Number(ms) : 0);
+  return totalMs;
+}
+
+function parseRetryAfterMs(headers: Headers): number | null {
+  const raw = headers.get("retry-after");
+  if (raw) {
+    const asSeconds = Number(raw);
+    if (!Number.isNaN(asSeconds) && asSeconds >= 0) return Math.round(asSeconds * 1000);
+    const asDate = Date.parse(raw);
+    if (!Number.isNaN(asDate)) {
+      const diff = asDate - Date.now();
+      return diff > 0 ? diff : 0;
+    }
+  }
+
+  const resetHeaders = [headers.get("x-ratelimit-reset-requests"), headers.get("x-ratelimit-reset-tokens")].filter(
+    (v): v is string => !!v,
+  );
+  for (const value of resetHeaders) {
+    const parsed = parseGoDurationMs(value);
+    if (parsed !== null) return parsed;
+  }
+  return null;
+}
+
 /**
  * Groq usa OpenAI-compatible API.
  * Para esta v1, hacemos una llamada HTTP simple en lugar de usar SDK.
@@ -150,9 +342,20 @@ async function callGroq(params: LLMCreateParams): Promise<LLMResponse> {
   if (!res.ok) {
     const text = await res.text();
     const invalidToolJson = /parse tool call arguments as json|tool call arguments are not valid json/i.test(text);
-    throw new Error(invalidToolJson
-      ? `groq_request_failed:${res.status}:invalid_tool_arguments_json`
-      : `groq_request_failed:${res.status}`);
+
+    if (invalidToolJson) {
+      throw new GroqHttpError(res.status, `groq_request_failed:${res.status}:invalid_tool_arguments_json`);
+    }
+    if (res.status === 401 || res.status === 403) {
+      console.warn(`[llm/provider] groq_auth_error status=${res.status} (revisar GROQ_API_KEY / configuración)`);
+      throw new GroqHttpError(res.status, `groq_auth_error:${res.status}`);
+    }
+    if (res.status === 429) {
+      const retryAfterMs = parseRetryAfterMs(res.headers);
+      const dailyLimit = /per day|\bdaily\b|\bTPD\b|\bRPD\b/i.test(text);
+      throw new GroqHttpError(429, "groq_rate_limited", { retryAfterMs, dailyLimit });
+    }
+    throw new GroqHttpError(res.status, `groq_request_failed:${res.status}`);
   }
 
   const data = (await res.json()) as {
@@ -275,10 +478,15 @@ async function callClaude(params: LLMCreateParams): Promise<LLMResponse> {
 /**
  * Llamada a LLM con fallback automático.
  *
- * Intenta Groq primero. Si falla por error técnico (timeout, API error),
- * intenta Claude. Si Claude falla, lanza error.
+ * Intenta Groq hasta `budget.maxAttempts` veces (2 por defecto, compartidas
+ * entre todas las rondas de un mismo mensaje). Un 429 de ventana corta
+ * (RPM/TPM) con Retry-After real dispara un segundo intento si cabe en el
+ * presupuesto de ejecución; un 5xx/timeout reintenta una vez con espera
+ * corta + jitter. Cualquier otro caso (400 de tool JSON inválido, 401/403,
+ * límite diario, Retry-After que excede el presupuesto, u otro 4xx) cae a
+ * Claude sin reintentar. Si Claude también falla, se lanza el error.
  *
- * Registra en logs cuál proveedor respondió.
+ * Registra en logs cuál proveedor respondió y por qué.
  */
 export async function runProviderFallback(
   params: LLMCreateParams,
@@ -287,22 +495,71 @@ export async function runProviderFallback(
     claude: (input: LLMCreateParams) => Promise<LLMResponse>;
   },
   preferGroq = true,
+  budget: GroqCallBudget = createGroqCallBudget(),
+  sleepFn: (ms: number) => Promise<void> = sleep,
 ): Promise<LLMResponse> {
   if (!preferGroq) return providers.claude(params);
-  try {
-    return await providers.groq(params);
-  } catch (err) {
-    const errMsg = (err instanceof Error ? err.message : "groq_unknown_error")
-      .replace(/\d{10,15}/g, "[redacted_phone]")
-      .slice(0, 160);
-    console.warn(`[llm/provider] Groq falló (${errMsg}), intentando Claude fallback`);
-    const response = await providers.claude(params);
-    console.log("[llm/provider] fallback a Claude exitoso");
-    return response;
+
+  if (budget.attemptsUsed >= budget.maxAttempts) {
+    console.log("[llm/provider] retry_skipped_reason=attempts_exhausted (budget ya consumido en rondas previas de este mensaje)");
+    return providers.claude(params);
   }
+
+  let lastReason = "unknown_error";
+
+  while (budget.attemptsUsed < budget.maxAttempts) {
+    if (Date.now() >= budget.deadline) {
+      console.log("[llm/provider] retry_skipped_reason=execution_budget_exhausted");
+      lastReason = "execution_budget_exhausted";
+      break;
+    }
+
+    const attempt = budget.attemptsUsed + 1;
+    budget.attemptsUsed = attempt;
+
+    try {
+      const response = await providers.groq(params);
+      console.log(`[llm/provider] groq_attempt=${attempt} final_provider=groq`);
+      return response;
+    } catch (err) {
+      const classified = classifyGroqError(err);
+      lastReason = classified.reason;
+      console.warn(
+        `[llm/provider] groq_attempt=${attempt} retry_reason=${classified.reason}` +
+          (classified.status !== null ? ` status=${classified.status}` : ""),
+      );
+
+      if (attempt >= budget.maxAttempts) {
+        console.log("[llm/provider] retry_skipped_reason=attempts_exhausted");
+        break;
+      }
+      if (!classified.retryable) {
+        console.log(`[llm/provider] retry_skipped_reason=${classified.reason}`);
+        break;
+      }
+
+      const waitMs = safeRetryWaitMs(classified, budget);
+      if (waitMs === null) {
+        const skipReason = classified.dailyLimit ? "daily_limit" : "retry_after_exceeds_budget";
+        console.log(
+          `[llm/provider] retry_skipped_reason=${skipReason}` +
+            (classified.retryAfterMs !== null ? ` retry_after_ms=${classified.retryAfterMs}` : ""),
+        );
+        break;
+      }
+
+      console.log(`[llm/provider] retry_after_ms=${waitMs} groq_attempt_next=${attempt + 1}`);
+      await sleepFn(waitMs);
+    }
+  }
+
+  console.log(`[llm/provider] fallback a Claude (motivo=${lastReason})`);
+  const response = await providers.claude(params);
+  console.log("[llm/provider] final_provider=claude_fallback");
+  return response;
 }
 
-export async function callLLM(params: LLMCreateParams): Promise<LLMResponse> {
+export async function callLLM(params: LLMCreateParams, budget?: GroqCallBudget): Promise<LLMResponse> {
   const preferGroq = !!process.env.GROQ_API_KEY;
 
   if (!preferGroq) {
@@ -312,10 +569,12 @@ export async function callLLM(params: LLMCreateParams): Promise<LLMResponse> {
     return response;
   }
 
-  const response = await runProviderFallback(params, { groq: callGroq, claude: callClaude }, true);
-  if (response.usedProvider === "groq") {
-    console.log("[llm/provider] respuesta exitosa de Groq");
-  }
+  const response = await runProviderFallback(
+    params,
+    { groq: callGroq, claude: callClaude },
+    true,
+    budget ?? createGroqCallBudget(),
+  );
   return response;
 }
 

@@ -26,8 +26,8 @@ import type {
   StoredMessage,
   WhatsAppWebhookPayload,
 } from "@/lib/whatsapp/types";
-import type { LLMCreateParams, LLMMessage, LLMResponse } from "@/lib/llm/provider";
-import { providerTelemetryLabel, type ProviderType } from "@/lib/llm/provider";
+import type { LLMCreateParams, LLMMessage, LLMResponse, GroqCallBudget } from "@/lib/llm/provider";
+import { providerTelemetryLabel, createGroqCallBudget, type ProviderType } from "@/lib/llm/provider";
 import type { ToolName } from "@/lib/llm/tools";
 import type { ToolResult } from "@/lib/llm/tool-results";
 import { extractAttributionToken } from "@/lib/acquisition/attribution";
@@ -418,7 +418,7 @@ function isInternalReasoning(text: string): boolean {
 }
 
 export interface GroqAgentDependencies {
-  callLLM: (params: LLMCreateParams) => Promise<LLMResponse>;
+  callLLM: (params: LLMCreateParams, budget?: GroqCallBudget) => Promise<LLMResponse>;
   executeToolCall: (
     toolName: ToolName,
     toolInput: Record<string, unknown>,
@@ -517,6 +517,10 @@ export async function callGroqAgent(
     const toolResults: Record<string, boolean> = {};
     let ultimoLeadInput: Record<string, unknown> | null = null;
     const canonicalContext = { numero, conversationId: dependencies.canonicalConversationId };
+    // Un solo presupuesto de reintentos de Groq para TODO el mensaje: aunque
+    // el loop de abajo haga varias rondas, nunca se disparan más de
+    // GROQ_MAX_ATTEMPTS_PER_MESSAGE llamadas reales a Groq en total.
+    const groqBudget = createGroqCallBudget();
 
     const persistirLead = async (
       input: Record<string, unknown>,
@@ -545,7 +549,7 @@ export async function callGroqAgent(
         messages,
         tools: ALL_TOOLS,
         tool_choice: { type: "auto" },
-      });
+      }, groqBudget);
       dependencies.onProviderUsed?.(response.usedProvider);
 
       if (!response.content || response.content.length === 0) {
