@@ -15,6 +15,10 @@ import Anthropic from "@anthropic-ai/sdk";
 
 export type ProviderType = "groq" | "claude";
 
+export function providerTelemetryLabel(selected: ProviderType, used: ProviderType): "groq" | "claude" | "claude_fallback" {
+  return selected === "groq" && used === "claude" ? "claude_fallback" : used;
+}
+
 export interface LLMMessage {
   role: "user" | "assistant";
   content: string;
@@ -129,6 +133,8 @@ async function callGroq(params: LLMCreateParams): Promise<LLMResponse> {
     messages: groqMessages,
     tools: groqTools,
     tool_choice: groqToolChoice,
+    temperature: 0,
+    reasoning_effort: "low",
   });
 
   const res = await fetch(url, {
@@ -143,7 +149,10 @@ async function callGroq(params: LLMCreateParams): Promise<LLMResponse> {
 
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`groq_request_failed:${res.status}:${text.slice(0, 100)}`);
+    const invalidToolJson = /parse tool call arguments as json|tool call arguments are not valid json/i.test(text);
+    throw new Error(invalidToolJson
+      ? `groq_request_failed:${res.status}:invalid_tool_arguments_json`
+      : `groq_request_failed:${res.status}`);
   }
 
   const data = (await res.json()) as {
@@ -173,12 +182,13 @@ async function callGroq(params: LLMCreateParams): Promise<LLMResponse> {
 
   if (choice.message.tool_calls) {
     for (const tc of choice.message.tool_calls) {
-      content.push({
-        type: "tool_use",
-        id: tc.id,
-        name: tc.function.name,
-        input: JSON.parse(tc.function.arguments) as Record<string, unknown>,
-      });
+      let input: Record<string, unknown>;
+      try {
+        input = JSON.parse(tc.function.arguments) as Record<string, unknown>;
+      } catch {
+        throw new Error("groq_invalid_tool_arguments_json");
+      }
+      content.push({ type: "tool_use", id: tc.id, name: tc.function.name, input });
     }
   }
 
@@ -270,6 +280,28 @@ async function callClaude(params: LLMCreateParams): Promise<LLMResponse> {
  *
  * Registra en logs cuál proveedor respondió.
  */
+export async function runProviderFallback(
+  params: LLMCreateParams,
+  providers: {
+    groq: (input: LLMCreateParams) => Promise<LLMResponse>;
+    claude: (input: LLMCreateParams) => Promise<LLMResponse>;
+  },
+  preferGroq = true,
+): Promise<LLMResponse> {
+  if (!preferGroq) return providers.claude(params);
+  try {
+    return await providers.groq(params);
+  } catch (err) {
+    const errMsg = (err instanceof Error ? err.message : "groq_unknown_error")
+      .replace(/\d{10,15}/g, "[redacted_phone]")
+      .slice(0, 160);
+    console.warn(`[llm/provider] Groq falló (${errMsg}), intentando Claude fallback`);
+    const response = await providers.claude(params);
+    console.log("[llm/provider] fallback a Claude exitoso");
+    return response;
+  }
+}
+
 export async function callLLM(params: LLMCreateParams): Promise<LLMResponse> {
   const preferGroq = !!process.env.GROQ_API_KEY;
 
@@ -280,26 +312,11 @@ export async function callLLM(params: LLMCreateParams): Promise<LLMResponse> {
     return response;
   }
 
-  try {
-    const response = await callGroq(params);
+  const response = await runProviderFallback(params, { groq: callGroq, claude: callClaude }, true);
+  if (response.usedProvider === "groq") {
     console.log("[llm/provider] respuesta exitosa de Groq");
-    return response;
-  } catch (err) {
-    const errMsg =
-      err instanceof Error ? err.message : String(err);
-    console.warn(
-      `[llm/provider] Groq falló (${errMsg}), intentando Claude fallback`
-    );
-
-    try {
-      const response = await callClaude(params);
-      console.log("[llm/provider] fallback a Claude exitoso");
-      return response;
-    } catch (claudeErr) {
-      // Si ambos fallan, lanzar el error de Claude
-      throw claudeErr;
-    }
   }
+  return response;
 }
 
 /**

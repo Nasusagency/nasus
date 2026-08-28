@@ -122,10 +122,6 @@ export const guardarActualizarLeadTool: LLMToolDefinition = {
   input_schema: {
     type: "object",
     properties: {
-      numero: {
-        type: "string",
-        description: "Número de teléfono. Formato: codigo_país + número.",
-      },
       nombre_contacto: {
         type: "string",
         description: "Nombre de la persona de contacto, si se conoce.",
@@ -180,7 +176,7 @@ export const guardarActualizarLeadTool: LLMToolDefinition = {
           "JSON libre con información adicional estructurada (presupuesto estimado, timeline, etc.)",
       },
     },
-    required: ["numero", "stage"],
+    required: ["stage"],
     additionalProperties: false,
   },
 };
@@ -209,10 +205,6 @@ export const registrarRequerimientoTool: LLMToolDefinition = {
   input_schema: {
     type: "object",
     properties: {
-      numero_contacto: {
-        type: "string",
-        description: "Número de teléfono del que hizo la solicitud.",
-      },
       tipo: {
         type: "string",
         enum: ["ajuste", "nuevo_feature", "problema", "consulta"],
@@ -236,17 +228,9 @@ export const registrarRequerimientoTool: LLMToolDefinition = {
         description:
           "Urgencia estimada: alta (está caído), media (funciona mal), baja (mejora).",
       },
-      cliente_slug: {
-        type: "string",
-        description: "Slug del cliente en el CRM, si es cliente conocido.",
-      },
       proyecto: {
         type: "string",
         description: "Nombre del proyecto/producto relacionado.",
-      },
-      conversation_id: {
-        type: "string",
-        description: "ID de la conversación en whatsapp_mensajes, si aplica.",
       },
       tiene_imagen: {
         type: "boolean",
@@ -261,7 +245,7 @@ export const registrarRequerimientoTool: LLMToolDefinition = {
         description: "JSON libre con información técnica o contexto extra.",
       },
     },
-    required: ["numero_contacto", "tipo", "descripcion_original"],
+    required: ["tipo", "descripcion_original"],
     additionalProperties: false,
   },
 };
@@ -293,11 +277,6 @@ export const notificarHumanoTool: LLMToolDefinition = {
         description:
           "Cuerpo del email con contexto para el equipo (máx 1000 chars). Sin incluir datos sensibles del usuario a menos que sea necesario.",
       },
-      numero_contacto: {
-        type: "string",
-        description:
-          "Número de teléfono del contacto, si necesario que el equipo lo devuelva.",
-      },
       nombre_contacto: {
         type: "string",
         description: "Nombre del contacto para referencia.",
@@ -319,7 +298,6 @@ export const notificarHumanoTool: LLMToolDefinition = {
  * Ordenadas: consultar (sin estado) → guardar (con estado) → notificar (salida).
  */
 export const ALL_TOOLS: LLMToolDefinition[] = [
-  consultarContextoContactoTool,
   consultarServiciosTool,
   consultarPortafolioTool,
   guardarActualizarLeadTool,

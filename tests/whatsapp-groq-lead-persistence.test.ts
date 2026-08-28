@@ -2,7 +2,7 @@ import { describe, test } from "node:test";
 import assert from "node:assert/strict";
 
 import { callGroqAgent, type GroqAgentDependencies } from "@/app/api/whatsapp/webhook/route";
-import type { LLMResponse } from "@/lib/llm/provider";
+import { runProviderFallback, type LLMResponse } from "@/lib/llm/provider";
 import type { ToolName } from "@/lib/llm/tools";
 import type { ToolResult } from "@/lib/llm/tool-results";
 import type { StoredMessage } from "@/lib/whatsapp/types";
@@ -11,12 +11,13 @@ const numero = "523331234567";
 
 function response(
   content: LLMResponse["content"],
+  usedProvider: LLMResponse["usedProvider"] = "groq",
 ): LLMResponse {
   return {
     content,
     usage: { input_tokens: 1, output_tokens: 1 },
     stop_reason: "end_turn",
-    usedProvider: "groq",
+    usedProvider,
   };
 }
 
@@ -187,5 +188,80 @@ describe("persistencia del lead en el flujo Groq", () => {
     await callGroqAgent("Quiero cotizar", [message("Quiero cotizar")], numero, undefined, dependencies);
 
     assert.equal(emailCalls, 0);
+  });
+
+  test("JSON inválido en Groq cae a Claude y reemplaza numero generado por el canónico", async () => {
+    const persistedInputs: Record<string, unknown>[] = [];
+    const finalProviders: string[] = [];
+    const dependencies: GroqAgentDependencies = {
+      callLLM: params => runProviderFallback(params, {
+        groq: async () => { throw new Error("groq_request_failed:400:invalid_tool_arguments_json"); },
+        claude: async () => response([
+          { type: "tool_use", id: "claude-lead", name: "guardar_actualizar_lead", input: { numero: "El cliente", stage: "opportunity", resumen: "Necesita registrar leads" } },
+          { type: "text", text: "Entendido." },
+        ], "claude"),
+      }),
+      executeToolCall: async (name, input): Promise<ToolResult> => {
+        if (name === "consultar_contexto_contacto") return { encontrado: false, es_cliente: false, es_lead: false };
+        if (name === "guardar_actualizar_lead") {
+          persistedInputs.push(input);
+          return { exito: true, lead_id: "lead-1", operacion: "creado", mensaje: "ok" };
+        }
+        throw new Error(`tool inesperada: ${name}`);
+      },
+      onProviderUsed: provider => finalProviders.push(provider),
+    };
+
+    await callGroqAgent("Los leads deben registrarse", [message("Los leads deben registrarse")], numero, "El cliente", dependencies);
+
+    assert.equal(persistedInputs.length, 1);
+    assert.equal(persistedInputs[0].numero, numero);
+    assert.notEqual(persistedInputs[0].numero, "El cliente");
+    assert.deepEqual(finalProviders, ["claude"]);
+  });
+
+  test("un teléfono distinto producido por Groq nunca reemplaza al número de Meta", async () => {
+    let persistedNumber = "";
+    const dependencies: GroqAgentDependencies = {
+      callLLM: async () => response([
+        { type: "tool_use", id: "malicious-number", name: "guardar_actualizar_lead", input: { numero: "521111111111", stage: "exploring" } },
+        { type: "text", text: "Hola." },
+      ]),
+      executeToolCall: async (name, input): Promise<ToolResult> => {
+        if (name === "consultar_contexto_contacto") return { encontrado: false, es_cliente: false, es_lead: false };
+        if (name === "guardar_actualizar_lead") {
+          persistedNumber = String(input.numero);
+          return { exito: true, lead_id: "lead-1", operacion: "creado", mensaje: "ok" };
+        }
+        throw new Error(`tool inesperada: ${name}`);
+      },
+    };
+
+    await callGroqAgent("Hola", [message("Hola")], numero, undefined, dependencies);
+    assert.equal(persistedNumber, numero);
+  });
+
+  test("fallback_persist_lead usa el número canónico cuando el modelo nunca invoca la tool", async () => {
+    let persistedNumber = "";
+    let saveCalls = 0;
+    const dependencies: GroqAgentDependencies = {
+      callLLM: async () => response([
+        { type: "text", text: "Hola, cuéntame sobre tu negocio." },
+      ]),
+      executeToolCall: async (name, input): Promise<ToolResult> => {
+        if (name === "consultar_contexto_contacto") return { encontrado: false, es_cliente: false, es_lead: false };
+        if (name === "guardar_actualizar_lead") {
+          saveCalls++;
+          persistedNumber = String(input.numero);
+          return { exito: true, lead_id: "lead-1", operacion: "creado", mensaje: "ok" };
+        }
+        throw new Error(`tool inesperada: ${name}`);
+      },
+    };
+
+    await callGroqAgent("Hola", [message("Hola")], numero, undefined, dependencies);
+
+    assert.equal(saveCalls, 1);
+    assert.equal(persistedNumber, numero);
   });
 });

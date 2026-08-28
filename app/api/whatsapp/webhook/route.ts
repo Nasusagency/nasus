@@ -27,10 +27,12 @@ import type {
   WhatsAppWebhookPayload,
 } from "@/lib/whatsapp/types";
 import type { LLMCreateParams, LLMMessage, LLMResponse } from "@/lib/llm/provider";
+import { providerTelemetryLabel, type ProviderType } from "@/lib/llm/provider";
 import type { ToolName } from "@/lib/llm/tools";
 import type { ToolResult } from "@/lib/llm/tool-results";
 import { extractAttributionToken } from "@/lib/acquisition/attribution";
 import { resolveAndAssociateAttribution } from "@/lib/acquisition/server";
+import { bindCanonicalToolInput } from "@/lib/whatsapp/tool-context";
 
 export const maxDuration = 30;
 
@@ -242,23 +244,26 @@ async function procesarMensaje(mensaje: IncomingMessage): Promise<void> {
     const maskedNumber = maskPhoneNumber(from);
 
     let respuesta: string;
-    let fallbackUsed = false;
-
     if (provider === "groq") {
       // Groq Agent con tools (número autorizado)
       const startTime = Date.now();
 
       try {
         console.log(`[whatsapp] ${maskedNumber} → Groq Agent (autorizado)`);
-        respuesta = await callGroqAgent(text, historial, from, profileName);
+        let finalProvider: ProviderType = "groq";
+        respuesta = await callGroqAgent(text, historial, from, profileName, {
+          callLLM,
+          executeToolCall,
+          canonicalConversationId: conversationId,
+          onProviderUsed: used => { finalProvider = used; },
+        });
         const latency = Date.now() - startTime;
 
         console.log(
-          `[whatsapp] ${maskedNumber} Groq completado ${latency}ms | ${provider} | ${cliente ? "cliente" : "prospecto"}`
+          `[whatsapp] ${maskedNumber} agent_completed ${latency}ms | provider_final=${providerTelemetryLabel("groq", finalProvider)} | ${cliente ? "cliente" : "prospecto"}`
         );
       } catch (groqErr) {
         // Fallback a Claude si Groq falla
-        fallbackUsed = true;
         const latency = Date.now() - startTime;
 
         logError(`groq fallback a claude (${latency}ms)`, groqErr);
@@ -418,6 +423,8 @@ export interface GroqAgentDependencies {
     toolName: ToolName,
     toolInput: Record<string, unknown>,
   ) => Promise<ToolResult>;
+  canonicalConversationId?: string;
+  onProviderUsed?: (provider: ProviderType) => void;
 }
 
 export async function callGroqAgent(
@@ -459,7 +466,6 @@ export async function callGroqAgent(
 
     // Si el contexto existe, agregarlo como contexto inicial
     if (contextResult && (esCliente || esLead)) {
-      const leadStage = contextResult.lead?.stage;
       const contextoObj: Record<string, unknown> = {
         es_cliente: contextResult.es_cliente,
         es_lead: contextResult.es_lead,
@@ -510,17 +516,19 @@ export async function callGroqAgent(
     const toolsEjecutados: string[] = [];
     const toolResults: Record<string, boolean> = {};
     let ultimoLeadInput: Record<string, unknown> | null = null;
+    const canonicalContext = { numero, conversationId: dependencies.canonicalConversationId };
 
     const persistirLead = async (
       input: Record<string, unknown>,
       scope: "tool" | "fallback",
     ): Promise<boolean> => {
-      const result = await dependencies.executeToolCall("guardar_actualizar_lead", input);
+      const trustedInput = bindCanonicalToolInput("guardar_actualizar_lead", input, canonicalContext);
+      const result = await dependencies.executeToolCall("guardar_actualizar_lead", trustedInput);
       const exito = "exito" in result && result.exito === true;
       toolResults.guardar_actualizar_lead = exito;
       const leadId = "lead_id" in result ? result.lead_id : "";
       console.log(
-        `[GROQ_AGENT] lead_persist scope=${scope} exito=${exito} stage=${String(input.stage ?? "unknown")} lead_id=${leadId || "none"}`,
+        `[GROQ_AGENT] lead_persist scope=${scope} exito=${exito} stage=${String(trustedInput.stage ?? "unknown")} lead_id=${leadId || "none"}`,
       );
       return exito;
     };
@@ -538,6 +546,7 @@ export async function callGroqAgent(
         tools: ALL_TOOLS,
         tool_choice: { type: "auto" },
       });
+      dependencies.onProviderUsed?.(response.usedProvider);
 
       if (!response.content || response.content.length === 0) {
         console.log(`[GROQ_AGENT] round=${ronda} empty_response breaking`);
@@ -588,10 +597,11 @@ export async function callGroqAgent(
           try {
             toolsEjecutados.push(toolCall.name);
             let result: ToolResult;
+            const trustedInput = bindCanonicalToolInput(toolCall.name as ToolName, toolCall.input, canonicalContext);
 
             if (toolCall.name === "guardar_actualizar_lead") {
-              ultimoLeadInput = toolCall.input;
-              const exito = await persistirLead(toolCall.input, "tool");
+              ultimoLeadInput = trustedInput;
+              const exito = await persistirLead(trustedInput, "tool");
               result = {
                 exito,
                 lead_id: "",
@@ -624,13 +634,13 @@ export async function callGroqAgent(
                 } else {
                   result = await dependencies.executeToolCall(
                     toolCall.name as ToolName,
-                    toolCall.input,
+                    trustedInput,
                   );
                 }
               } else {
                 result = await dependencies.executeToolCall(
                   toolCall.name as ToolName,
-                  toolCall.input,
+                  trustedInput,
                 );
               }
             }
