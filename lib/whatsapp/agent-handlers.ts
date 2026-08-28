@@ -30,7 +30,10 @@ import { recordCrmActivity, suggestClientConversion } from "@/lib/crm/service";
 
 // ─── Idempotencia Persistente (Supabase) ────────────────────────────────────
 
-function hashContent(content: string): string {
+/** Exportado para que utilidades de QA (ver scripts/qa-reset-contact.ts) puedan
+ * recomputar exactamente la misma clave y borrar solo la que corresponde a un
+ * contacto, sin adivinar ni tocar las de otros números. */
+export function hashContent(content: string): string {
   let hash = 0;
   for (let i = 0; i < content.length; i++) {
     const char = content.charCodeAt(i);
