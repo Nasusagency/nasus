@@ -11,7 +11,7 @@ export default function ContactForm() {
     const message = encodeURIComponent(
       `Hola, soy ${form.name} de ${form.company}.\n\nProblema:\n${form.problem}`
     );
-    void openTrackedWhatsApp(`https://wa.me/523329142391?text=${message}`, "humano", "contact_form");
+    void openTrackedWhatsApp(`https://wa.me/523329142391?text=${message}`, "humano", "contact_form", "Enviar mensaje");
   };
 
   const inputClass =

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 const NAV = [
+  { href: "/admin/whatsapp", label: "WhatsApp", icon: "◉" },
   { href: "/admin/leads", label: "Leads", icon: "◎" },
   { href: "/admin", label: "Dashboard", icon: "◈" },
   { href: "/admin/clientes", label: "Clientes", icon: "◉" },

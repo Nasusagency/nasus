@@ -7,10 +7,13 @@ import { checkRateLimit, markMessageSeen } from "@/lib/whatsapp/rate-limit";
 import { verifyMetaSignature } from "@/lib/whatsapp/signature";
 import {
   getCliente,
+  getConversationMode,
   getHistorial,
+  ensureConversation,
   resolveConversationId,
   saveMessage,
 } from "@/lib/whatsapp/store";
+import { shouldAutoRespond } from "@/lib/whatsapp/conversation-policy";
 import { construirTicket, detectarSolicitud, formatearHistorial } from "@/lib/whatsapp/ticket";
 import { callLLM } from "@/lib/llm/provider";
 import { ALL_TOOLS } from "@/lib/llm/tools";
@@ -191,6 +194,13 @@ async function procesarMensaje(mensaje: IncomingMessage): Promise<void> {
     mediaMime,
     messageId,
   });
+  await ensureConversation(conversationId, from);
+
+  const conversationMode = await getConversationMode(conversationId);
+  if (!shouldAutoRespond(conversationMode)) {
+    console.log(`[whatsapp] ${maskPhoneNumber(from)} auto_response_skipped mode=${conversationMode}`);
+    return;
+  }
 
   // El historial se lee después de guardar, así que ya incluye este mensaje.
   const historial = await getHistorial(conversationId);

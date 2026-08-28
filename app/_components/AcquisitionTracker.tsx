@@ -36,10 +36,14 @@ async function track(eventType: string, metadata: Record<string, string> = {}) {
   return response.json() as Promise<{ attributionId: string | null }>;
 }
 
-export async function openTrackedWhatsApp(url: string, destinationType: "humano" | "demo", ctaLocation: string) {
+export async function openTrackedWhatsApp(url: string, destinationType: "humano" | "demo", ctaLocation: string, ctaText?: string) {
   const pending = window.open("about:blank", "_blank");
   await completeTrackedWhatsAppClick(url, destinationType, {
-    trackInternal: () => track("whatsapp_click", { destination_type: destinationType, cta_location: ctaLocation }),
+    trackInternal: () => track("whatsapp_click", {
+      destination_type: destinationType,
+      cta_location: ctaLocation,
+      ...(ctaText ? { cta_text: ctaText.slice(0, 100) } : {}),
+    }),
     navigate: target => { if (pending) pending.location.href = target; else window.location.href = target; },
   });
 }
@@ -54,7 +58,12 @@ export default function AcquisitionTracker() {
       if (!anchor || event.defaultPrevented) return;
       event.preventDefault();
       const demo = anchor.href.includes("523329621602");
-      void openTrackedWhatsApp(anchor.href, demo ? "demo" : "humano", anchor.dataset.ctaLocation || "link");
+      void openTrackedWhatsApp(
+        anchor.href,
+        demo ? "demo" : "humano",
+        anchor.dataset.ctaLocation || "link",
+        anchor.textContent?.trim() || undefined,
+      );
     };
     document.addEventListener("click", onClick);
     return () => document.removeEventListener("click", onClick);

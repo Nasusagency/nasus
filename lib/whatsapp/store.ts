@@ -12,6 +12,7 @@
 
 import { createServiceClient } from "@/lib/supabase/service";
 import type { ClienteContexto, Direccion, StoredMessage } from "./types";
+import type { ConversationMode } from "./conversation-policy";
 
 const TABLA_MENSAJES = "whatsapp_mensajes";
 const TABLA_CLIENTES = "whatsapp_clientes";
@@ -71,6 +72,9 @@ export async function saveMessage(params: {
   mediaId?: string;
   mediaMime?: string;
   messageId?: string;
+  senderType?: "contact" | "ai" | "human" | "system";
+  adminActor?: string;
+  deliveryStatus?: "received" | "pending" | "sent" | "failed";
 }): Promise<void> {
   const supabase = createServiceClient();
   if (!supabase) return;
@@ -84,6 +88,9 @@ export async function saveMessage(params: {
       media_id: params.mediaId ?? null,
       media_mime: params.mediaMime ?? null,
       message_id: params.messageId ?? null,
+      sender_type: params.senderType ?? (params.direccion === "entrante" ? "contact" : "ai"),
+      admin_actor: params.adminActor ?? null,
+      delivery_status: params.deliveryStatus ?? (params.direccion === "entrante" ? "received" : "sent"),
     });
 
     // 23505 = unique_violation sobre message_id: es un reintento de Meta que ya
@@ -92,6 +99,28 @@ export async function saveMessage(params: {
   } catch (err) {
     logError("saveMessage", err);
   }
+}
+
+export async function ensureConversation(conversationId: string, numero: string): Promise<void> {
+  const supabase = createServiceClient();
+  if (!supabase) return;
+  const { error } = await supabase.from("whatsapp_conversations").upsert(
+    { conversation_id: conversationId, numero, updated_at: new Date().toISOString() },
+    { onConflict: "conversation_id", ignoreDuplicates: false },
+  );
+  if (error) logError("ensureConversation", error);
+}
+
+export async function getConversationMode(conversationId: string): Promise<ConversationMode> {
+  const supabase = createServiceClient();
+  if (!supabase) return "ai";
+  const { data, error } = await supabase.from("whatsapp_conversations")
+    .select("mode").eq("conversation_id", conversationId).maybeSingle();
+  if (error) {
+    logError("getConversationMode", error);
+    return "ai";
+  }
+  return (data?.mode as ConversationMode | undefined) ?? "ai";
 }
 
 /** Últimos mensajes del hilo, del más antiguo al más reciente. */
