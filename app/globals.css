@@ -18,6 +18,71 @@ body {
   font-family: var(--font-mono-space), ui-monospace, monospace;
 }
 
+/* Admin: tema claro encapsulado; no altera la landing ni las herramientas. */
+.admin-theme {
+  color-scheme: light;
+  background: #f7f5f0;
+  color: #18181b;
+}
+
+.admin-theme .bg-zinc-950,
+.admin-theme .bg-zinc-950\/95,
+.admin-theme .bg-zinc-950\/50,
+.admin-theme .bg-zinc-900,
+.admin-theme .bg-zinc-900\/70,
+.admin-theme .bg-zinc-900\/60,
+.admin-theme .bg-zinc-900\/40,
+.admin-theme .bg-zinc-900\/30,
+.admin-theme .bg-zinc-800 {
+  background-color: #fff;
+}
+
+.admin-theme .border-zinc-900,
+.admin-theme .border-zinc-800,
+.admin-theme .border-zinc-700 {
+  border-color: #dedbd3;
+}
+
+.admin-theme .text-white,
+.admin-theme .text-zinc-100,
+.admin-theme .text-zinc-200,
+.admin-theme .text-zinc-300 {
+  color: #18181b;
+}
+
+.admin-theme .text-zinc-400 { color: #3f3f46; }
+.admin-theme .text-zinc-500 { color: #52525b; }
+.admin-theme .text-zinc-600,
+.admin-theme .text-zinc-700 { color: #71717a; }
+.admin-theme .text-\[\#c4a882\] { color: #76582f; }
+.admin-theme .text-cyan-100,
+.admin-theme .text-cyan-300,
+.admin-theme .text-cyan-400,
+.admin-theme .text-cyan-500 { color: #075985; }
+.admin-theme .text-emerald-400 { color: #047857; }
+.admin-theme .text-yellow-400,
+.admin-theme .text-yellow-500,
+.admin-theme .text-yellow-600 { color: #a16207; }
+.admin-theme .text-red-400 { color: #b91c1c; }
+.admin-theme .bg-cyan-950\/30,
+.admin-theme .bg-cyan-950\/20 { background-color: #eff6ff; }
+.admin-theme .bg-yellow-950\/30 { background-color: #fffbeb; }
+.admin-theme .bg-red-950\/30 { background-color: #fef2f2; }
+.admin-theme .bg-emerald-950\/30 { background-color: #ecfdf5; }
+.admin-theme .hover\:bg-zinc-900:hover,
+.admin-theme .hover\:bg-zinc-900\/60:hover { background-color: #f3f1eb; }
+.admin-theme input,
+.admin-theme select,
+.admin-theme textarea { color: #18181b; }
+.admin-theme input::placeholder,
+.admin-theme textarea::placeholder { color: #71717a; }
+.admin-theme :focus-visible {
+  outline: 2px solid #76582f;
+  outline-offset: 2px;
+}
+.admin-theme button:disabled { cursor: not-allowed; }
+
+
 /* ─────────────────────────────────────────────────────────────────────────
    Sistema visual v1.0
    Toda la animación se apoya en transform/opacity (compositor) y se apaga

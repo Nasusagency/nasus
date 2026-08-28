@@ -4,6 +4,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { sendWhatsAppText } from "@/lib/whatsapp/client";
 import { performAdminReply } from "@/lib/whatsapp/admin-reply";
 import type { ConversationMode, ConversationStatus } from "@/lib/whatsapp/conversation-policy";
+import { buildContactInbox, type ContactInboxItem } from "@/lib/whatsapp/inbox-model";
 
 export type WhatsAppInboxFilters = {
   view?: string;
@@ -11,20 +12,7 @@ export type WhatsAppInboxFilters = {
   campaign?: string;
 };
 
-export type WhatsAppConversationListItem = {
-  conversationId: string;
-  numero: string;
-  lastActivity: string;
-  lastMessage: string | null;
-  stage: string | null;
-  requiereHumano: boolean;
-  mode: ConversationMode;
-  status: ConversationStatus;
-  unread: number;
-  source: string | null;
-  campaign: string | null;
-  nombre: string | null;
-};
+export type WhatsAppConversationListItem = ContactInboxItem;
 
 export async function getWhatsAppInbox(filters: WhatsAppInboxFilters): Promise<WhatsAppConversationListItem[]> {
   const supabase = createServiceClient();
@@ -34,36 +22,7 @@ export async function getWhatsAppInbox(filters: WhatsAppInboxFilters): Promise<W
     supabase.from("whatsapp_conversations").select("conversation_id,numero,mode,status,last_read_at,updated_at").order("updated_at", { ascending: false }).limit(1000),
     supabase.from("whatsapp_leads").select("numero,nombre_contacto,nombre_empresa,stage,requiere_humano,acquisition_events(source,campaign)").limit(2000),
   ]);
-  const messages = messagesResult.data ?? [];
-  const states = new Map((statesResult.data ?? []).map((state: any) => [state.conversation_id, state]));
-  const leads = new Map((leadsResult.data ?? []).map((lead: any) => [lead.numero, lead]));
-  const grouped = new Map<string, any[]>();
-  for (const message of messages) {
-    const rows = grouped.get(message.conversation_id) ?? [];
-    rows.push(message);
-    grouped.set(message.conversation_id, rows);
-  }
-  const items = [...grouped.entries()].map(([conversationId, rows]) => {
-    const latest = rows[0];
-    const state: any = states.get(conversationId);
-    const lead: any = leads.get(latest.numero);
-    const attribution: any = Array.isArray(lead?.acquisition_events) ? lead.acquisition_events[0] : lead?.acquisition_events;
-    const lastRead = state?.last_read_at ? new Date(state.last_read_at).getTime() : 0;
-    return {
-      conversationId,
-      numero: latest.numero,
-      lastActivity: latest.created_at,
-      lastMessage: latest.contenido,
-      stage: lead?.stage ?? null,
-      requiereHumano: Boolean(lead?.requiere_humano),
-      mode: (state?.mode ?? "ai") as ConversationMode,
-      status: (state?.status ?? "open") as ConversationStatus,
-      unread: rows.filter(row => row.direccion === "entrante" && new Date(row.created_at).getTime() > lastRead).length,
-      source: attribution?.source ?? null,
-      campaign: attribution?.campaign ?? null,
-      nombre: lead?.nombre_contacto ?? lead?.nombre_empresa ?? null,
-    };
-  });
+  const items = buildContactInbox(messagesResult.data as any[] ?? [], statesResult.data as any[] ?? [], leadsResult.data as any[] ?? []);
   return items.filter(item => {
     if (filters.source && item.source !== filters.source) return false;
     if (filters.campaign && item.campaign !== filters.campaign) return false;
@@ -86,22 +45,22 @@ export async function getWhatsAppConversation(conversationId: string) {
     .select("numero").eq("conversation_id", conversationId).limit(1).maybeSingle();
   const numero = state?.numero ?? firstMessage?.numero;
   if (!numero) return null;
-  const [messages, leadResult, requirements] = await Promise.all([
-    supabase.from("whatsapp_mensajes").select("id,direccion,contenido,media_id,created_at,sender_type,admin_actor,delivery_status,message_id").eq("conversation_id", conversationId).order("created_at", { ascending: true }).limit(2000),
+  const [messages, states, leadResult, requirements] = await Promise.all([
+    supabase.from("whatsapp_mensajes").select("id,conversation_id,direccion,contenido,media_id,created_at,sender_type,admin_actor,delivery_status,message_id").eq("numero", numero).order("created_at", { ascending: true }).limit(5000),
+    supabase.from("whatsapp_conversations").select("conversation_id,numero,mode,status,last_read_at,created_at,updated_at").eq("numero", numero).order("updated_at", { ascending: false }).limit(100),
     supabase.from("whatsapp_leads").select("id,numero,nombre_contacto,nombre_empresa,stage,requiere_humano,razon_handoff,resumen,created_at,ultima_interaccion,acquisition_event_id,acquisition_events(id,attribution_id,source,medium,campaign,content,landing_path,metadata,created_at)").eq("numero", numero).maybeSingle(),
     supabase.from("whatsapp_requerimientos").select("id,tipo,resumen,prioridad,estado,created_at").eq("numero_contacto", numero).order("created_at", { ascending: false }).limit(100),
   ]);
-  await supabase.from("whatsapp_conversations").upsert({
-    conversation_id: conversationId,
-    numero,
-    last_read_at: new Date().toISOString(),
-    updated_at: state?.updated_at ?? new Date().toISOString(),
-  }, { onConflict: "conversation_id" });
+  const allMessages = messages.data ?? [];
+  const latestConversationId = allMessages.at(-1)?.conversation_id ?? conversationId;
+  const latestState = (states.data ?? []).find(item => item.conversation_id === latestConversationId) ?? state;
+  const readAt = new Date().toISOString();
+  await supabase.from("whatsapp_conversations").update({ last_read_at: readAt }).eq("numero", numero);
   const lead: any = leadResult.data;
   const attribution: any = Array.isArray(lead?.acquisition_events) ? lead.acquisition_events[0] : lead?.acquisition_events;
   return {
-    conversation: { conversationId, numero, mode: state?.mode ?? "ai", status: state?.status ?? "open" },
-    messages: messages.data ?? [],
+    conversation: { conversationId: latestConversationId, numero, mode: latestState?.mode ?? "ai", status: latestState?.status ?? "open", history: states.data ?? [] },
+    messages: allMessages,
     lead: lead ?? null,
     requirements: requirements.data ?? [],
     attribution: attribution ?? null,

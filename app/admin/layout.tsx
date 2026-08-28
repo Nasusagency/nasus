@@ -1,3 +1,3 @@
 export default function AdminRootLayout({ children }: { children: React.ReactNode }) {
-  return <div className="min-h-screen bg-[#050508] text-zinc-100">{children}</div>;
+  return <div className="admin-theme min-h-screen bg-[#f7f5f0] text-zinc-900">{children}</div>;
 }
