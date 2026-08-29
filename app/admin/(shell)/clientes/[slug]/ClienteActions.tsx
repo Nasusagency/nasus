@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "../../_ui/Button";
+import { InlineMessage } from "../../_ui/InlineMessage";
 
 export default function ClienteActions({ clienteSlug }: { clienteSlug: string }) {
   const router = useRouter();
@@ -67,7 +68,7 @@ export default function ClienteActions({ clienteSlug }: { clienteSlug: string })
           Registrar
         </Button>
       </div>
-      {error && <p className="text-xs text-red-400">{error}</p>}
+      {error && <InlineMessage tone="error" compact>{error}</InlineMessage>}
     </form>
   );
 }

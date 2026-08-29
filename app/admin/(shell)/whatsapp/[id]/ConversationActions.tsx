@@ -5,6 +5,7 @@ import { useState } from "react";
 import type { ConversationMode } from "@/lib/whatsapp/conversation-policy";
 import { Button, Spinner } from "../../_ui/Button";
 import { Chip } from "../../_ui/Chip";
+import { InlineMessage } from "../../_ui/InlineMessage";
 
 type ModeAction = null | "human" | "ai" | "paused" | "resolved" | "send";
 
@@ -39,6 +40,6 @@ export default function ConversationActions({ conversationId, initialMode }: { c
     </div>
     <Button variant="ghost" size="sm" disabled={busy} loading={action === "resolved"} loadingText="Resolviendo…" onClick={() => changeMode(mode, "resolved", "resolved")}>Marcar como resuelta</Button>
     <form onSubmit={send} className="flex gap-2"><textarea value={text} onChange={event => setText(event.target.value)} maxLength={4096} rows={2} placeholder="Responder por WhatsApp…" className="flex-1 bg-white border border-zinc-300 rounded-lg px-3 py-2 text-sm resize-none outline-none focus:border-[#c4a882]"/><Button type="submit" variant="primary" className="self-stretch" disabled={!text.trim()} loading={action === "send"} loadingText="Enviando…">Enviar</Button></form>
-    {error && <p className="text-xs text-red-700">{error}</p>}
+    {error && <InlineMessage tone="error" compact>{error}</InlineMessage>}
   </div>;
 }

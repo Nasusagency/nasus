@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "../../_ui/Button";
+import { InlineMessage } from "../../_ui/InlineMessage";
 
 export default function NewPaymentAction({ contactId }: { contactId: string }) {
   const router = useRouter();
@@ -36,7 +37,7 @@ export default function NewPaymentAction({ contactId }: { contactId: string }) {
       <Button variant="primary" size="sm" onClick={create} loading={busy} loadingText="Creando…">Crear link</Button>
       <Button variant="ghost" size="sm" onClick={() => { setOpen(false); setResult(null); }}>Cancelar</Button>
     </div>
-    {result?.error && <p className="mt-2 text-red-700">{result.error}</p>}
-    {result?.publicUrl && <p className="mt-2 break-all text-emerald-700">Link: {result.publicUrl}</p>}
+    {result?.error && <InlineMessage tone="error" compact>{result.error}</InlineMessage>}
+    {result?.publicUrl && <InlineMessage tone="success" compact><span className="break-all">Link: {result.publicUrl}</span></InlineMessage>}
   </div>;
 }

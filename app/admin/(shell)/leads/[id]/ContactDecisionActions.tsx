@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "../../_ui/Button";
+import { InlineMessage } from "../../_ui/InlineMessage";
 
 type Action = null | "convert" | "lost" | "former_client" | "new_opportunity";
 
@@ -34,6 +35,6 @@ export default function ContactDecisionActions({ contactId, proposalId, lifecycl
     {lifecycle !== "client" && <Button variant="destructive" disabled={busy} loading={action === "lost"} loadingText="Marcando…" onClick={() => decide("lost", "¿Confirmas marcar esta oportunidad como perdida?")}>Marcar perdida</Button>}
     {lifecycle === "client" && <Button variant="secondary" disabled={busy} loading={action === "new_opportunity"} loadingText="Abriendo…" onClick={() => decide("new_opportunity", "¿Abrir una nueva oportunidad comercial para este cliente?")}>Nueva oportunidad</Button>}
     {lifecycle === "client" && <Button variant="secondary" disabled={busy} loading={action === "former_client"} loadingText="Actualizando…" onClick={() => decide("former_client", "¿Confirmas cambiar el lifecycle a antiguo cliente?")}>Antiguo cliente</Button>}
-    {error && <span className="text-xs text-red-700">{error}</span>}
+    {error && <InlineMessage tone="error" compact>{error}</InlineMessage>}
   </div>;
 }

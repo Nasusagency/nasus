@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "../../_ui/Button";
 import { Chip } from "../../_ui/Chip";
+import { InlineMessage } from "../../_ui/InlineMessage";
 
 interface ClienteOption {
   slug: string;
@@ -234,7 +235,7 @@ export default function PropuestasNuevaForm({
                     Ver página pública ↗
                   </a>
                 )}
-                {saveError && <span className="text-xs text-red-400">{saveError}</span>}
+                {saveError && <InlineMessage tone="error" compact>{saveError}</InlineMessage>}
               </div>
             </div>
           )}
