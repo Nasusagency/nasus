@@ -73,6 +73,31 @@ describe("aprobación humana e historial inmutable", () => {
     assert.doesNotMatch(sql, /update\s+whatsapp_leads/i);
   });
 
+  test("ningún activity insert usa actores fuera del enum crm_actor", () => {
+    const sources = [
+      ...["0008_crm_lifecycle_activity.sql", "0010_whatsapp_master_agent.sql", "0011_whatsapp_passive_observer.sql", "0012_crm_pricing_quotes.sql", "0013_quote_review_approval.sql", "0014_fix_quote_review_actor.sql"]
+        .map(file => readFileSync(`supabase/migrations/${file}`, "utf8")),
+      readFileSync("lib/crm/service.ts", "utf8"),
+      readFileSync("lib/whatsapp/master-agent.ts", "utf8"),
+      readFileSync("lib/whatsapp/passive-observer.ts", "utf8"),
+    ].join("\n");
+    const sqlActors = sources.split(";")
+      .filter(statement => /insert into (?:public\.)?crm_activities/i.test(statement))
+      .map(statement => statement.match(/values\s*\(\s*[^,]+,\s*'[^']+',\s*'([^']+)'/i)?.[1])
+      .filter((actor): actor is string => Boolean(actor));
+    const actors = [...sqlActors, ...[...sources.matchAll(/actor\s*:\s*["']([^"']+)["']/g)].map(match => match[1])];
+    assert.ok(actors.length > 0);
+    assert.deepEqual([...new Set(actors)].filter(actor => !["groq", "human", "system"].includes(actor)), []);
+    assert.doesNotMatch(sources, /actor[^\n]*["']ai["']|values\s*\([^;]*'ai'/i);
+  });
+
+  test("quote_reviewed usa system y conserva Claude como reviewer_provider", () => {
+    const sql = readFileSync("supabase/migrations/0014_fix_quote_review_actor.sql", "utf8");
+    assert.match(sql, /'quote_reviewed','system'/);
+    assert.match(sql, /'reviewer_provider',p_review->>'reviewerProvider'/);
+    assert.doesNotMatch(sql, /'quote_reviewed','ai'/);
+  });
+
   test("API exige cookie admin y no acepta total para aprobar", () => {
     const route = readFileSync("app/api/admin/quotes/[id]/route.ts", "utf8");
     assert.match(route, /await authorized\(request\)/);

@@ -73,7 +73,7 @@ begin
     values(quote_id,1,coalesce(p_review->'findings','[]'),coalesce(p_review->'risks','[]'),coalesce(p_review->'missingRequirements','[]'),
       coalesce(p_review->'recommendations','[]'),p_review->>'reviewerProvider',coalesce(p_review_reasons,'[]'),(p_review->>'reviewedAt')::timestamptz);
     insert into crm_activities(contact_id,event_type,actor,actor_user_id,metadata,idempotency_key)
-    values(p_contact_id,'quote_reviewed','ai',p_actor_user_id,jsonb_build_object('quote_id',quote_id,'provider',p_review->>'reviewerProvider','reasons',p_review_reasons),'quote-reviewed:'||quote_id||':1');
+    values(p_contact_id,'quote_reviewed','system',p_actor_user_id,jsonb_build_object('quote_id',quote_id,'reviewer_provider',p_review->>'reviewerProvider','reasons',p_review_reasons),'quote-reviewed:'||quote_id||':1');
   end if;
   insert into crm_activities(contact_id,event_type,actor,actor_user_id,metadata,idempotency_key)
   values(p_contact_id,'quote_draft_created','human',p_actor_user_id,jsonb_build_object('quote_id',quote_id),'quote-created:'||quote_id);
