@@ -1,4 +1,5 @@
 import "server-only";
+import { randomBytes } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServiceClient } from "@/lib/supabase/service";
 import { createMercadoPagoProvider } from "@/lib/payments/mercadopago";
@@ -17,14 +18,16 @@ export async function createPayment(input: {
     p_contact_id: input.contactId, p_proposal_id: input.proposalId ?? null, p_quote_id: input.quoteId ?? null,
     p_quote_version_id: input.quoteVersionId ?? null, p_provider: provider.name, p_external_reference: externalReference,
     p_amount: input.amount, p_currency: input.currency, p_description: input.description.slice(0, 500),
-    p_due_at: input.dueAt ?? null, p_actor_user_id: input.actorUserId,
+    p_due_at: input.dueAt ?? null, p_actor_user_id: input.actorUserId, p_public_token: randomBytes(32).toString("hex"),
   });
   if (error || !payment) return { ok: false as const, error: error?.message || "payment_not_created" };
-  if (payment.payment_url) return { ok: true as const, payment };
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://nasus.lat";
+  const publicUrl = `${siteUrl}/pagar/${payment.public_token}`;
+  if (payment.payment_url) return { ok: true as const, payment, publicUrl };
   const checkout = await provider.createCheckout({ externalReference: payment.external_reference, amount: Number(payment.amount), currency: payment.currency, description: payment.description, payerEmail: input.payerEmail });
   const { error: attachError } = await client.rpc("crm_attach_payment_checkout", { p_payment_id: payment.id, p_provider_payment_id: checkout.providerPaymentId, p_payment_url: checkout.paymentUrl });
   if (attachError) return { ok: false as const, error: attachError.message };
-  return { ok: true as const, payment: { ...payment, provider_payment_id: checkout.providerPaymentId, payment_url: checkout.paymentUrl } };
+  return { ok: true as const, payment: { ...payment, provider_payment_id: checkout.providerPaymentId, payment_url: checkout.paymentUrl }, publicUrl };
 }
 
 // El redirect del navegador (back_urls) NUNCA marca paid. Solo esta función, alimentada por un
@@ -47,4 +50,12 @@ export async function listPaymentsForContact(contactId: string, client: Supabase
   if (!client) return [];
   const { data } = await client.from("crm_payments").select("id,proposal_id,amount,currency,status,payment_url,description,due_at,paid_at,created_at").eq("contact_id", contactId).order("created_at", { ascending: false });
   return data ?? [];
+}
+
+// Para /pagar/[token]: solo devuelve las columnas necesarias para mostrar el estado de ESTE
+// pago. El token es aleatorio (32 bytes) y no revela ni el id interno ni datos de otros contactos.
+export async function getPaymentByPublicToken(token: string, client: SupabaseClient | null = createServiceClient()) {
+  if (!client || !/^[0-9a-f]{64}$/.test(token)) return null;
+  const { data } = await client.from("crm_payments").select("amount,currency,status,payment_url,description,due_at").eq("public_token", token).maybeSingle();
+  return data;
 }

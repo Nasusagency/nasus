@@ -5,7 +5,7 @@ import { describe, test } from "node:test";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { PaymentProvider } from "../lib/payments/provider";
 import { createMercadoPagoProvider } from "../lib/payments/mercadopago";
-import { createPayment, confirmPaymentFromProvider } from "../lib/crm/payments";
+import { createPayment, confirmPaymentFromProvider, getPaymentByPublicToken } from "../lib/crm/payments";
 
 type Row = Record<string, unknown>;
 function makeFakeClient(rpcImpl: (fn: string, args: Record<string, unknown>) => { data: unknown; error: { message: string } | null }, tables: Record<string, Row[]> = {}) {
@@ -77,6 +77,11 @@ describe("Fase 8: crm_payments", () => {
     const result = await confirmPaymentFromProvider({ providerPaymentId: "pay-1" }, provider, client);
     assert.equal(result.ok, true);
     assert.equal(confirmCalled, true);
+  });
+  test("getPaymentByPublicToken rechaza tokens con formato inválido sin consultar la base", async () => {
+    const client = makeFakeClient(() => ({ data: null, error: { message: "no debería llamarse" } }));
+    assert.equal(await getPaymentByPublicToken("no-es-hex-de-64", client), null);
+    assert.equal(await getPaymentByPublicToken("../../etc/passwd", client), null);
   });
 });
 
