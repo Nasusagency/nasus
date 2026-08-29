@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { Spinner } from "./_ui/Button";
 
 const NAV = [
   { href: "/admin/cotizaciones", label: "Cotizaciones", icon: "◇" },
@@ -18,6 +19,7 @@ export default function AdminNav() {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -32,6 +34,7 @@ export default function AdminNav() {
   }, [open]);
 
   async function logout() {
+    setLoggingOut(true);
     await fetch("/api/admin/logout", { method: "POST" });
     router.push("/admin/login");
   }
@@ -81,11 +84,13 @@ export default function AdminNav() {
 
       <div className="px-3 py-4 border-t border-zinc-900">
         <button
+          type="button"
           onClick={logout}
-          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-mono text-zinc-600 hover:text-zinc-400 hover:bg-zinc-900 transition-colors"
+          disabled={loggingOut}
+          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-mono text-zinc-600 hover:text-zinc-400 hover:bg-zinc-900 transition-colors disabled:opacity-60"
         >
-          <span className="text-base leading-none">⊗</span>
-          Cerrar sesión
+          {loggingOut ? <Spinner className="h-3.5 w-3.5" /> : <span className="text-base leading-none">⊗</span>}
+          {loggingOut ? "Cerrando sesión…" : "Cerrar sesión"}
         </button>
       </div>
     </aside>

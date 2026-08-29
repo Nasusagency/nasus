@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Button } from "../../_ui/Button";
 
 export default function NewPaymentAction({ contactId }: { contactId: string }) {
   const router = useRouter();
@@ -27,13 +28,13 @@ export default function NewPaymentAction({ contactId }: { contactId: string }) {
     router.refresh();
   }
 
-  if (!open) return <button type="button" onClick={() => setOpen(true)} className="rounded-lg border border-emerald-700 px-3 py-2 text-xs font-semibold text-emerald-800">+ Nuevo pago</button>;
+  if (!open) return <Button variant="primary" size="sm" onClick={() => setOpen(true)}>+ Nuevo pago</Button>;
   return <div className="rounded-lg border border-zinc-300 bg-white p-3 text-xs">
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       <input type="number" min="0" step="0.01" placeholder="Monto MXN" value={amount} onChange={e => setAmount(e.target.value)} className="w-32 rounded border px-2 py-1.5" />
       <input type="text" placeholder="Descripción (ej. Anticipo 50%)" value={description} onChange={e => setDescription(e.target.value)} className="min-w-48 flex-1 rounded border px-2 py-1.5" />
-      <button type="button" onClick={create} disabled={busy} className="rounded-lg bg-emerald-700 px-3 py-1.5 font-semibold text-white disabled:opacity-40">{busy ? "Creando…" : "Crear link"}</button>
-      <button type="button" onClick={() => { setOpen(false); setResult(null); }} className="rounded-lg border px-3 py-1.5 text-zinc-600">Cancelar</button>
+      <Button variant="primary" size="sm" onClick={create} loading={busy} loadingText="Creando…">Crear link</Button>
+      <Button variant="ghost" size="sm" onClick={() => { setOpen(false); setResult(null); }}>Cancelar</Button>
     </div>
     {result?.error && <p className="mt-2 text-red-700">{result.error}</p>}
     {result?.publicUrl && <p className="mt-2 break-all text-emerald-700">Link: {result.publicUrl}</p>}

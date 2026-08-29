@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
+import { Button } from "../../_ui/Button";
 
 interface ClienteOption {
   slug: string;
@@ -26,6 +27,7 @@ export default function PropuestasNuevaForm({
   const [saved, setSaved] = useState(false);
   const [savedSlugFinal, setSavedSlugFinal] = useState("");
   const [saveError, setSaveError] = useState("");
+  const [saving, setSaving] = useState(false);
   const [titulo, setTitulo] = useState("");
   const [saveSlug, setSaveSlug] = useState("");
   const outputRef = useRef<HTMLDivElement>(null);
@@ -82,6 +84,7 @@ export default function PropuestasNuevaForm({
       .trim();
     const t = titulo.trim() || firstLine || "Propuesta";
     setSaveError("");
+    setSaving(true);
     const res = await fetch("/api/admin/propuestas", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -92,6 +95,7 @@ export default function PropuestasNuevaForm({
         contactId: mode === "cliente" ? clienteSlug : undefined,
       }),
     });
+    setSaving(false);
     if (res.ok) {
       setSaved(true);
       setSavedSlugFinal(finalSlug);
@@ -163,29 +167,34 @@ export default function PropuestasNuevaForm({
           />
         </div>
 
-        <button
+        <Button
+          variant="primary"
+          size="lg"
+          fullWidth
+          className="mt-4"
           onClick={generate}
           disabled={
-            generating ||
             (mode === "cliente" && !clienteSlug) ||
             (mode === "libre" && !contexto.trim())
           }
-          className="mt-4 w-full bg-[#c4a882] text-[#050508] font-mono font-bold text-sm py-2.5 rounded-lg hover:bg-[#d4b892] disabled:opacity-40 transition-colors"
+          loading={generating}
+          loadingText="Generando…"
         >
-          {generating ? "Generando…" : "Generar propuesta"}
-        </button>
+          Generar propuesta
+        </Button>
       </div>
 
       {output && (
         <div className="bg-zinc-900/40 border border-zinc-800 rounded-xl overflow-hidden">
           <div className="flex items-center justify-between px-5 py-3 border-b border-zinc-800">
             <span className="text-xs font-mono text-zinc-400">Propuesta generada</span>
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => navigator.clipboard.writeText(output)}
-              className="text-[10px] font-mono text-zinc-500 hover:text-zinc-300 transition-colors"
             >
               Copiar
-            </button>
+            </Button>
           </div>
           <div
             ref={outputRef}
@@ -214,13 +223,15 @@ export default function PropuestasNuevaForm({
                 />
               </div>
               <div className="flex items-center gap-3 flex-wrap">
-                <button
+                <Button
+                  variant="primary"
                   onClick={save}
                   disabled={saved}
-                  className="px-4 py-2 text-xs font-mono border border-[#c4a882]/40 text-[#c4a882] rounded-lg hover:bg-[#c4a882]/10 disabled:opacity-40 transition-colors"
+                  loading={saving}
+                  loadingText="Guardando…"
                 >
                   {saved ? "✓ Guardada" : "Guardar propuesta"}
-                </button>
+                </Button>
                 {saved && savedSlugFinal && (
                   <a
                     href={`/propuesta/${savedSlugFinal}`}

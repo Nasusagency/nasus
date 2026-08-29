@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "../../_ui/Button";
 
 export default function ClienteActions({ clienteSlug }: { clienteSlug: string }) {
   const router = useRouter();
@@ -56,13 +57,15 @@ export default function ClienteActions({ clienteSlug }: { clienteSlug: string })
           placeholder="Solicitado por (opcional)"
           className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 outline-none focus:border-[#c4a882] transition-colors placeholder:text-zinc-600"
         />
-        <button
+        <Button
           type="submit"
-          disabled={loading || !descripcion.trim()}
-          className="px-4 py-2 text-xs font-mono bg-zinc-700 text-zinc-200 rounded-lg hover:bg-zinc-600 disabled:opacity-40 transition-colors"
+          variant="primary"
+          disabled={!descripcion.trim()}
+          loading={loading}
+          loadingText="Registrando…"
         >
-          {loading ? "…" : "Registrar"}
-        </button>
+          Registrar
+        </Button>
       </div>
       {error && <p className="text-xs text-red-400">{error}</p>}
     </form>

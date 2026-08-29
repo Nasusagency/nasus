@@ -2,36 +2,38 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Button } from "../../_ui/Button";
+
+type Action = null | "convert" | "lost" | "former_client" | "new_opportunity";
 
 export default function ContactDecisionActions({ contactId, proposalId, lifecycle }: { contactId: string; proposalId?: string; lifecycle: string }) {
   const router = useRouter();
-  const [busy, setBusy] = useState(false);
+  const [action, setAction] = useState<Action>(null);
+  const busy = action !== null;
   const [error, setError] = useState("");
   async function convert() {
     if (!window.confirm("¿Confirmas convertir este contacto a cliente y marcar la oportunidad como ganada?")) return;
-    setBusy(true); setError("");
+    setAction("convert"); setError("");
     const response = await fetch(`/api/admin/crm/contacts/${contactId}/convert`, {
       method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ proposalId }),
     });
-    setBusy(false);
+    setAction(null);
     if (!response.ok) { setError("No se pudo convertir el contacto."); return; }
     router.refresh();
   }
   async function decide(decision: "lost" | "former_client" | "new_opportunity", prompt: string) {
     if (!window.confirm(prompt)) return;
-    setBusy(true); setError("");
+    setAction(decision); setError("");
     const response = await fetch(`/api/admin/crm/contacts/${contactId}/decision`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ decision, requestId: crypto.randomUUID() }) });
-    setBusy(false);
+    setAction(null);
     if (!response.ok) { setError("No se pudo registrar la decisión."); return; }
     router.refresh();
   }
-  return <div className="flex items-center gap-3">
-    {lifecycle !== "client" && <button type="button" onClick={convert} disabled={busy} className="rounded-lg bg-[#8c6a3b] px-4 py-2 text-xs font-semibold text-white hover:bg-[#76582f] disabled:opacity-50">
-      {busy ? "Convirtiendo…" : "Convertir a cliente"}
-    </button>}
-    {lifecycle !== "client" && <button type="button" onClick={() => decide("lost", "¿Confirmas marcar esta oportunidad como perdida?")} disabled={busy} className="rounded-lg border border-red-300 px-3 py-2 text-xs text-red-700 disabled:opacity-50">Marcar perdida</button>}
-    {lifecycle === "client" && <button type="button" onClick={() => decide("new_opportunity", "¿Abrir una nueva oportunidad comercial para este cliente?")} disabled={busy} className="rounded-lg border border-amber-300 px-3 py-2 text-xs text-amber-800 disabled:opacity-50">Nueva oportunidad</button>}
-    {lifecycle === "client" && <button type="button" onClick={() => decide("former_client", "¿Confirmas cambiar el lifecycle a antiguo cliente?")} disabled={busy} className="rounded-lg border border-zinc-300 px-3 py-2 text-xs text-zinc-700 disabled:opacity-50">Antiguo cliente</button>}
+  return <div className="flex flex-wrap items-center gap-3">
+    {lifecycle !== "client" && <Button variant="primary" disabled={busy} loading={action === "convert"} loadingText="Convirtiendo…" onClick={convert}>Convertir a cliente</Button>}
+    {lifecycle !== "client" && <Button variant="destructive" disabled={busy} loading={action === "lost"} loadingText="Marcando…" onClick={() => decide("lost", "¿Confirmas marcar esta oportunidad como perdida?")}>Marcar perdida</Button>}
+    {lifecycle === "client" && <Button variant="secondary" disabled={busy} loading={action === "new_opportunity"} loadingText="Abriendo…" onClick={() => decide("new_opportunity", "¿Abrir una nueva oportunidad comercial para este cliente?")}>Nueva oportunidad</Button>}
+    {lifecycle === "client" && <Button variant="secondary" disabled={busy} loading={action === "former_client"} loadingText="Actualizando…" onClick={() => decide("former_client", "¿Confirmas cambiar el lifecycle a antiguo cliente?")}>Antiguo cliente</Button>}
     {error && <span className="text-xs text-red-700">{error}</span>}
   </div>;
 }
