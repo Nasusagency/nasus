@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { usePathname } from "next/navigation";
 
 import { ASSISTANT_BUTTON_ID } from "./assistant-support";
 
@@ -129,6 +130,7 @@ export default function VoiceAssistant() {
   const [mensajeError, setMensajeError] = useState<string | null>(null);
   const [respuesta, setRespuesta] = useState<string | null>(null);
   const soportado = useSyncExternalStore(noSuscribir, leerSoporte, soporteEnServidor);
+  const pathname = usePathname();
 
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -338,7 +340,10 @@ export default function VoiceAssistant() {
     void iniciar();
   }, [detener, estado, iniciar, limpiarAudio]);
 
-  if (!soportado) return null;
+  // El panel admin es una herramienta operativa del CRM, no la landing comercial:
+  // el FAB del asistente de voz no debe flotar ahí. Se prueba desde
+  // /internal/voice-test (misma auth admin, fuera del nav del CRM).
+  if (!soportado || pathname?.startsWith("/admin")) return null;
 
   const activo = estado === "listening";
   const color = activo || estado === "speaking" ? CYAN : GOLD;

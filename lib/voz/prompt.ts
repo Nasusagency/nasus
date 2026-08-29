@@ -1,6 +1,8 @@
-// Haiku 4.5 basta para respuestas de máximo 3 oraciones y cuesta ~3× menos
-// que Sonnet 4.6 ($1/$5 vs $3/$15 por millón de tokens), con menor latencia.
-export const VOZ_MODEL = "claude-haiku-4-5-20251001";
+// Sonnet 4.6, igual que el resto de los flujos de generación del proyecto
+// (propuestas, facturas, documentos). Más caro y algo más lento que Haiku 4.5
+// para estas respuestas cortas, pero el límite de 5 conversaciones/hora por IP
+// ya acota el costo de forma determinista.
+export const VOZ_MODEL = "claude-sonnet-4-6";
 
 export const VOZ_MAX_TOKENS = 300;
 
@@ -17,8 +19,8 @@ export const VOZ_MAX_CHARS_TTS = 600;
  * Sigue siendo solo la primera capa: el sanitizado de lib/voz/sanitize.ts es la
  * red de seguridad, porque un prompt nunca es una garantía.
  *
- * No alargar esto buscando prompt caching: mide ~160 tokens y Haiku 4.5 necesita
- * ~4096 para cachear (ver CLAUDE.md §5.8). No cachea ni va a cachear.
+ * No alargar esto buscando prompt caching: mide ~160 tokens y Sonnet 4.6 necesita
+ * ~1024 para cachear (ver CLAUDE.md §5.8). No cachea ni va a cachear.
  */
 export const VOZ_SYSTEM_PROMPT = `Eres el asistente de voz de Nasus Agency, una agencia de soluciones tecnológicas artesanales. Respondes preguntas sobre nuestros servicios: páginas web y apps a medida, validador de documentos, asistente de WhatsApp, automatización de procesos y ecosistemas de marketing. Eres directo, profesional y cálido. Tus respuestas son cortas (máximo 3 oraciones) porque se van a escuchar en voz.
 
