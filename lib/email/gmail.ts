@@ -1,0 +1,13 @@
+import "server-only";
+
+export type GmailSendResult={messageId:string;threadId:string};
+export interface ProposalDeliveryProvider { name:"gmail"; send(input:{to:string;subject:string;text:string;idempotencyKey:string}):Promise<GmailSendResult>; getThread(threadId:string):Promise<{messages:Array<{id:string;text:string}>}> }
+type Fetcher=typeof fetch;
+const required=(name:string)=>{const value=process.env[name];if(!value)throw new Error(`gmail_config_missing:${name}`);return value;};
+const b64url=(value:string)=>Buffer.from(value,"utf8").toString("base64url");
+function decodeBody(data?:string){return data?Buffer.from(data,"base64url").toString("utf8"):"";}
+
+export function createGmailProvider(fetcher:Fetcher=fetch):ProposalDeliveryProvider {
+  async function token(){const body=new URLSearchParams({client_id:required("GMAIL_CLIENT_ID"),client_secret:required("GMAIL_CLIENT_SECRET"),refresh_token:required("GMAIL_REFRESH_TOKEN"),grant_type:"refresh_token"});const res=await fetcher("https://oauth2.googleapis.com/token",{method:"POST",headers:{"content-type":"application/x-www-form-urlencoded"},body});if(!res.ok)throw new Error(`gmail_auth_failed:${res.status}`);const data=await res.json() as {access_token?:string};if(!data.access_token)throw new Error("gmail_auth_missing_token");return data.access_token;}
+  return {name:"gmail",async send(input){const access=await token();const from=required("GMAIL_SENDER_EMAIL");const raw=b64url([`From: ${from}`,`To: ${input.to}`,`Subject: =?UTF-8?B?${Buffer.from(input.subject).toString("base64")}?=`,`Message-ID: <${input.idempotencyKey}@nasus.local>`,`MIME-Version: 1.0`,`Content-Type: text/plain; charset=UTF-8`,"",input.text].join("\r\n"));const res=await fetcher("https://gmail.googleapis.com/gmail/v1/users/me/messages/send",{method:"POST",headers:{authorization:`Bearer ${access}`,"content-type":"application/json"},body:JSON.stringify({raw})});if(!res.ok)throw new Error(`gmail_send_failed:${res.status}`);const data=await res.json() as {id?:string;threadId?:string};if(!data.id||!data.threadId)throw new Error("gmail_missing_provider_reference");return {messageId:data.id,threadId:data.threadId};},async getThread(threadId){const access=await token();const res=await fetcher(`https://gmail.googleapis.com/gmail/v1/users/me/threads/${encodeURIComponent(threadId)}?format=full`,{headers:{authorization:`Bearer ${access}`}});if(!res.ok)throw new Error(`gmail_thread_failed:${res.status}`);const data=await res.json() as {messages?:Array<{id:string;payload?:{body?:{data?:string};parts?:Array<{mimeType?:string;body?:{data?:string}}>} }>};return {messages:(data.messages||[]).map(m=>({id:m.id,text:decodeBody(m.payload?.parts?.find(p=>p.mimeType==="text/plain")?.body?.data||m.payload?.body?.data)}))};}};
+}

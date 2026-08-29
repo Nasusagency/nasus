@@ -1,0 +1,4 @@
+import {NextRequest,NextResponse} from "next/server";import {ADMIN_COOKIE,verifyAdminToken} from "@/lib/admin/auth";import {getActiveProposalTerms,updateActiveProposalTerms,type ProposalTerms} from "@/lib/crm/proposals";
+async function auth(r:NextRequest){const t=r.cookies.get(ADMIN_COOKIE)?.value;return !!t&&await verifyAdminToken(t)}
+export async function GET(r:NextRequest){if(!await auth(r))return NextResponse.json({},{status:401});return NextResponse.json(await getActiveProposalTerms())}
+export async function PUT(r:NextRequest){if(!await auth(r))return NextResponse.json({},{status:401});const b=await r.json() as ProposalTerms&{name:string};const result=await updateActiveProposalTerms({...b,actorUserId:process.env.ADMIN_ACTOR||"admin"});return NextResponse.json(result,{status:result.ok?200:400})}

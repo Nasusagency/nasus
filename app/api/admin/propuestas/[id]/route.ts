@@ -1,0 +1,7 @@
+import { NextRequest, NextResponse } from "next/server";
+import { ADMIN_COOKIE, verifyAdminToken } from "@/lib/admin/auth";
+import { createServiceClient } from "@/lib/supabase/service";
+import { updateProposalCopy } from "@/lib/crm/proposals";
+async function auth(r:NextRequest){const t=r.cookies.get(ADMIN_COOKIE)?.value;return !!t&&await verifyAdminToken(t)}
+export async function GET(r:NextRequest,{params}:{params:Promise<{id:string}>}){if(!await auth(r))return NextResponse.json({},{status:401});const db=createServiceClient();if(!db)return NextResponse.json({error:"database_unavailable"},{status:503});const {data}=await db.from("crm_proposals").select("*,whatsapp_leads(nombre_contacto,nombre_empresa),crm_quote_versions(version,snapshot)").eq("id",(await params).id).maybeSingle();return data?NextResponse.json(data):NextResponse.json({error:"not_found"},{status:404});}
+export async function PATCH(r:NextRequest,{params}:{params:Promise<{id:string}>}){if(!await auth(r))return NextResponse.json({},{status:401});const b=await r.json().catch(()=>null) as {content?:string;recipientEmail?:string;ready?:boolean}|null;if(!b||typeof b.content!=="string")return NextResponse.json({error:"invalid_body"},{status:400});const result=await updateProposalCopy({proposalId:(await params).id,content:b.content,recipientEmail:b.recipientEmail,ready:Boolean(b.ready),actorUserId:process.env.ADMIN_ACTOR||"admin"});return NextResponse.json(result,{status:result.ok?200:400});}

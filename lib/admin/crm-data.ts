@@ -15,7 +15,7 @@ export async function getCrmProposals() {
   const client = createServiceClient();
   if (!client) return [];
   const { data } = await client.from("crm_proposals")
-    .select("id,contact_id,slug,title,status,value,currency,generated_at,sent_at,updated_at,whatsapp_leads(nombre_contacto,nombre_empresa,numero,lifecycle,stage)")
+    .select("id,contact_id,slug,title,status,value,currency,proposal_version,generated_at,sent_at,updated_at,whatsapp_leads(nombre_contacto,nombre_empresa,numero,lifecycle,stage)")
     .order("updated_at", { ascending: false }).limit(1000);
   return data ?? [];
 }
