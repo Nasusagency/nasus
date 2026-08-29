@@ -59,6 +59,17 @@ export function isNumberInGroqAllowlist(numero: string, allowlistEnv?: string): 
   return allowedNumbers.includes(normalized);
 }
 
+/** Identifica administradores del Master Agent exclusivamente con una allowlist server-side. */
+export function isNumberInMasterAdminAllowlist(numero: string, allowlistEnv?: string): boolean {
+  const normalized = normalizePhoneNumber(numero);
+  if (!normalized) return false;
+  return (allowlistEnv ?? "")
+    .split(",")
+    .map(normalizePhoneNumber)
+    .filter(Boolean)
+    .includes(normalized);
+}
+
 /**
  * Enmascarar número de teléfono para logging (sin PII)
  * Ej: "523331002790" → "523331***790"

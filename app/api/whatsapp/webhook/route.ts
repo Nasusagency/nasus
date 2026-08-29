@@ -18,7 +18,8 @@ import { construirTicket, detectarSolicitud, formatearHistorial } from "@/lib/wh
 import { callLLM } from "@/lib/llm/provider";
 import { ALL_TOOLS } from "@/lib/llm/tools";
 import { executeToolCall } from "@/lib/whatsapp/agent-handlers";
-import { selectProvider, maskPhoneNumber } from "@/lib/whatsapp/groq-allowlist";
+import { isNumberInMasterAdminAllowlist, selectProvider, maskPhoneNumber } from "@/lib/whatsapp/groq-allowlist";
+import { runConfiguredMasterAgent } from "@/lib/whatsapp/master-agent";
 import type {
   ClienteContexto,
   DeteccionSolicitud,
@@ -171,16 +172,20 @@ function extractMessages(payload: WhatsAppWebhookPayload): IncomingMessage[] {
 async function procesarMensaje(mensaje: IncomingMessage): Promise<void> {
   const { messageId, from, profileName, mediaId, mediaMime } = mensaje;
   const { cleanText: text, attributionId } = extractAttributionToken(mensaje.text);
+  const isMasterAdmin = isNumberInMasterAdminAllowlist(
+    from,
+    process.env.WHATSAPP_MASTER_ADMIN_NUMBERS,
+  );
 
   if (!markMessageSeen(messageId)) return;
 
   // Se resuelve el cliente antes del rate limit porque la cuota depende de si
   // está dado de alta: 100/hora para clientes, 10/hora para desconocidos.
-  const cliente = await getCliente(from);
+  const cliente = isMasterAdmin ? null : await getCliente(from);
 
   // Al alcanzar el límite se deja de responder en silencio: contestar aquí
   // solo alimentaría el bucle que se intenta frenar.
-  if (!checkRateLimit(from, cliente !== null)) {
+  if (!checkRateLimit(from, isMasterAdmin || cliente !== null)) {
     console.warn("[whatsapp/webhook] límite por número alcanzado");
     return;
   }
@@ -195,8 +200,29 @@ async function procesarMensaje(mensaje: IncomingMessage): Promise<void> {
     mediaId,
     mediaMime,
     messageId,
+    senderType: isMasterAdmin ? "human" : "contact",
+    adminActor: isMasterAdmin ? "master_admin" : undefined,
   });
   await ensureConversation(conversationId, from);
+
+  if (isMasterAdmin) {
+    try {
+      if (!text) {
+        await responder(conversationId, from, "La consola administrativa requiere un mensaje de texto.");
+        return;
+      }
+      const response = await runConfiguredMasterAgent({
+        text,
+        conversationId,
+        adminNumber: from,
+      });
+      await responder(conversationId, from, response);
+    } catch (err) {
+      logError("master_agent", err);
+      await responder(conversationId, from, "No pude completar la operación administrativa; no apliqué cambios sensibles.");
+    }
+    return;
+  }
 
   const conversationMode = await getConversationMode(conversationId);
   if (!shouldAutoRespond(conversationMode)) {

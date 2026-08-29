@@ -9,6 +9,7 @@ import assert from "node:assert/strict";
 import {
   normalizePhoneNumber,
   isNumberInGroqAllowlist,
+  isNumberInMasterAdminAllowlist,
   selectProvider,
   maskPhoneNumber,
 } from "@/lib/whatsapp/groq-allowlist";
@@ -92,6 +93,14 @@ describe("normalizePhoneNumber", () => {
       // +54 11 1234 5678 → 541112345678
       assert.equal(normalizePhoneNumber("+54 11 1234 5678"), "541112345678");
     });
+  });
+});
+
+describe("isNumberInMasterAdminAllowlist", () => {
+  test("usa una allowlist independiente y normalizada", () => {
+    assert.equal(isNumberInMasterAdminAllowlist("5213331002790", "523331002790"), true);
+    assert.equal(isNumberInMasterAdminAllowlist("523331002791", "523331002790"), false);
+    assert.equal(isNumberInMasterAdminAllowlist("523331002790", undefined), false);
   });
 });
 
