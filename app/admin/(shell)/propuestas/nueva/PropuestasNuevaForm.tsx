@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "../../_ui/Button";
+import { Chip } from "../../_ui/Chip";
 
 interface ClienteOption {
   slug: string;
@@ -114,19 +115,11 @@ export default function PropuestasNuevaForm({
 
       <div className="bg-zinc-900/40 border border-zinc-800 rounded-xl p-5 mb-5">
         {/* Mode toggle */}
-        <div className="flex gap-2 mb-4">
+        <div className="flex gap-2 mb-4" role="group" aria-label="Origen del contexto">
           {(["libre", "cliente"] as const).map((m) => (
-            <button
-              key={m}
-              onClick={() => setMode(m)}
-              className={`px-3 py-1.5 text-xs font-mono rounded-lg transition-colors ${
-                mode === m
-                  ? "bg-[#c4a882]/10 text-[#c4a882] border border-[#c4a882]/30"
-                  : "text-zinc-500 border border-zinc-800 hover:text-zinc-300"
-              }`}
-            >
+            <Chip key={m} active={mode === m} tone="brand" onClick={() => setMode(m)}>
               {m === "libre" ? "Contexto libre" : "Desde CRM"}
-            </button>
+            </Chip>
           ))}
         </div>
 

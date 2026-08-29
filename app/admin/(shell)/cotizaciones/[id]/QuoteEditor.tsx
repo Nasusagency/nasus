@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { calculateQuote, PRICING_CATEGORIES, type PricingCategory, type PricingProfile, type PricingUnit, type QuoteLineInput } from "@/lib/crm/pricing";
 import { Button } from "../../_ui/Button";
+import { Badge } from "../../_ui/Badge";
 
 type StoredLine = { id: string; category: PricingCategory; description: string; unit: PricingUnit; quantity: number | string; hours: number | string; unit_rate: number | string; direct_cost: number | string; external_cost: number | string; margin_pct: number | string; notes: string | null };
 type Review = { findings: string[]; risks: string[]; missing_requirements: string[]; recommendations: string[]; reviewer_provider: string; reviewed_at: string; trigger_reasons: string[] } | null;
@@ -56,7 +57,7 @@ export default function QuoteEditor({ initial, linkedProposal }: { initial: Init
   return <div className="mx-auto max-w-[1600px] p-4 sm:p-6 lg:p-8">
     <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
       <div className="min-w-0"><p className="text-[10px] tracking-[.18em] text-[#8c6a3b]">COTIZACIÓN · V{initial.version} · REV {revision}</p><input value={title} disabled={!editable} onChange={event => setTitle(event.target.value)} className="mt-1 w-full border-b border-transparent bg-transparent text-2xl font-semibold text-zinc-950 outline-none focus:border-zinc-300 disabled:opacity-100" /><p className="mt-1 text-sm text-zinc-500">{String(contact?.nombre_empresa || contact?.nombre_contacto || contact?.numero || "Contacto CRM")}</p></div>
-      <div className="shrink-0 sm:text-right"><span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${editable ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800"}`}>{editable ? "Draft" : "Aprobada"}</span><strong className="mt-2 block text-2xl text-zinc-950">{initial.currency} {money(calculation?.total ?? 0)}</strong><p className="text-xs text-zinc-500">Total determinista</p></div>
+      <div className="shrink-0 sm:text-right"><Badge tone={editable ? "warning" : "success"}>{editable ? "Draft" : "Aprobada"}</Badge><strong className="mt-2 block text-2xl text-zinc-950">{initial.currency} {money(calculation?.total ?? 0)}</strong><p className="text-xs text-zinc-500">Total determinista</p></div>
     </div>
     {!editable && <ProposalStatus proposal={linkedProposal} quoteVersion={initial.version} onGenerate={createProposal} busy={action === "proposal"} />}
     <div className="grid min-w-0 grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.85fr)_minmax(20rem,1fr)]">

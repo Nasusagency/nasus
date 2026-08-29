@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { ConversationMode } from "@/lib/whatsapp/conversation-policy";
 import { Button, Spinner } from "../../_ui/Button";
+import { Chip } from "../../_ui/Chip";
 
 type ModeAction = null | "human" | "ai" | "paused" | "resolved" | "send";
 
@@ -27,14 +28,16 @@ export default function ConversationActions({ conversationId, initialMode }: { c
     if (response.ok) { setText(""); setMode("human"); router.refresh(); } else setError("No se pudo enviar el mensaje.");
     setAction(null);
   }
-  const modeButtonClass = (active: boolean) => `inline-flex items-center gap-1.5 border rounded-lg px-3 py-2 transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${active ? "border-yellow-700 text-yellow-700 bg-yellow-50" : "border-zinc-300 text-zinc-500 hover:border-zinc-400 hover:text-zinc-700"}`;
   return <div className="space-y-4">
-    <div className="flex gap-2 flex-wrap text-[10px]">
-      <button type="button" disabled={busy} onClick={() => changeMode("human", "open", "human")} className={modeButtonClass(mode === "human")}>{action === "human" && <Spinner className="h-3 w-3" />}Tomar conversación</button>
-      <button type="button" disabled={busy} onClick={() => changeMode("ai", "open", "ai")} className={modeButtonClass(mode === "ai")}>{action === "ai" && <Spinner className="h-3 w-3" />}Devolver a IA</button>
-      <button type="button" disabled={busy} onClick={() => changeMode("paused", undefined, "paused")} className={modeButtonClass(mode === "paused")}>{action === "paused" && <Spinner className="h-3 w-3" />}Pausar</button>
-      <button type="button" disabled={busy} onClick={() => changeMode(mode, "resolved", "resolved")} className={modeButtonClass(false)}>{action === "resolved" && <Spinner className="h-3 w-3" />}Resolver</button>
+    <div>
+      <p className="mb-1.5 text-[10px] uppercase tracking-widest text-zinc-500">Modo de la conversación</p>
+      <div className="flex gap-2 flex-wrap text-xs" role="group" aria-label="Modo de la conversación">
+        <Chip active={mode === "human"} tone="warning" disabled={busy} onClick={() => changeMode("human", "open", "human")}>{action === "human" && <Spinner className="h-3 w-3" />}Tomar conversación</Chip>
+        <Chip active={mode === "ai"} tone="success" disabled={busy} onClick={() => changeMode("ai", "open", "ai")}>{action === "ai" && <Spinner className="h-3 w-3" />}Devolver a IA</Chip>
+        <Chip active={mode === "paused"} tone="neutral" disabled={busy} onClick={() => changeMode("paused", undefined, "paused")}>{action === "paused" && <Spinner className="h-3 w-3" />}Pausar</Chip>
+      </div>
     </div>
+    <Button variant="ghost" size="sm" disabled={busy} loading={action === "resolved"} loadingText="Resolviendo…" onClick={() => changeMode(mode, "resolved", "resolved")}>Marcar como resuelta</Button>
     <form onSubmit={send} className="flex gap-2"><textarea value={text} onChange={event => setText(event.target.value)} maxLength={4096} rows={2} placeholder="Responder por WhatsApp…" className="flex-1 bg-white border border-zinc-300 rounded-lg px-3 py-2 text-sm resize-none outline-none focus:border-[#c4a882]"/><Button type="submit" variant="primary" className="self-stretch" disabled={!text.trim()} loading={action === "send"} loadingText="Enviando…">Enviar</Button></form>
     {error && <p className="text-xs text-red-700">{error}</p>}
   </div>;
