@@ -20,6 +20,7 @@ import { ALL_TOOLS } from "@/lib/llm/tools";
 import { executeToolCall } from "@/lib/whatsapp/agent-handlers";
 import { isNumberInMasterAdminAllowlist, selectProvider, maskPhoneNumber } from "@/lib/whatsapp/groq-allowlist";
 import { runConfiguredMasterAgent } from "@/lib/whatsapp/master-agent";
+import { observeConfiguredHumanMessage } from "@/lib/whatsapp/passive-observer";
 import type {
   ClienteContexto,
   DeteccionSolicitud,
@@ -226,6 +227,19 @@ async function procesarMensaje(mensaje: IncomingMessage): Promise<void> {
 
   const conversationMode = await getConversationMode(conversationId);
   if (!shouldAutoRespond(conversationMode)) {
+    if (conversationMode === "human" && text) {
+      try {
+        const observation = await observeConfiguredHumanMessage({
+          text,
+          conversationId,
+          messageId,
+          direction: "inbound",
+        });
+        console.log(`[whatsapp] ${maskPhoneNumber(from)} passive_observer=${observation.reason}`);
+      } catch (err) {
+        logError("passive_observer_inbound", err);
+      }
+    }
     console.log(`[whatsapp] ${maskPhoneNumber(from)} auto_response_skipped mode=${conversationMode}`);
     return;
   }

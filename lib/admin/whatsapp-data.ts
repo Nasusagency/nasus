@@ -6,6 +6,7 @@ import { performAdminReply } from "@/lib/whatsapp/admin-reply";
 import type { ConversationMode, ConversationStatus } from "@/lib/whatsapp/conversation-policy";
 import { buildContactInbox, type ContactInboxItem } from "@/lib/whatsapp/inbox-model";
 import { recordCrmActivity } from "@/lib/crm/service";
+import { observeConfiguredHumanMessage } from "@/lib/whatsapp/passive-observer";
 
 export type WhatsAppInboxFilters = {
   view?: string;
@@ -117,6 +118,18 @@ export async function sendAdminWhatsAppMessage(input: {
   if (result.ok) {
     const { data: contact } = await supabase.from("whatsapp_leads").select("id").eq("numero", conversation.numero).maybeSingle();
     if (contact) await recordCrmActivity({ contactId: contact.id, eventType: "human_reply", actor: "human", actorUserId: input.adminActor, metadata: { conversation_id: input.conversationId, message_id: reservedId }, idempotencyKey: `human-reply:${reservedId}` }, supabase);
+    if (!result.duplicate) {
+      try {
+        await observeConfiguredHumanMessage({
+          text: input.body,
+          conversationId: input.conversationId,
+          messageId,
+          direction: "outbound",
+        });
+      } catch (error) {
+        console.error("[admin/whatsapp] passive_observer_outbound_failed", error instanceof Error ? error.message : "unknown");
+      }
+    }
   }
   return result.ok
     ? { ...result, messageId: reservedId || undefined }
