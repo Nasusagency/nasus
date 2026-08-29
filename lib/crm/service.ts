@@ -13,6 +13,7 @@ export async function recordCrmActivity(input: {
   newValue?: unknown;
   metadata?: Record<string, unknown>;
   idempotencyKey?: string;
+  source?: string;
 }, client: SupabaseClient | null = createServiceClient()): Promise<boolean> {
   if (!client) return false;
   const { error } = await client.from("crm_activities").upsert({
@@ -24,6 +25,7 @@ export async function recordCrmActivity(input: {
     new_value: input.newValue ?? null,
     metadata: input.metadata ?? {},
     idempotency_key: input.idempotencyKey ?? null,
+    source: input.source ?? null,
   }, { onConflict: "idempotency_key", ignoreDuplicates: true });
   if (error) console.error(`[CRM] activity_failed event=${input.eventType} code=${error.code}`);
   return !error;

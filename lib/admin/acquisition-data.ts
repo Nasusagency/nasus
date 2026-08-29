@@ -4,12 +4,13 @@ import { calculateCampaignEfficiency, campaignMetricRange, sumKnown, type Nullab
 import { selectPreferredMetricRows } from "@/lib/acquisition/campaign-metrics";
 import { defaultAdsSyncStatuses, type AdsPlatform, type AdsSyncState } from "@/lib/acquisition/sync-status";
 
-export type DashboardFilters = { days: number; source?: string; campaign?: string; stage?: string; lifecycle?: string; human?: boolean };
+export type DashboardFilters = { days: number; source?: string; campaign?: string; stage?: string; lifecycle?: string; human?: boolean; archived?: boolean };
 export type AdminLead = {
   id: string; numero: string; nombre_contacto: string | null; nombre_empresa: string | null; sector: string | null;
   lifecycle: string; stage: string; high_intent_detected_at: string | null; problema_descrito: string | null; servicio_probable: string | null; resumen: string | null;
   requiere_humano: boolean; ultima_interaccion: string; acquisition_event_id: string | null;
   source: string | null; campaign: string | null; medium: string | null;
+  archived_at: string | null;
 };
 
 const since = (days: number) => new Date(Date.now() - Math.max(1, Math.min(days, 365)) * 86400000).toISOString();
@@ -21,7 +22,10 @@ export async function getAcquisitionDashboard(filters: DashboardFilters) {
   const from = since(filters.days);
   const [eventsResult, leadsResult, messagesResult, metricsResult, syncStatusesResult] = await Promise.all([
     supabase.from("acquisition_events").select("event_type,session_id,source,campaign").gte("created_at", from).limit(10000),
-    supabase.from("whatsapp_leads").select("id,numero,nombre_contacto,nombre_empresa,sector,lifecycle,stage,high_intent_detected_at,problema_descrito,servicio_probable,resumen,requiere_humano,ultima_interaccion,acquisition_event_id,acquisition_events(source,medium,campaign)").gte("ultima_interaccion", from).order("ultima_interaccion", { ascending: false }).limit(1000),
+    (filters.archived
+      ? supabase.from("whatsapp_leads").select("id,numero,nombre_contacto,nombre_empresa,sector,lifecycle,stage,high_intent_detected_at,problema_descrito,servicio_probable,resumen,requiere_humano,ultima_interaccion,acquisition_event_id,archived_at,acquisition_events(source,medium,campaign)").not("archived_at", "is", null)
+      : supabase.from("whatsapp_leads").select("id,numero,nombre_contacto,nombre_empresa,sector,lifecycle,stage,high_intent_detected_at,problema_descrito,servicio_probable,resumen,requiere_humano,ultima_interaccion,acquisition_event_id,archived_at,acquisition_events(source,medium,campaign)").is("archived_at", null)
+    ).gte("ultima_interaccion", from).order("ultima_interaccion", { ascending: false }).limit(1000),
     supabase.from("whatsapp_mensajes").select("conversation_id,numero").eq("direccion", "entrante").gte("created_at", from).limit(10000),
     supabase.from("acquisition_campaign_metrics").select("id,platform,campaign,metric_date,impressions,ad_clicks,spend,currency,daily_budget,total_budget,source_type").gte("metric_date", from.slice(0, 10)).order("metric_date", { ascending: false }).limit(5000),
     supabase.from("acquisition_ads_sync_status").select("platform,status,last_success_at,last_attempt_at,last_error_code").in("platform", ["google", "chatgpt"]),
@@ -91,7 +95,7 @@ export async function getAdminLead(id: string) {
   const supabase = createServiceClient();
   if (!supabase) return null;
   const { data: lead } = await supabase.from("whatsapp_leads")
-    .select("id,numero,nombre_contacto,nombre_empresa,sector,lifecycle,stage,high_intent_detected_at,responsible,converted_at,converted_by,problema_descrito,servicio_probable,resumen,requiere_humano,razon_handoff,ultima_interaccion,created_at,acquisition_event_id,acquisition_events(attribution_id,session_id,source,medium,campaign,content,term,landing_path,created_at)")
+    .select("id,numero,nombre_contacto,nombre_empresa,sector,lifecycle,stage,high_intent_detected_at,responsible,converted_at,converted_by,problema_descrito,servicio_probable,resumen,requiere_humano,razon_handoff,ultima_interaccion,created_at,acquisition_event_id,archived_at,archived_by,acquisition_events(attribution_id,session_id,source,medium,campaign,content,term,landing_path,created_at)")
     .eq("id", id).maybeSingle();
   if (!lead) return null;
   const attribution: any = Array.isArray(lead.acquisition_events) ? lead.acquisition_events[0] : lead.acquisition_events;
