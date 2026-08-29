@@ -33,6 +33,12 @@ export async function createProposalFromApprovedQuote(input:{quoteId:string;acto
   return {ok:true as const,proposal};
 }
 
+export async function getLatestProposalForQuote(quoteId:string,client:SupabaseClient|null=createServiceClient()) {
+  if(!client)return null;
+  const {data}=await client.from("crm_proposals").select("id,status,ready_for_delivery,sent_at").eq("quote_id",quoteId).order("proposal_version",{ascending:false}).limit(1).maybeSingle();
+  return data;
+}
+
 export async function updateProposalCopy(input:{proposalId:string;content:string;recipientEmail?:string;ready:boolean;actorUserId:string},client:SupabaseClient|null=createServiceClient()) {
   if(!client)return {ok:false as const,error:"database_unavailable"}; const email=input.recipientEmail?.trim().toLowerCase()||null;
   if(email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return {ok:false as const,error:"invalid_email"};
