@@ -425,6 +425,60 @@ async function handleGuardarActualizarLead(
   }
 }
 
+// ─── Red de seguridad determinista: garantizar lead para todo prospecto ────
+
+/**
+ * Ejecuta un `guardar_actualizar_lead` mínimo si el contacto todavía no
+ * existe en `whatsapp_leads`, sin depender de que Groq o Claude hayan
+ * decidido invocar la tool por su cuenta. Idempotente: si el lead ya existe,
+ * no lo toca (para no pisar datos ya curados por una conversación previa).
+ *
+ * Existe porque el flujo "Claude clásico" (número no autorizado para Groq,
+ * el default para casi todo el tráfico real) nunca invocaba esta tool: solo
+ * generaba tickets vía detectarSolicitud, así que un prospecto podía
+ * conversar indefinidamente sin quedar registrado como lead.
+ */
+export async function ensureLeadPersisted(
+  input: {
+    numero: string;
+    nombreContacto?: string;
+    problemaDescrito?: string;
+    esCliente: boolean;
+  },
+  dependencies: { executeToolCall: typeof executeToolCall } = { executeToolCall }
+): Promise<void> {
+  const { numero, nombreContacto, problemaDescrito, esCliente } = input;
+  if (esCliente) return;
+  if (!numero || !numero.match(/^\d{10,15}$/)) return;
+
+  try {
+    const context = await dependencies.executeToolCall("consultar_contexto_contacto", {
+      numero,
+      buscar_cliente: false,
+      buscar_lead: true,
+    });
+    if ("es_lead" in context && context.es_lead) return; // ya existe: la actualización queda a cargo del flujo que lo tocó
+
+    const result = await dependencies.executeToolCall("guardar_actualizar_lead", {
+      numero,
+      nombre_contacto: nombreContacto,
+      stage: "exploring",
+      problema_descrito: problemaDescrito?.slice(0, 150) || "Prospecto nuevo",
+    });
+
+    const exito = "exito" in result && result.exito === true;
+    if (!exito) {
+      const error = "error" in result ? result.error : "unknown";
+      console.error(`[agent-handlers] ensureLeadPersisted failed | reason=${error}`);
+    }
+  } catch (err) {
+    console.error(
+      "[agent-handlers] ensureLeadPersisted exception:",
+      err instanceof Error ? err.message : String(err)
+    );
+  }
+}
+
 // ─── Handler 5: Registrar Requerimiento ───────────────────────────────────
 
 async function handleRegistrarRequerimiento(

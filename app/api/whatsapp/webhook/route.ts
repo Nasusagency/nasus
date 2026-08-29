@@ -17,7 +17,7 @@ import { shouldAutoRespond } from "@/lib/whatsapp/conversation-policy";
 import { construirTicket, detectarSolicitud, formatearHistorial } from "@/lib/whatsapp/ticket";
 import { callLLM } from "@/lib/llm/provider";
 import { ALL_TOOLS } from "@/lib/llm/tools";
-import { executeToolCall } from "@/lib/whatsapp/agent-handlers";
+import { executeToolCall, ensureLeadPersisted } from "@/lib/whatsapp/agent-handlers";
 import { isNumberInMasterAdminAllowlist, selectProvider, maskPhoneNumber } from "@/lib/whatsapp/groq-allowlist";
 import { runConfiguredMasterAgent } from "@/lib/whatsapp/master-agent";
 import { observeConfiguredHumanMessage } from "@/lib/whatsapp/passive-observer";
@@ -353,6 +353,17 @@ async function procesarMensaje(mensaje: IncomingMessage): Promise<void> {
         });
       }
     }
+
+    // Red de seguridad determinista: el flujo de Groq exitoso ya garantiza el
+    // lead internamente, pero el flujo Claude clásico (default para números no
+    // autorizados) y el fallback por error de Groq nunca invocaban esta tool.
+    // Idempotente y de bajo costo: si el lead ya existe, no hace nada.
+    await ensureLeadPersisted({
+      numero: from,
+      nombreContacto: profileName,
+      problemaDescrito: text,
+      esCliente: Boolean(cliente),
+    });
 
     await responder(conversationId, from, respuesta);
     // El tool de Groq ya creó/actualizó el lead. La asociación es best-effort:
