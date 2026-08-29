@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 const NAV = [
+  { href: "/admin/cotizaciones", label: "Cotizaciones", icon: "◇" },
   { href: "/admin", label: "Dashboard", icon: "◈" },
   { href: "/admin/whatsapp", label: "WhatsApp", icon: "◉" },
   { href: "/admin/leads", label: "CRM / Leads", icon: "◎" },
@@ -18,7 +19,6 @@ export default function AdminNav() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
 
-  useEffect(() => { setOpen(false); }, [pathname]);
   useEffect(() => {
     if (!open) return;
     const previousOverflow = document.body.style.overflow;
