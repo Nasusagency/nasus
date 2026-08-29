@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { describe, test } from "node:test";
 import {
   extractPhoneCandidates,
@@ -120,6 +121,20 @@ describe("Master Agent por WhatsApp", () => {
       callAgent: async () => tool("registrar_contacto_manual", { nombre_contacto: "Juan", stage: "exploring" }),
     });
     assert.equal(receivedSource, "whatsapp_manual");
+  });
+
+  test("un admin autorizado nunca cae al Sales Agent: el bloque isMasterAdmin siempre retorna antes", () => {
+    const source = readFileSync("app/api/whatsapp/webhook/route.ts", "utf8");
+    const blockStart = source.indexOf("if (isMasterAdmin) {");
+    assert.notEqual(blockStart, -1, "no se encontró el branch de admin en el webhook");
+    const salesFlowStart = source.indexOf("const conversationMode = await getConversationMode(conversationId);");
+    assert.notEqual(salesFlowStart, -1, "no se encontró el flujo de ventas (Groq/Claude) en el webhook");
+    assert.ok(salesFlowStart > blockStart, "el flujo de ventas debe estar después del branch de admin, no antes");
+    const adminBlock = source.slice(blockStart, salesFlowStart);
+    // El bloque de admin debe terminar con `return;` antes de llegar al flujo de ventas: si a
+    // alguien se le olvida el return en un refactor, un mensaje de admin también dispararía el
+    // Sales Agent (Groq/Claude) con el mismo texto, lo cual mezclaría dos flujos incompatibles.
+    assert.match(adminBlock.trimEnd(), /return;\s*\}\s*$/);
   });
 
   test("una acción sensible requiere un segundo mensaje de confirmación", async () => {
