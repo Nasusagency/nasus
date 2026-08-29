@@ -3,6 +3,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServiceClient } from "@/lib/supabase/service";
 import { analyzeQuoteScope, type QuoteScopeAnalyzerDependencies } from "./quote-agent";
+import { decideClaudeReview, reviewQuoteAnalysis, type QuoteReviewerDependencies } from "./quote-reviewer";
 import {
   calculateQuote, lineFromRate, PRICING_CATEGORIES, type PricingCategory,
   type PricingProfile, type PricingRate, type PricingUnit, type QuoteLineInput,
@@ -81,7 +82,7 @@ function itemsPayload(calculation: ReturnType<typeof calculateQuote>) {
 
 export async function createQuoteDraftFromScope(input: {
   contactId: string; scope: string; requestKey: string; actorUserId: string;
-}, dependencies?: QuoteScopeAnalyzerDependencies, client: SupabaseClient | null = createServiceClient()) {
+}, dependencies?: QuoteScopeAnalyzerDependencies & Partial<QuoteReviewerDependencies>, client: SupabaseClient | null = createServiceClient()) {
   if (!client) return { ok: false as const, error: "database_unavailable" };
   const [profile, contactResult] = await Promise.all([
     getActivePricingProfile(client),
@@ -97,6 +98,12 @@ export async function createQuoteDraftFromScope(input: {
     `Alcance solicitado por admin: ${input.scope}`,
   ].filter(Boolean).join("\n");
   const analysis = await analyzeQuoteScope(context, dependencies);
+  const reviewDecision = decideClaudeReview(input.scope, analysis);
+  const review = reviewDecision.required
+    ? await reviewQuoteAnalysis(input.scope, analysis, dependencies?.callReviewer
+      ? { callReviewer: dependencies.callReviewer, now: dependencies.now }
+      : undefined)
+    : null;
   const rateMap = new Map(profile.rates.filter(rate => rate.active !== false).map(rate => [rate.category, rate]));
   const lines = analysis.items.map(item => {
     const rate = rateMap.get(item.category);
@@ -110,6 +117,7 @@ export async function createQuoteDraftFromScope(input: {
     p_title: analysis.title, p_scope: input.scope, p_currency: profile.currency, p_notes: analysis.notes ?? null,
     p_risks: analysis.risks, p_missing_requirements: analysis.missingRequirements, p_pricing_snapshot: snapshot,
     p_totals: totalsPayload(calculation), p_items: itemsPayload(calculation), p_actor_user_id: input.actorUserId,
+    p_review: review, p_review_reasons: reviewDecision.reasons,
   });
   return error ? { ok: false as const, error: error.message } : { ok: true as const, quoteId: data as string };
 }
@@ -150,14 +158,66 @@ export async function updateQuoteDraft(input: {
 
 export async function getQuoteDrafts(client: SupabaseClient | null = createServiceClient()) {
   if (!client) return [];
-  const { data } = await client.from("crm_quotes").select("id,contact_id,title,status,currency,total,revision,created_at,updated_at,whatsapp_leads(nombre_contacto,nombre_empresa,numero,lifecycle,stage)").order("updated_at", { ascending: false }).limit(500);
+  const { data } = await client.from("crm_quotes").select("id,contact_id,title,status,currency,total,revision,version,parent_quote_id,approved_at,created_at,updated_at,whatsapp_leads(nombre_contacto,nombre_empresa,numero,lifecycle,stage)").order("updated_at", { ascending: false }).limit(500);
   return data ?? [];
 }
 
 export async function getQuoteDraft(id: string, client: SupabaseClient | null = createServiceClient()) {
   if (!client) return null;
-  const { data: quote } = await client.from("crm_quotes").select("id,contact_id,status,title,scope,currency,notes,risks,missing_requirements,pricing_snapshot,direct_cost,external_cost,margin_amount,contingency_amount,subtotal,tax_amount,total,revision,created_at,updated_at,whatsapp_leads(nombre_contacto,nombre_empresa,numero,lifecycle,stage)").eq("id", id).maybeSingle();
+  const { data: quote } = await client.from("crm_quotes").select("id,contact_id,status,title,scope,currency,notes,risks,missing_requirements,pricing_snapshot,direct_cost,external_cost,margin_amount,contingency_amount,subtotal,tax_amount,total,revision,version,parent_quote_id,approved_at,approved_by,created_at,updated_at,whatsapp_leads(nombre_contacto,nombre_empresa,numero,lifecycle,stage)").eq("id", id).maybeSingle();
   if (!quote) return null;
-  const { data: items } = await client.from("crm_quote_items").select("id,sort_order,category,description,unit,quantity,hours,unit_rate,direct_cost,external_cost,margin_pct,margin_amount,line_subtotal,notes,source").eq("quote_id", id).order("sort_order");
-  return { ...quote, items: items ?? [] };
+  const [itemsResult, reviewResult, versionsResult] = await Promise.all([
+    client.from("crm_quote_items").select("id,sort_order,category,description,unit,quantity,hours,unit_rate,direct_cost,external_cost,margin_pct,margin_amount,line_subtotal,notes,source").eq("quote_id", id).order("sort_order"),
+    client.from("crm_quote_reviews").select("findings,risks,missing_requirements,recommendations,reviewer_provider,reviewed_at,trigger_reasons,quote_revision").eq("quote_id", id).order("reviewed_at", { ascending: false }).limit(1).maybeSingle(),
+    client.from("crm_quote_versions").select("id,version,approved_at,approved_by,total,snapshot").eq("root_quote_id", quote.parent_quote_id ?? quote.id).order("version", { ascending: false }),
+  ]);
+  return { ...quote, items: itemsResult.data ?? [], review: reviewResult.data ?? null, approved_versions: versionsResult.data ?? [] };
+}
+
+function storedLines(items: Array<Record<string, unknown>>): QuoteLineInput[] {
+  const parsed = parseEditableLines(items.map(item => ({
+    ...item, unitRate: item.unit_rate, directCost: item.direct_cost, externalCost: item.external_cost, marginPct: item.margin_pct,
+  })));
+  if (!parsed) throw new Error("invalid_stored_quote_items");
+  return parsed;
+}
+
+export function buildApprovedSnapshot(input: {
+  quote: Record<string, unknown>; items: Array<Record<string, unknown>>; review: Record<string, unknown> | null;
+  calculation: ReturnType<typeof calculateQuote>; approvedBy: string; approvedAt: string;
+}) {
+  return {
+    quoteId: input.quote.id, contactId: input.quote.contact_id, version: input.quote.version,
+    title: input.quote.title, scope: input.quote.scope, notes: input.quote.notes, currency: input.quote.currency,
+    items: itemsPayload(input.calculation), pricing: input.quote.pricing_snapshot,
+    totals: totalsPayload(input.calculation), review: input.review,
+    approvedAt: input.approvedAt, approvedBy: input.approvedBy,
+  };
+}
+
+export async function approveQuote(input: { quoteId: string; expectedRevision: number; actorUserId: string }, client: SupabaseClient | null = createServiceClient()) {
+  if (!client) return { ok: false as const, error: "database_unavailable" };
+  const { data: quote } = await client.from("crm_quotes").select("*").eq("id", input.quoteId).maybeSingle();
+  if (!quote) return { ok: false as const, error: "quote_not_found" };
+  if (quote.status !== "draft") return { ok: false as const, error: "quote_not_approvable" };
+  if (Number(quote.revision) !== input.expectedRevision) return { ok: false as const, error: "quote_revision_conflict" };
+  const [itemsResult, reviewResult] = await Promise.all([
+    client.from("crm_quote_items").select("*").eq("quote_id", input.quoteId).order("sort_order"),
+    client.from("crm_quote_reviews").select("*").eq("quote_id", input.quoteId).order("reviewed_at", { ascending: false }).limit(1).maybeSingle(),
+  ]);
+  if (itemsResult.error || !itemsResult.data?.length) return { ok: false as const, error: "quote_items_not_found" };
+  const calculation = calculateQuote(storedLines(itemsResult.data as Array<Record<string, unknown>>), quote.pricing_snapshot as PricingProfile);
+  const approvedAt = new Date().toISOString();
+  const snapshot = buildApprovedSnapshot({ quote, items: itemsResult.data as Array<Record<string, unknown>>, review: reviewResult.data as Record<string, unknown> | null, calculation, approvedBy: input.actorUserId, approvedAt });
+  const { data, error } = await client.rpc("crm_approve_quote", {
+    p_quote_id: input.quoteId, p_expected_revision: input.expectedRevision, p_actor_user_id: input.actorUserId,
+    p_approved_at: approvedAt, p_totals: totalsPayload(calculation), p_snapshot: snapshot,
+  });
+  return error ? { ok: false as const, error: error.message } : { ok: true as const, versionId: data as string, calculation };
+}
+
+export async function createQuoteRevision(input: { quoteId: string; actorUserId: string }, client: SupabaseClient | null = createServiceClient()) {
+  if (!client) return { ok: false as const, error: "database_unavailable" };
+  const { data, error } = await client.rpc("crm_create_quote_revision", { p_quote_id: input.quoteId, p_actor_user_id: input.actorUserId });
+  return error ? { ok: false as const, error: error.message } : { ok: true as const, quoteId: data as string };
 }

@@ -475,6 +475,11 @@ async function callClaude(params: LLMCreateParams): Promise<LLMResponse> {
   };
 }
 
+/** Explicit Claude-only path for second-opinion workflows. */
+export async function callClaudeReviewer(params: LLMCreateParams): Promise<LLMResponse> {
+  return callClaude(params);
+}
+
 /**
  * Llamada a LLM con fallback automático.
  *
