@@ -9,6 +9,14 @@ import { buildLookupCandidates } from "./qa-reset-candidates";
 
 export type MasterSensitiveAction = "convert_client" | "mark_lost" | "accept_proposal";
 
+// El canal por el que ESTE mensaje llega al Master Agent siempre es WhatsApp; esto es el canal
+// donde OCURRIÓ el evento que el admin está reportando ("Pedro aceptó en la reunión" -> meeting).
+export type ManualEventSource = "whatsapp_manual" | "meeting" | "call" | "email" | "web" | "admin";
+const MANUAL_EVENT_SOURCES: ManualEventSource[] = ["whatsapp_manual", "meeting", "call", "email", "web", "admin"];
+function resolveEventSource(value: unknown): ManualEventSource {
+  return MANUAL_EVENT_SOURCES.includes(value as ManualEventSource) ? value as ManualEventSource : "whatsapp_manual";
+}
+
 export type MasterContact = {
   id: string;
   numero: string;
@@ -39,6 +47,7 @@ export interface MasterAgentRepository {
     stage: "exploring" | "opportunity" | "qualified";
     nextAction?: string;
     adminNumber: string;
+    source: ManualEventSource;
   }): Promise<MasterContact>;
   summarizeContact(contactId: string): Promise<string>;
   resolveProposalForAcceptance(contactId: string): Promise<string | null>;
@@ -64,6 +73,11 @@ const MASTER_TOOLS: LLMCreateParams["tools"] = [
         resumen: { type: "string" },
         stage: { type: "string", enum: ["exploring", "opportunity", "qualified"] },
         next_action: { type: "string" },
+        source: {
+          type: "string",
+          enum: MANUAL_EVENT_SOURCES,
+          description: "Canal donde OCURRIÓ el evento reportado (no por dónde llega este mensaje). 'meeting' si dice 'en la reunión/junta', 'call' si dice 'me llamó/por teléfono', 'email' si dice 'por correo', 'web' si vino de un formulario, 'admin' si es una nota interna sin canal. Si no hay pista, usa 'whatsapp_manual'.",
+        },
       },
       required: ["stage"],
       additionalProperties: false,
@@ -96,7 +110,9 @@ const MASTER_TOOLS: LLMCreateParams["tools"] = [
 
 const MASTER_PROMPT = `Eres el Master Agent administrativo de Nasus. El remitente ya fue autenticado server-side.
 Convierte cada mensaje en exactamente una tool. No inventes contactos, IDs, estados ni resultados.
-- Para registrar información ocurrida fuera del sistema usa registrar_contacto_manual.
+- Para registrar información ocurrida fuera del sistema usa registrar_contacto_manual. Si el admin
+  menciona el canal real del evento (reunión, llamada, correo, formulario web), captúralo en
+  source; si no lo menciona, omite source (se usa whatsapp_manual por default).
 - Para preguntar qué pasó con alguien usa consultar_contacto_crm.
 - Para convertir a cliente, marcar lost o aceptar una propuesta usa proponer_accion_sensible.
 La identidad final siempre la resuelve el backend. Extrae solo información explícita y pregunta lo mínimo faltante.`;
@@ -187,6 +203,7 @@ export async function runMasterAgent(input: {
       stage,
       nextAction: typeof args.next_action === "string" ? args.next_action : undefined,
       adminNumber: input.adminNumber,
+      source: resolveEventSource(args.source),
     });
     return `Listo. Registré a ${label(contact)} en ${contact.stage}${args.next_action ? `, con próxima acción: ${args.next_action}` : ""}.`;
   }
@@ -248,7 +265,7 @@ export function createMasterAgentRepository(): MasterAgentRepository | null {
         problema_descrito: values.necesidad ?? current?.problema_descrito ?? null,
         resumen: values.resumen ?? values.necesidad ?? current?.resumen ?? null,
         stage: current ? resolveGroqStage(current.stage, values.stage, current.lifecycle as CrmLifecycle) : values.stage,
-        origin_source: current ? undefined : "manual_whatsapp",
+        origin_source: current ? undefined : values.source,
         datos_estructurados: structured,
         ultima_interaccion: now,
         updated_at: now,
@@ -257,7 +274,7 @@ export function createMasterAgentRepository(): MasterAgentRepository | null {
       if (error || !data) throw error ?? new Error("manual_contact_not_saved");
       const { error: activityError } = await database.from("crm_activities").insert({
         contact_id: data.id, event_type: current ? "manual_contact_updated" : "manual_contact_created", actor: "human",
-        actor_user_id: values.adminNumber, source: "manual_whatsapp", metadata: { next_action: values.nextAction ?? null },
+        actor_user_id: values.adminNumber, source: values.source, metadata: { next_action: values.nextAction ?? null },
       });
       if (activityError) throw activityError;
       return data as MasterContact;
@@ -305,7 +322,7 @@ export function createMasterAgentRepository(): MasterAgentRepository | null {
       const now = new Date().toISOString();
       const { error } = await database.from("crm_proposals").update({ status: "accepted", accepted_at: now, updated_at: now }).eq("id", proposal.id).eq("status", proposal.status);
       if (error) throw error;
-      await database.from("crm_activities").insert({ contact_id: action.contactId, event_type: "proposal_accepted", actor: "human", actor_user_id: adminNumber, source: "manual_whatsapp", metadata: { proposal_id: proposal.id }, idempotency_key: `master-proposal-accepted:${proposal.id}` });
+      await database.from("crm_activities").insert({ contact_id: action.contactId, event_type: "proposal_accepted", actor: "human", actor_user_id: adminNumber, source: "whatsapp_manual", metadata: { proposal_id: proposal.id }, idempotency_key: `master-proposal-accepted:${proposal.id}` });
       return `La propuesta de ${action.contactLabel} quedó aceptada.`;
     },
   };

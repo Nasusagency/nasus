@@ -75,6 +75,53 @@ describe("Master Agent por WhatsApp", () => {
     assert.match(result, /varias coincidencias/);
   });
 
+  test("registra el canal real del evento cuando el admin lo menciona", async () => {
+    let receivedSource = "";
+    const repo = repository({
+      upsertManualContact: async input => { receivedSource = input.source; return { ...contact, numero: input.phone }; },
+    });
+    await runMasterAgent({
+      text: "Pedro aceptó $30,000 en la reunión de ayer, +52 333 123 4567.",
+      conversationId: "conversation-1", adminNumber: "523330000000",
+    }, {
+      repository: repo,
+      callAgent: async () => tool("registrar_contacto_manual", {
+        nombre_contacto: "Pedro", necesidad: "aceptó propuesta en reunión", stage: "qualified", source: "meeting",
+      }),
+    });
+    assert.equal(receivedSource, "meeting");
+  });
+
+  test("un source inventado o fuera del enum cae a whatsapp_manual, nunca se pasa tal cual", async () => {
+    let receivedSource = "";
+    const repo = repository({
+      upsertManualContact: async input => { receivedSource = input.source; return { ...contact, numero: input.phone }; },
+    });
+    await runMasterAgent({
+      text: "Habló Juan, +52 333 123 4567.",
+      conversationId: "conversation-1", adminNumber: "523330000000",
+    }, {
+      repository: repo,
+      callAgent: async () => tool("registrar_contacto_manual", { nombre_contacto: "Juan", stage: "exploring", source: "canal_inventado_por_el_llm" }),
+    });
+    assert.equal(receivedSource, "whatsapp_manual");
+  });
+
+  test("sin mención de canal, el default es whatsapp_manual", async () => {
+    let receivedSource = "";
+    const repo = repository({
+      upsertManualContact: async input => { receivedSource = input.source; return { ...contact, numero: input.phone }; },
+    });
+    await runMasterAgent({
+      text: "Habló Juan, +52 333 123 4567.",
+      conversationId: "conversation-1", adminNumber: "523330000000",
+    }, {
+      repository: repo,
+      callAgent: async () => tool("registrar_contacto_manual", { nombre_contacto: "Juan", stage: "exploring" }),
+    });
+    assert.equal(receivedSource, "whatsapp_manual");
+  });
+
   test("una acción sensible requiere un segundo mensaje de confirmación", async () => {
     const repo = repository();
     const dependencies = { repository: repo, callAgent: async () => tool("proponer_accion_sensible", { target_query: "Juan", action: "mark_lost" }) };
