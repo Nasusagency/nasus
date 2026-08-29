@@ -95,7 +95,7 @@ export async function getAdminLead(id: string) {
     .eq("id", id).maybeSingle();
   if (!lead) return null;
   const attribution: any = Array.isArray(lead.acquisition_events) ? lead.acquisition_events[0] : lead.acquisition_events;
-  const [messages, requirements, proposals, activities, suggestions, conversations, firstMessage, sessionEvents, metricRows] = await Promise.all([
+  const [messages, requirements, proposals, activities, suggestions, conversations, firstMessage, sessionEvents, metricRows, quotes, payments] = await Promise.all([
     supabase.from("whatsapp_mensajes").select("id,direccion,contenido,created_at").eq("numero", lead.numero).order("created_at", { ascending: false }).limit(20),
     supabase.from("whatsapp_requerimientos").select("id,tipo,resumen,prioridad,estado,created_at").eq("numero_contacto", lead.numero).order("created_at", { ascending: false }).limit(20),
     supabase.from("crm_proposals").select("id,slug,title,status,value,currency,generated_at,sent_at,updated_at").eq("contact_id", lead.id).order("updated_at", { ascending: false }).limit(20),
@@ -105,6 +105,8 @@ export async function getAdminLead(id: string) {
     supabase.from("whatsapp_mensajes").select("created_at").eq("numero", lead.numero).eq("direccion", "entrante").order("created_at", { ascending: true }).limit(1).maybeSingle(),
     attribution?.session_id ? supabase.from("acquisition_events").select("event_type,session_id,created_at").eq("session_id", attribution.session_id).order("created_at", { ascending: true }).limit(10000) : Promise.resolve({ data: [] }),
     attribution?.source && attribution?.campaign ? supabase.from("acquisition_campaign_metrics").select("platform,campaign,metric_date,impressions,ad_clicks,spend,currency,source_type").eq("platform", attribution.source).eq("campaign", attribution.campaign).order("metric_date", { ascending: true }).limit(5000) : Promise.resolve({ data: [] }),
+    supabase.from("crm_quotes").select("id,title,status,total,currency,version,revision,updated_at").eq("contact_id", lead.id).order("updated_at", { ascending: false }).limit(20),
+    supabase.from("crm_payments").select("id,amount,currency,status,description,due_at,paid_at,public_token,created_at").eq("contact_id", lead.id).order("created_at", { ascending: false }).limit(20),
   ]);
   const rows: any[] = selectPreferredMetricRows(metricRows.data ?? []);
   let campaignPerformance = null;
@@ -125,5 +127,5 @@ export async function getAdminLead(id: string) {
     campaignPerformance = { ...external, ...owned, currency: rows[0].currency, sourceTypes: [...new Set(rows.map(row => row.source_type))], rangeStart: metricRange.start, rangeEnd: metricRange.end, ...calculateCampaignEfficiency({ ...external, ...owned }) };
   }
   const exactEvents: any[] = sessionEvents.data ?? [];
-  return { lead, messages: messages.data ?? [], requirements: requirements.data ?? [], proposals: proposals.data ?? [], activities: activities.data ?? [], suggestions: suggestions.data ?? [], conversations: conversations.data ?? [], acquisition: { attribution, firstInteractionAt: firstMessage.data?.created_at ?? null, sessions: exactEvents.some(event => event.event_type === "page_view") ? new Set(exactEvents.map(event => event.session_id)).size : null, pageViews: exactEvents.filter(event => event.event_type === "page_view").length, whatsappClicks: exactEvents.filter(event => event.event_type === "whatsapp_click").length, conversationStarted: Boolean(firstMessage.data), campaignPerformance } };
+  return { lead, messages: messages.data ?? [], requirements: requirements.data ?? [], proposals: proposals.data ?? [], activities: activities.data ?? [], suggestions: suggestions.data ?? [], conversations: conversations.data ?? [], quotes: quotes.data ?? [], payments: payments.data ?? [], acquisition: { attribution, firstInteractionAt: firstMessage.data?.created_at ?? null, sessions: exactEvents.some(event => event.event_type === "page_view") ? new Set(exactEvents.map(event => event.session_id)).size : null, pageViews: exactEvents.filter(event => event.event_type === "page_view").length, whatsappClicks: exactEvents.filter(event => event.event_type === "whatsapp_click").length, conversationStarted: Boolean(firstMessage.data), campaignPerformance } };
 }
