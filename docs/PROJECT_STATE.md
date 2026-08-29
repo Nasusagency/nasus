@@ -147,21 +147,17 @@ Todas viven en `.env.local` (local, gitignored) y en el panel de Vercel (producc
 
 ## 5. Migraciones: aplicadas vs pendientes
 
-18 archivos en `supabase/migrations/`, `0001` a `0018`.
+19 archivos en `supabase/migrations/`, `0001` a `0019`.
 
-- **`0001` a `0015`**: base de WhatsApp, Groq Agent, adquisición, CRM lifecycle, cotizaciones, propuestas — asumidas aplicadas (el proyecto corre en producción sobre este esquema desde antes de esta ronda de trabajo).
-- **`0016_proposal_delivery_finalize.sql`, `0017_crm_payments.sql`, `0018_crm_payments_public_token.sql` — PENDIENTES de aplicar en el SQL Editor de Supabase.** Se crearon en esta ronda (fases 7-10) pero no hay conexión directa a Postgres ni CLI de Supabase enlazada en este entorno de desarrollo para aplicarlas automáticamente. Hasta que se corran, en producción:
-  - la finalización atómica de envío de propuestas (`crm_finalize_proposal_delivery`) no existe todavía → cualquier envío exitoso de Gmail fallaría al intentar persistir (sin marcar `sent` falsamente, pero bloqueando el flujo);
-  - `crm_payments` y sus RPCs (`crm_create_payment`, `crm_attach_payment_checkout`, `crm_confirm_payment`) no existen todavía → no se pueden crear pagos ni confirmarlos.
+- **`0001` a `0019`**: todas aplicadas en producción (Supabase SQL Editor), incluidas `0016_proposal_delivery_finalize.sql`, `0017_crm_payments.sql`, `0018_crm_payments_public_token.sql` y `0019_whatsapp_leads_manual_crud.sql` — confirmado por el usuario 2026-08-29. `crm_finalize_proposal_delivery`, `crm_payments` (+ RPCs `crm_create_payment`/`crm_attach_payment_checkout`/`crm_confirm_payment`) y `whatsapp_leads.archived_at`/`archived_by` ya existen y están operativos.
 
-Aplicar en orden: `0016` → `0017` → `0018`.
+No hay migraciones pendientes de aplicar al momento de esta actualización.
 
 ---
 
 ## 6. Deuda técnica y mejoras futuras abiertas
 
 - **Verificación end-to-end de pago real pendiente.** `MERCADOPAGO_WEBHOOK_SECRET` ya está configurado (producción, en `.env.local` y Vercel), pero nadie ha corrido un pago real de punta a punta (crear pago → pagar en `/pagar/[token]` → confirmar que el webhook marca `paid`). Los tests cubren el flujo con mocks fieles a las respuestas documentadas de Mercado Pago, no una llamada real.
-- **Migraciones 0016-0018 sin aplicar** (ver §5) — bloquea pagos y la finalización atómica de propuestas en producción hasta que se corran.
 - **UX del admin es funcional pero visualmente básica.** Sin feedback de loading consistente en botones de acción, sin estados de seleccionado/activo claros, sin empty states diseñados, sin manejo de error consistente (más allá de mensajes de texto plano). Es el objeto de la siguiente ronda de trabajo (rediseño UX/UI del panel).
 - **No hay un listado global de pagos.** `crm_payments` solo se puede ver desde la ficha de un contacto (`/admin/leads/[id]`); no existe un `/admin/pagos` con todos los pagos de todos los contactos (útil para conciliación).
 - **`crm_activities.source` en `proponer_accion_sensible` sigue fijo en `"whatsapp_manual"`.** El campo `source` dinámico (fase 12) solo se conectó a `registrar_contacto_manual`; aceptar una propuesta o marcar `lost`/`convert_client` vía Master Agent no captura el canal real del evento porque esas acciones no tienen ese parámetro en su tool schema. Bajo impacto (son decisiones que de por sí requieren confirmación explícita), pero queda inconsistente si se le da importancia al reporting por canal.
