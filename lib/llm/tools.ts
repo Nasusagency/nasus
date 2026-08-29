@@ -13,7 +13,10 @@ export type ToolName =
   | "consultar_portafolio"
   | "guardar_actualizar_lead"
   | "registrar_requerimiento"
-  | "notificar_humano";
+  | "notificar_humano"
+  | "consultar_estado_pago"
+  | "consultar_pagos_pendientes"
+  | "recuperar_link_pago_existente";
 
 // ─── Tool 1: Consultar Contexto del Contacto ───────────────────────────────
 
@@ -293,6 +296,74 @@ export const notificarHumanoTool: LLMToolDefinition = {
   },
 };
 
+// ─── Tool 7: Consultar Estado de Pago ──────────────────────────────────────
+
+export interface ConsultarEstadoPagoInput {
+  numero: string;
+  payment_id?: string;
+}
+
+export const consultarEstadoPagoTool: LLMToolDefinition = {
+  name: "consultar_estado_pago",
+  description:
+    "Consulta el estado real de un pago del contacto (pending/paid/failed/cancelled/refunded). Usar cuando el contacto pregunta si ya se registró su pago. El estado viene siempre del backend/proveedor de pagos, nunca se debe inventar ni asumir 'pagado' sin este resultado.",
+  input_schema: {
+    type: "object",
+    properties: {
+      payment_id: {
+        type: "string",
+        description:
+          "Id del pago específico a consultar, si se conoce (de una consulta previa). Si se omite, se consulta el pago más reciente del contacto.",
+      },
+    },
+    required: [],
+    additionalProperties: false,
+  },
+};
+
+// ─── Tool 8: Consultar Pagos Pendientes ─────────────────────────────────────
+
+export interface ConsultarPagosPendientesInput {
+  numero: string;
+}
+
+export const consultarPagosPendientesTool: LLMToolDefinition = {
+  name: "consultar_pagos_pendientes",
+  description:
+    "Lista los pagos pendientes (status=pending) del contacto: monto, moneda, descripción, vencimiento y link de pago. Usar cuando el contacto pregunta qué debe pagar o cuánto falta.",
+  input_schema: {
+    type: "object",
+    properties: {},
+    required: [],
+    additionalProperties: false,
+  },
+};
+
+// ─── Tool 9: Recuperar Link de Pago Existente ───────────────────────────────
+
+export interface RecuperarLinkPagoExistenteInput {
+  numero: string;
+  payment_id?: string;
+}
+
+export const recuperarLinkPagoExistenteTool: LLMToolDefinition = {
+  name: "recuperar_link_pago_existente",
+  description:
+    "Reenvía el link de un pago pendiente YA CREADO (no crea un pago nuevo, no genera cargos, no cambia montos). Usar cuando el contacto pide de nuevo el link de pago o dice que lo perdió.",
+  input_schema: {
+    type: "object",
+    properties: {
+      payment_id: {
+        type: "string",
+        description:
+          "Id del pago pendiente a reenviar, si se conoce. Si se omite, se reenvía el pago pendiente más reciente del contacto.",
+      },
+    },
+    required: [],
+    additionalProperties: false,
+  },
+};
+
 /**
  * Array con todas las definiciones de tools.
  * Ordenadas: consultar (sin estado) → guardar (con estado) → notificar (salida).
@@ -303,6 +374,9 @@ export const ALL_TOOLS: LLMToolDefinition[] = [
   guardarActualizarLeadTool,
   registrarRequerimientoTool,
   notificarHumanoTool,
+  consultarEstadoPagoTool,
+  consultarPagosPendientesTool,
+  recuperarLinkPagoExistenteTool,
 ];
 
 /**
@@ -321,4 +395,10 @@ export type ToolInput<T extends ToolName> = T extends "consultar_contexto_contac
           ? RegistrarRequerimientoInput
           : T extends "notificar_humano"
             ? NotificarHumanoInput
-            : never;
+            : T extends "consultar_estado_pago"
+              ? ConsultarEstadoPagoInput
+              : T extends "consultar_pagos_pendientes"
+                ? ConsultarPagosPendientesInput
+                : T extends "recuperar_link_pago_existente"
+                  ? RecuperarLinkPagoExistenteInput
+                  : never;

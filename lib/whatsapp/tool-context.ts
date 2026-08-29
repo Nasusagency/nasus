@@ -21,7 +21,7 @@ export function bindCanonicalToolInput(
   delete input.contact_id;
   delete input.cliente_slug;
 
-  if (toolName === "guardar_actualizar_lead" || toolName === "consultar_contexto_contacto") {
+  if (toolName === "guardar_actualizar_lead" || toolName === "consultar_contexto_contacto" || toolName === "consultar_estado_pago" || toolName === "consultar_pagos_pendientes" || toolName === "recuperar_link_pago_existente") {
     input.numero = context.numero;
   }
   if (toolName === "registrar_requerimiento" || toolName === "notificar_humano") {

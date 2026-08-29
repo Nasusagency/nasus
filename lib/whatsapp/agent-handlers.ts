@@ -6,6 +6,7 @@
  */
 
 import { createServiceClient } from "@/lib/supabase/service";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   ToolName,
   ConsultarContextoContactoInput,
@@ -14,6 +15,9 @@ import type {
   GuardarActualizarLeadInput,
   RegistrarRequerimientoInput,
   NotificarHumanoInput,
+  ConsultarEstadoPagoInput,
+  ConsultarPagosPendientesInput,
+  RecuperarLinkPagoExistenteInput,
 } from "@/lib/llm/tools";
 
 import type {
@@ -23,10 +27,14 @@ import type {
   GuardarActualizarLeadResult,
   RegistrarRequerimientoResult,
   NotificarHumanoResult,
+  ConsultarEstadoPagoResult,
+  ConsultarPagosPendientesResult,
+  RecuperarLinkPagoExistenteResult,
   ToolResult,
 } from "@/lib/llm/tool-results";
 import { isHighIntentRequest, resolveGroqStage } from "@/lib/crm/domain";
 import { recordCrmActivity, suggestClientConversion } from "@/lib/crm/service";
+import { listPaymentsForContact, buildPublicPaymentUrl } from "@/lib/crm/payments";
 
 // ─── Idempotencia Persistente (Supabase) ────────────────────────────────────
 
@@ -646,6 +654,57 @@ async function handleNotificarHumano(
   }
 }
 
+// ─── Tools 7-9: Pagos ───────────────────────────────────────────────────────
+//
+// Groq NUNCA decide amount/status/payment_id: estos handlers solo leen lo que
+// ya existe en crm_payments (creado por un admin humano, Fase 8-9) o reenvían
+// un link ya generado. Ninguno de los tres puede crear un cargo, cambiar un
+// monto, marcar paid manualmente ni reembolsar.
+
+async function resolveContactId(numero: string, supabase: SupabaseClient): Promise<string | null> {
+  const { data } = await supabase.from("whatsapp_leads").select("id").eq("numero", numero).maybeSingle();
+  return data?.id ?? null;
+}
+
+async function handleConsultarEstadoPago(input: ConsultarEstadoPagoInput): Promise<ConsultarEstadoPagoResult> {
+  if (!input.numero || !input.numero.match(/^\d{10,15}$/)) return { encontrado: false, mensaje: "Número de teléfono inválido" };
+  const supabase = createServiceClient();
+  if (!supabase) return { encontrado: false, mensaje: "Servicio de base de datos no disponible" };
+  const contactId = await resolveContactId(input.numero, supabase);
+  if (!contactId) return { encontrado: false, mensaje: "No se encontró un contacto con pagos registrados." };
+  const payments = await listPaymentsForContact(contactId, supabase);
+  const payment = input.payment_id ? payments.find(p => p.id === input.payment_id) : payments[0];
+  if (!payment) return { encontrado: false, mensaje: "No hay pagos registrados para este contacto." };
+  return { encontrado: true, payment_id: String(payment.id), status: payment.status as ConsultarEstadoPagoResult["status"], monto: Number(payment.amount), moneda: String(payment.currency), descripcion: String(payment.description), pagado_en: payment.paid_at as string | null };
+}
+
+async function handleConsultarPagosPendientes(input: ConsultarPagosPendientesInput): Promise<ConsultarPagosPendientesResult> {
+  if (!input.numero || !input.numero.match(/^\d{10,15}$/)) return { encontrado: false, pagos: [], total: 0 };
+  const supabase = createServiceClient();
+  if (!supabase) return { encontrado: false, pagos: [], total: 0 };
+  const contactId = await resolveContactId(input.numero, supabase);
+  if (!contactId) return { encontrado: false, pagos: [], total: 0 };
+  const payments = await listPaymentsForContact(contactId, supabase);
+  const pendientes = payments.filter(p => p.status === "pending").map(p => ({
+    payment_id: String(p.id), monto: Number(p.amount), moneda: String(p.currency), descripcion: String(p.description),
+    vence: p.due_at as string | null, link_pago: p.public_token ? buildPublicPaymentUrl(String(p.public_token)) : null,
+  }));
+  return { encontrado: pendientes.length > 0, pagos: pendientes, total: pendientes.length };
+}
+
+async function handleRecuperarLinkPagoExistente(input: RecuperarLinkPagoExistenteInput): Promise<RecuperarLinkPagoExistenteResult> {
+  if (!input.numero || !input.numero.match(/^\d{10,15}$/)) return { encontrado: false, mensaje: "Número de teléfono inválido" };
+  const supabase = createServiceClient();
+  if (!supabase) return { encontrado: false, mensaje: "Servicio de base de datos no disponible" };
+  const contactId = await resolveContactId(input.numero, supabase);
+  if (!contactId) return { encontrado: false, mensaje: "No hay un link de pago pendiente para reenviar." };
+  const payments = await listPaymentsForContact(contactId, supabase);
+  const pendientes = payments.filter(p => p.status === "pending");
+  const payment = input.payment_id ? pendientes.find(p => p.id === input.payment_id) : pendientes[0];
+  if (!payment || !payment.public_token) return { encontrado: false, mensaje: "No hay un link de pago pendiente para reenviar." };
+  return { encontrado: true, link_pago: buildPublicPaymentUrl(String(payment.public_token)), monto: Number(payment.amount), moneda: String(payment.currency), descripcion: String(payment.description) };
+}
+
 // ─── Dispatcher ────────────────────────────────────────────────────────────
 
 /**
@@ -686,6 +745,21 @@ export async function executeToolCall(
       case "notificar_humano":
         return await handleNotificarHumano(
           toolInput as unknown as NotificarHumanoInput
+        );
+
+      case "consultar_estado_pago":
+        return await handleConsultarEstadoPago(
+          toolInput as unknown as ConsultarEstadoPagoInput
+        );
+
+      case "consultar_pagos_pendientes":
+        return await handleConsultarPagosPendientes(
+          toolInput as unknown as ConsultarPagosPendientesInput
+        );
+
+      case "recuperar_link_pago_existente":
+        return await handleRecuperarLinkPagoExistente(
+          toolInput as unknown as RecuperarLinkPagoExistenteInput
         );
 
       default:

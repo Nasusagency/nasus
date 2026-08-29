@@ -102,6 +102,49 @@ export interface NotificarHumanoResult {
   motivo_fallo?: string;
 }
 
+// ─── Tool 7: Consultar Estado de Pago ───────────────────────────────────────
+
+export type PaymentStatusCode = "pending" | "paid" | "failed" | "cancelled" | "refunded";
+
+export interface ConsultarEstadoPagoResult {
+  encontrado: boolean;
+  payment_id?: string;
+  status?: PaymentStatusCode;
+  monto?: number;
+  moneda?: string;
+  descripcion?: string;
+  pagado_en?: string | null;
+  mensaje?: string;
+}
+
+// ─── Tool 8: Consultar Pagos Pendientes ─────────────────────────────────────
+
+export interface PagoPendiente {
+  payment_id: string;
+  monto: number;
+  moneda: string;
+  descripcion: string;
+  vence?: string | null;
+  link_pago?: string | null;
+}
+
+export interface ConsultarPagosPendientesResult {
+  encontrado: boolean;
+  pagos: PagoPendiente[];
+  total: number;
+}
+
+// ─── Tool 9: Recuperar Link de Pago Existente ───────────────────────────────
+
+export interface RecuperarLinkPagoExistenteResult {
+  encontrado: boolean;
+  link_pago?: string;
+  monto?: number;
+  moneda?: string;
+  descripcion?: string;
+  mensaje?: string;
+}
+
 // ─── Union Type ──────────────────────────────────────────────────────────────
 
 export type ToolResult =
@@ -110,4 +153,7 @@ export type ToolResult =
   | ConsultarPortafolioResult
   | GuardarActualizarLeadResult
   | RegistrarRequerimientoResult
-  | NotificarHumanoResult;
+  | NotificarHumanoResult
+  | ConsultarEstadoPagoResult
+  | ConsultarPagosPendientesResult
+  | RecuperarLinkPagoExistenteResult;

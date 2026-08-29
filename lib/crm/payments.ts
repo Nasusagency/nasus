@@ -21,8 +21,7 @@ export async function createPayment(input: {
     p_due_at: input.dueAt ?? null, p_actor_user_id: input.actorUserId, p_public_token: randomBytes(32).toString("hex"),
   });
   if (error || !payment) return { ok: false as const, error: error?.message || "payment_not_created" };
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://nasus.lat";
-  const publicUrl = `${siteUrl}/pagar/${payment.public_token}`;
+  const publicUrl = buildPublicPaymentUrl(payment.public_token);
   if (payment.payment_url) return { ok: true as const, payment, publicUrl };
   const checkout = await provider.createCheckout({ externalReference: payment.external_reference, amount: Number(payment.amount), currency: payment.currency, description: payment.description, payerEmail: input.payerEmail });
   const { error: attachError } = await client.rpc("crm_attach_payment_checkout", { p_payment_id: payment.id, p_provider_payment_id: checkout.providerPaymentId, p_payment_url: checkout.paymentUrl });
@@ -46,9 +45,14 @@ export async function confirmPaymentFromProvider(input: { providerPaymentId: str
   return { ok: true as const, ignored: false as const, payment };
 }
 
+export function buildPublicPaymentUrl(token: string): string {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://nasus.lat";
+  return `${siteUrl}/pagar/${token}`;
+}
+
 export async function listPaymentsForContact(contactId: string, client: SupabaseClient | null = createServiceClient()) {
   if (!client) return [];
-  const { data } = await client.from("crm_payments").select("id,proposal_id,amount,currency,status,payment_url,description,due_at,paid_at,created_at").eq("contact_id", contactId).order("created_at", { ascending: false });
+  const { data } = await client.from("crm_payments").select("id,proposal_id,amount,currency,status,payment_url,description,due_at,paid_at,created_at,public_token").eq("contact_id", contactId).order("created_at", { ascending: false });
   return data ?? [];
 }
 

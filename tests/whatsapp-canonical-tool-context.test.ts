@@ -42,6 +42,14 @@ describe("binding canónico de tools WhatsApp", () => {
     assert.equal(input.contact_id, undefined);
   });
 
+  test("las tools de pago reciben siempre el número de Meta, nunca uno inventado por el LLM", () => {
+    for (const toolName of ["consultar_estado_pago", "consultar_pagos_pendientes", "recuperar_link_pago_existente"] as const) {
+      const input = bindCanonicalToolInput(toolName, { numero: "521111111111", payment_id: "legit-payment-id" }, context);
+      assert.equal(input.numero, context.numero, toolName);
+      assert.equal(input.payment_id, "legit-payment-id", toolName);
+    }
+  });
+
   test("telemetría distingue Claude fallback de Groq exitoso", () => {
     assert.equal(providerTelemetryLabel("groq", "groq"), "groq");
     assert.equal(providerTelemetryLabel("groq", "claude"), "claude_fallback");
