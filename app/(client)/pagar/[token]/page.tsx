@@ -2,6 +2,11 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getPaymentByPublicToken } from "@/lib/crm/payments";
 
+// Lee el estado del pago vía service role (sin cookies()), lo que no
+// auto-opta a Next a render dinámico: sin esto, Next cachearía el HTML
+// en el primer build y el estado del pago quedaría congelado.
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = { robots: "noindex, nofollow" };
 
 const money = (value: number, currency: string) => `${currency} ${value.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;

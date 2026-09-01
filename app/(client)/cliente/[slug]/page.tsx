@@ -6,6 +6,10 @@ export const metadata: Metadata = {
   robots: "noindex, nofollow",
 };
 
+// Lee de un store en memoria mutado por el admin en tiempo real; sin marca
+// explícita Next lo renderizaría una sola vez en build y quedaría obsoleto.
+export const dynamic = "force-dynamic";
+
 export default async function ClientePanelPage({
   params,
 }: {
