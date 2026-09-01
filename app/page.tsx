@@ -1,30 +1,8 @@
-import type { Metadata } from "next";
 import Image from "next/image";
 import AssistantHint from "./_components/AssistantHint";
 import SiteChrome from "./_components/SiteChrome";
 import ContactForm from "./_components/ContactForm";
 import DemoIsland from "./_components/DemoIsland";
-
-export const metadata: Metadata = {
-  title: "Nasus Agency — Desarrollo web, apps y soluciones tecnológicas a medida",
-  description:
-    "Páginas web, aplicaciones, CRMs y automatización para empresas en crecimiento. Implementación directa, sin intermediarios.",
-  alternates: { canonical: "https://nasus.lat" },
-  openGraph: {
-    title: "Nasus Agency — Desarrollo web, apps y soluciones tecnológicas a medida",
-    description:
-      "Páginas web, aplicaciones, CRMs y automatización para empresas en crecimiento. Implementación directa, sin intermediarios.",
-    type: "website",
-    siteName: "Nasus Agency",
-    url: "https://nasus.lat",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Nasus Agency — Desarrollo web, apps y soluciones tecnológicas a medida",
-    description:
-      "Páginas web, aplicaciones, CRMs y automatización para empresas en crecimiento. Implementación directa, sin intermediarios.",
-  },
-};
 
 const GOLD = "text-[#c4a882]";
 const CYAN = "text-[#00f2ff]";
