@@ -111,8 +111,18 @@ export async function POST(req: NextRequest) {
 
   if (!res.ok) {
     await releaseLiveReservation(reservation.id);
-    // Solo el status: el cuerpo puede incluir la oferta SDP u otros datos.
-    console.error("[live] OpenAI status:", res.status);
+    // Solo status y los códigos de error de OpenAI (p. ej. insufficient_quota):
+    // el cuerpo completo puede incluir la oferta SDP u otros datos.
+    let code = "";
+    try {
+      const body = (await res.json()) as { error?: { code?: unknown; type?: unknown } };
+      const c = typeof body.error?.code === "string" ? body.error.code : "";
+      const t = typeof body.error?.type === "string" ? body.error.type : "";
+      code = [c, t].filter(Boolean).join("/").slice(0, 80);
+    } catch {
+      code = "";
+    }
+    console.error("[live] OpenAI status:", res.status, code);
     return fail(502, "No pude conectar la voz en vivo.", "upstream");
   }
 
