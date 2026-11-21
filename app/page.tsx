@@ -975,11 +975,6 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Leyenda de marca registrada (IMPI, clase 42) */}
-          <p className="mt-8 pt-6 border-t border-zinc-900/50 text-[11px] leading-5 text-zinc-600">
-            NASUS® es una marca registrada ante el Instituto Mexicano de la Propiedad Industrial (IMPI), clase 42.
-            Todos los derechos reservados.
-          </p>
         </div>
       </footer>
     </div>
