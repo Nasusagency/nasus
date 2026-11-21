@@ -58,7 +58,8 @@
 #### API Endpoints
 | Ruta | Descripción |
 |------|-------------|
-| `POST /api/assistant` | Asistente de voz — Claude + ElevenLabs TTS (público, 5/IP/hora) |
+| `POST /api/assistant` | Asistente de voz (respaldo en texto) — Claude + ElevenLabs TTS (público, 5/IP/hora) |
+| `POST /api/live/session` | Asistente de voz en vivo — GPT-Live por WebRTC. Reserva presupuesto en Supabase (`live_reserve`, migración 0020) antes de abrir sesión; falla cerrado |
 | `POST /api/validate` | Validación de documentos generales |
 | `POST /api/validate-photo` | Validación de fotografías |
 | `POST /api/facturas/extract` | Extracción de facturas PDF → JSON/Excel |
@@ -82,7 +83,7 @@
 | Base de datos | Supabase (PostgreSQL) |
 | IA — LLM principal | Claude Haiku 4.5 (`claude-haiku-4-5-20251001`) — visión, generación, WhatsApp |
 | IA — Agent (Groq) | Groq Agent (modelo `openai/gpt-oss-120b`) — calificación leads, tool use, fallback a Claude |
-| Voz | Web Speech API (STT, navegador) + ElevenLabs TTS (voz clonada) |
+| Voz | OpenAI GPT-Live (`gpt-live-1.1`, WebRTC, backend `gpt-5.6-luna`). Respaldo: Web Speech API (STT) + Claude + ElevenLabs TTS |
 | WhatsApp | Meta Cloud API (webhook, mensajes) |
 | Verificación ext. | Didit API (validación CURP en base de datos oficial) |
 | Eventos/Ticketing | Zoho Backstage (OAuth, crear órdenes con UTM tracking) — experimento rápido |
@@ -270,7 +271,10 @@ WHATSAPP_GROQ_TEST_NUMBERS — CSV de números autorizados para Groq
 ```
 DIDIT_API_KEY              — Verificación CURP en base oficial
 UAG_API_KEY                — API key del cliente UAG
-ELEVENLABS_API_KEY         — Text-to-speech del asistente de voz
+OPENAI_API_KEY             — Asistente de voz en vivo (GPT-Live). Solo servidor. Sin ella, el botón usa el respaldo en texto
+LIVE_SESSION_SECONDS / LIVE_IP_DAILY_SESSIONS / LIVE_DAILY_SECONDS / LIVE_MONTHLY_SECONDS — Opcionales: topes de presupuesto de voz (default 90 / 4 / 2400 / 9000). Ver lib/live/config.ts
+LIVE_MODEL / LIVE_BACKEND_MODEL / LIVE_VOICE — Opcionales (default gpt-live-1.1 / gpt-5.6-luna / marin)
+ELEVENLABS_API_KEY         — Text-to-speech del flujo de respaldo
 ELEVENLABS_VOICE_ID        — ID de la voz clonada de Nasus
 ELEVENLABS_MODEL_ID        — Opcional (default: eleven_multilingual_v2)
 ZOHO_CLIENT_ID             — OAuth Zoho Backstage

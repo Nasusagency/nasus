@@ -9,15 +9,23 @@ const GOLD = "#c4a882";
 const CYAN = "#00f2ff";
 const MAX_LISTEN_MS = 30_000;
 
-type Estado = "idle" | "listening" | "processing" | "speaking" | "error";
+type Estado = "idle" | "listening" | "processing" | "speaking" | "live" | "error";
 
 const ETIQUETAS: Record<Estado, string> = {
   idle: "Probar asistente IA",
   listening: "Escuchando…",
   processing: "Procesando…",
   speaking: "Nasus responde…",
+  live: "En vivo · toca para terminar",
   error: "Reintentar",
 };
+
+// Tiempo máximo de conexión WebRTC antes de rendirse y pasar al flujo anterior.
+const LIVE_CONNECT_TIMEOUT_MS = 15_000;
+// Si el servidor no indica otra cosa, la conversación en vivo dura como máximo esto.
+const LIVE_MAX_SECONDS_DEFAULT = 90;
+// Tras pedir cierre, se espera `session.closed` este tiempo antes de cortar.
+const LIVE_CLOSE_GRACE_MS = 3_000;
 
 // ─── Web Speech API (no está en las libs de TS por defecto) ───────────────────
 
@@ -120,7 +128,9 @@ async function asegurarMicrofono(): Promise<string | null> {
 // El soporte del navegador es estado externo: se lee con useSyncExternalStore
 // para no provocar un mismatch de hidratación ni un setState dentro de un efecto.
 const noSuscribir = () => () => {};
-const leerSoporte = () => getRecognitionCtor() !== null;
+// La voz en vivo solo necesita WebRTC; el dictado del navegador es el respaldo.
+const leerSoporte = () =>
+  getRecognitionCtor() !== null || typeof RTCPeerConnection !== "undefined";
 const soporteEnServidor = () => true;
 
 // ─── Componente ───────────────────────────────────────────────────────────────
@@ -139,6 +149,35 @@ export default function VoiceAssistant() {
   const transcriptRef = useRef("");
   const enviadoRef = useRef(false);
 
+  // Conexión de voz en vivo (GPT-Live por WebRTC).
+  const livePcRef = useRef<RTCPeerConnection | null>(null);
+  const liveEventsRef = useRef<RTCDataChannel | null>(null);
+  const liveStreamRef = useRef<MediaStream | null>(null);
+  const liveAudioRef = useRef<HTMLAudioElement | null>(null);
+  const liveMaxTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const liveConnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const liveCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const limpiarLive = useCallback(() => {
+    for (const ref of [liveMaxTimerRef, liveConnectTimerRef, liveCloseTimerRef]) {
+      if (ref.current) clearTimeout(ref.current);
+      ref.current = null;
+    }
+    liveStreamRef.current?.getTracks().forEach((t) => t.stop());
+    liveStreamRef.current = null;
+    // Se anula la referencia ANTES de cerrar: así el listener de `close` sabe que
+    // fue un cierre pedido por nosotros y no un corte inesperado.
+    const events = liveEventsRef.current;
+    liveEventsRef.current = null;
+    events?.close();
+    livePcRef.current?.close();
+    livePcRef.current = null;
+    if (liveAudioRef.current) {
+      liveAudioRef.current.srcObject = null;
+      liveAudioRef.current = null;
+    }
+  }, []);
+
   const limpiarAudio = useCallback(() => {
     if (audioRef.current) {
       audioRef.current.pause();
@@ -155,8 +194,9 @@ export default function VoiceAssistant() {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       recognitionRef.current?.abort();
       limpiarAudio();
+      limpiarLive();
     },
-    [limpiarAudio],
+    [limpiarAudio, limpiarLive],
   );
 
   const fallar = useCallback((msg: string) => {
@@ -233,16 +273,162 @@ export default function VoiceAssistant() {
     recognitionRef.current?.stop();
   }, []);
 
+  // Pide a GPT-Live cerrar la sesión (deja de cobrar) y corta si no confirma.
+  const terminarLive = useCallback(() => {
+    if (liveMaxTimerRef.current) {
+      clearTimeout(liveMaxTimerRef.current);
+      liveMaxTimerRef.current = null;
+    }
+    const events = liveEventsRef.current;
+    if (events && events.readyState === "open") {
+      try {
+        events.send(JSON.stringify({ type: "session.close" }));
+      } catch {
+        // Si no se puede enviar, el corte de abajo cierra igual.
+      }
+      liveCloseTimerRef.current = setTimeout(() => {
+        limpiarLive();
+        setEstado("idle");
+      }, LIVE_CLOSE_GRACE_MS);
+      return;
+    }
+    limpiarLive();
+    setEstado("idle");
+  }, [limpiarLive]);
+
+  /**
+   * Intenta una conversación en vivo con GPT-Live.
+   * Devuelve `true` si el caso quedó resuelto aquí (conectó, o ya se mostró un
+   * error al usuario) y `false` si conviene usar el flujo anterior de texto.
+   */
+  const iniciarLive = useCallback(async (): Promise<boolean> => {
+    if (typeof RTCPeerConnection === "undefined") return false;
+
+    // Permiso explícito de micrófono, dentro del gesto del usuario.
+    const errorMicrofono = await asegurarMicrofono();
+    if (errorMicrofono) {
+      fallar(errorMicrofono);
+      return true;
+    }
+
+    setEstado("processing");
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      liveStreamRef.current = stream;
+
+      const pc = new RTCPeerConnection();
+      livePcRef.current = pc;
+
+      const audio = new Audio();
+      audio.autoplay = true;
+      liveAudioRef.current = audio;
+      pc.addEventListener("track", (e) => {
+        audio.srcObject = new MediaStream([e.track]);
+        void audio.play().catch(() => {});
+      });
+      stream.getAudioTracks().forEach((track) => pc.addTrack(track, stream));
+
+      // El canal de eventos se crea ANTES de generar la oferta SDP.
+      const events = pc.createDataChannel("oai-events");
+      liveEventsRef.current = events;
+      let maxSeconds = LIVE_MAX_SECONDS_DEFAULT;
+
+      events.addEventListener("message", ({ data }) => {
+        let evento: { type?: string };
+        try {
+          evento = JSON.parse(String(data)) as { type?: string };
+        } catch {
+          return;
+        }
+        if (evento.type === "session.started") {
+          if (liveConnectTimerRef.current) clearTimeout(liveConnectTimerRef.current);
+          liveConnectTimerRef.current = null;
+          setEstado("live");
+          setRespuesta("Te escucho. Pregúntame lo que quieras.");
+          // Tope de duración del lado del cliente (el servidor ya reservó ese tiempo).
+          liveMaxTimerRef.current = setTimeout(() => terminarLive(), maxSeconds * 1000);
+        } else if (evento.type === "session.closed") {
+          limpiarLive();
+          setEstado("idle");
+        }
+      });
+      events.addEventListener("close", () => {
+        // Solo corte inesperado: nuestros cierres anulan la referencia antes.
+        if (liveEventsRef.current !== events) return;
+        limpiarLive();
+        setEstado("idle");
+      });
+
+      liveConnectTimerRef.current = setTimeout(() => {
+        limpiarLive();
+        fallar("No pude conectar la voz. Intenta de nuevo.");
+      }, LIVE_CONNECT_TIMEOUT_MS);
+
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      if (pc.iceGatheringState !== "complete") {
+        await new Promise<void>((resolve) => {
+          const onState = () => {
+            if (pc.iceGatheringState !== "complete") return;
+            pc.removeEventListener("icegatheringstatechange", onState);
+            resolve();
+          };
+          pc.addEventListener("icegatheringstatechange", onState);
+          onState();
+        });
+      }
+      const sdp = pc.localDescription?.sdp;
+      if (!sdp) throw new Error("sin_sdp");
+
+      const res = await fetch("/api/live/session", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ sdp }),
+      });
+      const data = (await res.json()) as {
+        sdp?: string;
+        maxSeconds?: number;
+        error?: string;
+        reason?: string;
+      };
+
+      if (!res.ok || !data.sdp) {
+        limpiarLive();
+        // Sin presupuesto o demasiados intentos: mensaje claro, sin gastar en el
+        // flujo anterior. Cualquier otro caso (sin configurar, error de OpenAI)
+        // pasa al flujo de texto.
+        if (data.reason === "ip" || data.reason === "day" || data.reason === "month") {
+          fallar(data.error ?? "Escríbenos por WhatsApp.");
+          return true;
+        }
+        return false;
+      }
+
+      if (typeof data.maxSeconds === "number" && data.maxSeconds > 0) {
+        maxSeconds = Math.min(data.maxSeconds, 300);
+      }
+      await pc.setRemoteDescription({ type: "answer", sdp: data.sdp });
+      return true;
+    } catch {
+      limpiarLive();
+      return false;
+    }
+  }, [fallar, limpiarLive, terminarLive]);
+
   const iniciar = useCallback(async () => {
+    limpiarAudio();
+    setRespuesta(null);
+    setMensajeError(null);
+
+    // Primero la conversación en vivo; si no está disponible, el flujo de texto.
+    if (await iniciarLive()) return;
+
     const Ctor = getRecognitionCtor();
     if (!Ctor) {
       fallar("Tu navegador no permite dictado por voz. Prueba con Chrome o Edge.");
       return;
     }
 
-    limpiarAudio();
-    setRespuesta(null);
-    setMensajeError(null);
     transcriptRef.current = "";
     enviadoRef.current = false;
 
@@ -324,9 +510,13 @@ export default function VoiceAssistant() {
 
     setEstado("listening");
     timeoutRef.current = setTimeout(() => recognition.stop(), MAX_LISTEN_MS);
-  }, [enviar, fallar, limpiarAudio]);
+  }, [enviar, fallar, iniciarLive, limpiarAudio]);
 
   const alHacerClick = useCallback(() => {
+    if (estado === "live") {
+      terminarLive();
+      return;
+    }
     if (estado === "listening") {
       detener();
       return;
@@ -338,14 +528,14 @@ export default function VoiceAssistant() {
     }
     if (estado === "processing") return;
     void iniciar();
-  }, [detener, estado, iniciar, limpiarAudio]);
+  }, [detener, estado, iniciar, limpiarAudio, terminarLive]);
 
   // El panel admin es una herramienta operativa del CRM, no la landing comercial:
   // el FAB del asistente de voz no debe flotar ahí. Se prueba desde
   // /internal/voice-test (misma auth admin, fuera del nav del CRM).
   if (!soportado || pathname?.startsWith("/admin")) return null;
 
-  const activo = estado === "listening";
+  const activo = estado === "listening" || estado === "live";
   const color = activo || estado === "speaking" ? CYAN : GOLD;
 
   return (
