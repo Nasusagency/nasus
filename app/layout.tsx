@@ -24,14 +24,14 @@ const monoSpace = Space_Mono({
   display: "swap",
 });
 
-const TITLE = "Nasus Agency — Desarrollo web y automatización con IA";
+const TITLE = "NASUS® Agency — Desarrollo web y automatización con IA";
 const DESCRIPTION =
   "Páginas web, aplicaciones, CRMs y automatización para empresas en crecimiento. Implementación directa, sin intermediarios.";
 
 export const metadata: Metadata = {
   title: {
     default: TITLE,
-    template: "%s — Nasus Agency",
+    template: "%s — NASUS® Agency",
   },
   description: DESCRIPTION,
   keywords: [
@@ -61,7 +61,7 @@ export const metadata: Metadata = {
     title: TITLE,
     description: DESCRIPTION,
     type: "website",
-    siteName: "Nasus Agency",
+    siteName: "NASUS® Agency",
     url: "https://nasus.lat",
     locale: "es_MX",
     images: [
@@ -69,7 +69,7 @@ export const metadata: Metadata = {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Nasus Agency — Soluciones tecnológicas artesanales para empresas en escala",
+        alt: "NASUS® Agency — Soluciones tecnológicas artesanales para empresas en escala",
       },
     ],
   },

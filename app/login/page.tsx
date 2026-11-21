@@ -55,7 +55,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm flex flex-col gap-6">
         <div>
           <a href="/" className="text-[#c4a882] font-mono font-bold tracking-wide text-sm mb-8 inline-block">
-            Nasus Agency
+            NASUS® Agency
           </a>
           <h1 className="text-2xl font-semibold text-white tracking-tight mt-4">
             {mode === "signin" ? "Iniciar sesión" : "Crear cuenta"}

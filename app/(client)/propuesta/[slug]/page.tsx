@@ -137,7 +137,7 @@ export default async function PropuestaPage({
       <footer className="border-t border-zinc-200 px-6 py-6 mt-12">
         <div className="max-w-3xl mx-auto">
           <p className="text-xs text-zinc-400">
-            © Nasus Agency · nasusagency@gmail.com · nasus.lat · Documento confidencial
+            © NASUS® Agency · nasusagency@gmail.com · nasus.lat · Documento confidencial
           </p>
         </div>
       </footer>

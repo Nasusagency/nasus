@@ -19,7 +19,7 @@ export default async function AppLayout({
             href="/"
             className="text-[#c4a882] font-mono font-bold tracking-wide text-sm"
           >
-            Nasus Agency
+            NASUS® Agency
           </a>
           <div className="flex items-center gap-4">
             <nav className="hidden sm:flex items-center gap-1">
