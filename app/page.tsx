@@ -510,7 +510,7 @@ export default function LandingPage() {
             caben con las medidas de desktop y la barra se desborda. */}
         <div className="max-w-5xl mx-auto px-6 max-md:px-4 h-16 max-md:h-14 flex items-center justify-between gap-4 max-md:gap-3">
           <span className="font-mono text-[13px] max-md:text-[11px] tracking-[0.25em] max-md:tracking-[0.18em] text-white whitespace-nowrap">
-            NASUS AGENCY
+            NASUS<sup className="text-[0.6em] align-super ml-0.5">®</sup> AGENCY
           </span>
           <span
             id="nav-chapter"
@@ -930,7 +930,7 @@ export default function LandingPage() {
           {/* Sección principal: Nasus + contacto */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 mb-8 pb-8 border-b border-zinc-900/50">
             <div>
-              <span className={`${GOLD} font-mono font-bold text-sm`}>NASUS AGENCY</span>
+              <span className={`${GOLD} font-mono font-bold text-sm`}>NASUS<sup className="text-[0.6em] align-super ml-0.5">®</sup> AGENCY</span>
               <p className="text-zinc-600 text-xs mt-2">
                 Diseñamos, construimos e integramos
               </p>
@@ -974,6 +974,12 @@ export default function LandingPage() {
               </nav>
             </div>
           </div>
+
+          {/* Leyenda de marca registrada (IMPI, clase 42) */}
+          <p className="mt-8 pt-6 border-t border-zinc-900/50 text-[11px] leading-5 text-zinc-600">
+            NASUS® es una marca registrada ante el Instituto Mexicano de la Propiedad Industrial (IMPI), clase 42.
+            Todos los derechos reservados.
+          </p>
         </div>
       </footer>
     </div>
