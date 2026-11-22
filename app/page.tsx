@@ -493,12 +493,28 @@ function ProductCard({
 
 const SCHEMA_ORG = {
   "@context": "https://schema.org",
-  "@type": "Organization",
-  name: "Nasus Agency",
-  url: "https://nasus.lat",
-  email: "nasusagency@gmail.com",
-  description:
-    "Diseñamos, construimos e integramos software, IA y automatización en los sistemas de nuestros clientes.",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://nasus.lat/#organizacion",
+      name: "Nasus Agency",
+      url: "https://nasus.lat",
+      logo: "https://nasus.lat/android-chrome-512x512.png",
+      image: "https://nasus.lat/og-image.png",
+      email: "nasusagency@gmail.com",
+      description:
+        "Diseñamos, construimos e integramos software, IA y automatización en los sistemas de nuestros clientes.",
+    },
+    {
+      // Nombre del sitio que Google muestra junto al ícono en los resultados.
+      "@type": "WebSite",
+      "@id": "https://nasus.lat/#sitio",
+      name: "Nasus",
+      alternateName: ["NASUS Agency", "nasus.lat"],
+      url: "https://nasus.lat",
+      publisher: { "@id": "https://nasus.lat/#organizacion" },
+    },
+  ],
 };
 
 /** Número de la línea humana, tal como se muestra en pantalla. */

@@ -1,3 +1,5 @@
+import Link from "next/link";
+import Logo from "@/app/_components/Logo";
 import { createClient } from "@/lib/supabase/server";
 import LogoutButton from "@/components/auth/LogoutButton";
 
@@ -15,12 +17,9 @@ export default async function AppLayout({
     <>
       <nav className="sticky top-0 z-50 bg-[#050508]/90 backdrop-blur border-b border-zinc-900">
         <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
-          <a
-            href="/"
-            className="text-[#c4a882] font-mono font-bold tracking-wide text-sm"
-          >
-            NASUS® Agency
-          </a>
+          <Link href="/" aria-label="Nasus, inicio">
+            <Logo height={32} tone="dark" />
+          </Link>
           <div className="flex items-center gap-4">
             <nav className="hidden sm:flex items-center gap-1">
               <a

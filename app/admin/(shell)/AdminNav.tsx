@@ -4,6 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Spinner } from "./_ui/Button";
+import Logo from "@/app/_components/Logo";
 
 const NAV = [
   { href: "/admin/cotizaciones", label: "Cotizaciones", icon: "◇" },
@@ -41,7 +42,7 @@ export default function AdminNav() {
 
   return <>
     <header className="lg:hidden sticky top-0 z-30 h-14 px-4 bg-zinc-950/95 backdrop-blur border-b border-zinc-900 flex items-center justify-between">
-      <div><span className="text-[#c4a882] font-mono font-bold text-sm tracking-widest">NASUS</span><span className="text-zinc-600 text-[10px] font-mono ml-2">Admin</span></div>
+      <div><span className="inline-flex items-center gap-2"><Logo height={26} tone="dark" /><span className="text-zinc-600 text-[10px] font-mono">Admin</span></span></div>
       <button type="button" onClick={() => setOpen(true)} aria-label="Abrir menú de administración" aria-expanded={open} aria-controls="admin-navigation" className="h-10 w-10 rounded-lg border border-zinc-800 text-zinc-300 grid place-items-center hover:border-zinc-700">
         <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5 fill-none stroke-current" strokeWidth="1.8"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
       </button>

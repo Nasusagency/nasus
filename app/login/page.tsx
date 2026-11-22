@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import Logo from "@/app/_components/Logo";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/browser";
 import { useRouter } from "next/navigation";
@@ -54,9 +56,9 @@ export default function LoginPage() {
     <div className="min-h-screen bg-[#050508] flex items-center justify-center px-4">
       <div className="w-full max-w-sm flex flex-col gap-6">
         <div>
-          <a href="/" className="text-[#c4a882] font-mono font-bold tracking-wide text-sm mb-8 inline-block">
-            NASUS® Agency
-          </a>
+          <Link href="/" aria-label="Nasus, inicio" className="mb-8 inline-block">
+            <Logo height={38} tone="dark" />
+          </Link>
           <h1 className="text-2xl font-semibold text-white tracking-tight mt-4">
             {mode === "signin" ? "Iniciar sesión" : "Crear cuenta"}
           </h1>

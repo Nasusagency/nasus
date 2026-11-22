@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import Logo from "@/app/_components/Logo";
 import { getPaymentByPublicToken } from "@/lib/crm/payments";
 
 // Lee el estado del pago vía service role (sin cookies()), lo que no
@@ -28,7 +29,7 @@ export default async function PagarPage({ params }: { params: Promise<{ token: s
     <div className="min-h-screen bg-zinc-50 text-zinc-900">
       <header className="border-b border-zinc-200 bg-white px-6 py-4">
         <div className="mx-auto flex max-w-lg items-center justify-between">
-          <span className="font-mono text-sm font-bold tracking-widest text-[#c4a882]">NASUS</span>
+          <Logo height={30} tone="light" />
           <span className="text-xs text-zinc-400">Pago seguro</span>
         </div>
       </header>
