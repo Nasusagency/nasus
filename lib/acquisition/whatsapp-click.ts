@@ -10,18 +10,22 @@ export type WhatsAppClickDependencies = {
 
 export async function completeTrackedWhatsAppClick(
   url: string,
-  destinationType: "humano" | "demo",
+  destinationType: "comercial" | "demo",
   dependencies: WhatsAppClickDependencies,
 ): Promise<void> {
   const result = await dependencies.trackInternal().catch(() => ({ attributionId: null }));
   const target = new URL(url);
-  if (destinationType === "demo" && result.attributionId) {
-    const existing = target.searchParams.get("text") || "Hola, quiero conocer el asistente de Nasus.";
+  // Todo el sitio apunta a la línea de la Cloud API: el token [N:...] liga el clic con el lead
+  // que crea el webhook, sea demo o comercial.
+  if (result.attributionId) {
+    const fallbackText = destinationType === "demo" ? "Hola, quiero conocer el asistente de Nasus." : "Hola Nasus, quiero platicar sobre un proyecto.";
+    const existing = target.searchParams.get("text") || fallbackText;
     target.searchParams.set("text", `${existing}\n\n[N:${result.attributionId}]`);
   }
 
   const navigate = () => dependencies.navigate(target.toString());
-  if (destinationType === "humano") {
+  // Solo los clics comerciales cuentan como conversión de Google Ads (probar la demo no).
+  if (destinationType === "comercial") {
     (dependencies.reportConversion ?? reportGoogleAdsWhatsAppConversion)(navigate);
   } else {
     navigate();

@@ -10,13 +10,15 @@
 //
 // Dos cuotas según quién escribe:
 //
-// - Desconocidos (modo demo): 10/hora. Freno de abuso para un número público.
+// - Desconocidos (prospectos): 30/hora. Desde que esta línea recibe todo el tráfico
+//   comercial del sitio y de Google Ads, 10 cortaba conversaciones reales de calificación.
+//   Sigue siendo el freno de abuso y de costo de IA para un número público.
 // - Clientes dados de alta: 100/hora. Un cliente describiendo varios ajustes
 //   pasa de 10 sin problema, así que el límite bajo lo cortaría a media
 //   conversación. No se les exenta del todo: el límite sigue siendo el tope
 //   que evita que un bucle de mensajes queme el presupuesto de la API.
 
-const RATE_LIMIT_DEMO = 10;
+const RATE_LIMIT_DEMO = 30;
 const RATE_LIMIT_CLIENTE = 100;
 const RATE_LIMIT_WINDOW_MS = 60 * 60_000;
 

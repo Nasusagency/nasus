@@ -251,7 +251,7 @@ export default function SiteShell({
 
             <div className="mt-auto pt-6 pb-2">
               <p className="font-mono text-[11px] uppercase tracking-[0.25em] text-zinc-600">
-                WhatsApp · atiende una persona
+                WhatsApp · respuesta inmediata
               </p>
               <a
                 href={whatsappUrl}

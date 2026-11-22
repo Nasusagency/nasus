@@ -35,7 +35,7 @@ export default function ContactForm() {
     const message = encodeURIComponent(
       `Hola, soy ${form.name} de ${form.company}.\n\nProblema:\n${form.problem}`
     );
-    await openTrackedWhatsApp(`https://wa.me/523329142391?text=${message}`, "humano", "contact_form", "Enviar mensaje");
+    await openTrackedWhatsApp(`https://wa.me/523329621602?text=${message}`, "comercial", "contact_form", "Enviar mensaje");
     setSending(false);
   };
 
@@ -105,7 +105,7 @@ export default function ContactForm() {
       <p className="text-center text-zinc-600 text-sm">
         o escríbenos directo por{" "}
         <a
-          href="https://wa.me/523329142391"
+          href="https://wa.me/523329621602"
           target="_blank"
           rel="noopener noreferrer"
           className="text-zinc-400 hover:text-[#c4a882] transition-colors"

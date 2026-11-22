@@ -181,15 +181,8 @@ async function procesarMensaje(mensaje: IncomingMessage): Promise<void> {
   if (!markMessageSeen(messageId)) return;
 
   // Se resuelve el cliente antes del rate limit porque la cuota depende de si
-  // está dado de alta: 100/hora para clientes, 10/hora para desconocidos.
+  // está dado de alta: 100/hora para clientes, 30/hora para desconocidos.
   const cliente = isMasterAdmin ? null : await getCliente(from);
-
-  // Al alcanzar el límite se deja de responder en silencio: contestar aquí
-  // solo alimentaría el bucle que se intenta frenar.
-  if (!checkRateLimit(from, isMasterAdmin || cliente !== null)) {
-    console.warn("[whatsapp/webhook] límite por número alcanzado");
-    return;
-  }
 
   const conversationId = await resolveConversationId(from);
 
@@ -241,6 +234,15 @@ async function procesarMensaje(mensaje: IncomingMessage): Promise<void> {
       }
     }
     console.log(`[whatsapp] ${maskPhoneNumber(from)} auto_response_skipped mode=${conversationMode}`);
+    return;
+  }
+
+  // El límite solo frena la respuesta AUTOMÁTICA (y su costo de IA). El mensaje ya
+  // quedó guardado arriba y, si una persona tomó la conversación, ni siquiera se
+  // llega aquí: así el equipo nunca pierde mensajes de un prospecto. Al alcanzar el
+  // límite se deja de responder en silencio para no alimentar un bucle.
+  if (!checkRateLimit(from, cliente !== null)) {
+    console.warn("[whatsapp/webhook] límite por número alcanzado");
     return;
   }
 

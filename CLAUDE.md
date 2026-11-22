@@ -13,11 +13,10 @@
 - Asistente de voz integrado (ElevenLabs TTS, Web Speech API).
 
 **Productos activos (destacados en nasus.lat):**
-- **Nasus WhatsApp Assistant** — Sistema conectado a WhatsApp Cloud API que distingue prospectos de clientes, responde con contexto de negocio, detecta solicitudes formales y genera tickets. Dos números separados:
-  - Demo/Prospecto (`+52 33 2962 1602`) — Connectado a Groq Agent + Claude (fallback).
-  - Humano (`+52 33 2914 2391`) — Línea de atención directa, no es automatizada.
+- **Nasus WhatsApp Assistant** — Sistema conectado a WhatsApp Cloud API que distingue prospectos de clientes, responde con contexto de negocio, detecta solicitudes formales y genera tickets. Es el **único WhatsApp que anuncia el sitio** (`+52 33 2962 1602`): todo prospecto entra al CRM, el asistente lo califica y, cuando hay intención real, una persona toma la conversación desde `/admin/whatsapp` (el bot se pausa en ese hilo).
+  - El `+52 33 2914 2391` (WhatsApp Business normal) ya no se anuncia: lo que llega ahí no entra al CRM ni se puede atribuir a una campaña.
 - **Validador de documentos** — Unifica validación de documentos de identidad (INE, CURP, RFC, actas, pasaportes), académicos (títulos, cédulas) y facturas de Google/Meta Ads → Excel.
-- **Asistente de voz** — Interfaz de voz clonada en el sitio principal, contacto vía WhatsApp.
+- **Asistente de voz** — Interfaz de voz en el sitio principal (GPT-Live), contacto vía WhatsApp al 1602.
 
 **Sistema admin interno (privado):**
 - Panel de leads con calificación progresiva (exploring → opportunity → qualified → high_intent).
@@ -151,14 +150,17 @@ Meta WhatsApp webhook
 
 **Rate Limit:**
 - Clientes registrados: 100 msg/hora
-- Números desconocidos: 10 msg/hora
+- Números desconocidos: 30 msg/hora
+- El límite solo frena la respuesta automática: el mensaje siempre se guarda, y si una persona ya tomó la conversación no aplica
 
-**Números de WhatsApp (separados intencionalmente):**
+**Números de WhatsApp:**
 
 | Número | Propósito | Qué es |
 |---|---|---|
-| `+52 33 2962 1602` | Demo/Prospecto | Groq Agent + Claude, ticket si hay solicitud formal |
-| `+52 33 2914 2391` | Atención humana | WhatsApp Business, atiende persona real |
+| `+52 33 2962 1602` | **Único número del sitio, Google Ads y mundo.nasus.lat** | Cloud API: Groq Agent + Claude califican; una persona toma el hilo desde `/admin/whatsapp` |
+| `+52 33 2914 2391` | Ya no se anuncia | WhatsApp Business normal: fuera del CRM y sin atribución |
+
+Antes (v1.0, ago-2026) los CTA comerciales iban al 2391 porque en el 1602 no podía atender una persona. Desde el inbox con handoff humano (`b5bf293`) sí puede, y mantener el 2391 dejaba a los prospectos de pago fuera del CRM. En el sitio, los enlaces de "probar el asistente" llevan `data-wa="demo"`: cuentan como demo y no disparan la conversión de Google Ads; el resto son `comercial` y sí la disparan. Ambos agregan el token `[N:...]` que liga el clic con el lead.
 
 **Prompt caching:**
 - Prompts de WhatsApp miden ~160 tokens: **no cachean nada** (están bajo el mínimo de ~4096 tokens en Haiku 4.5)

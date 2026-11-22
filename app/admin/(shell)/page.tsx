@@ -22,7 +22,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
   const currency = data.currency ?? "MXN";
   const priorityKpis = [
     { label: "Visitas", value: show(data.visits), hint: "Sesiones web observadas", featured: true },
-    { label: "Clics en WhatsApp", value: show(data.whatsappClicks), hint: "CTA al número comercial 2391", featured: true },
+    { label: "Clics en WhatsApp", value: show(data.whatsappClicks), hint: "CTA comerciales al WhatsApp 1602", featured: true },
     { label: "Leads", value: show(data.leads), hint: "Prospectos persistidos" },
     { label: "Gasto", value: data.currency ? money(data.spend, data.currency) : "—", hint: "Inversión conocida del periodo" },
     { label: "Gasto por visita", value: money(totals.costPerVisit, currency), hint: "Gasto / visitas" },

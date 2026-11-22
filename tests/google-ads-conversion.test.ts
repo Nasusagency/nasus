@@ -7,14 +7,15 @@ import { GOOGLE_ADS_WHATSAPP_CONVERSION_ID, reportGoogleAdsWhatsAppConversion, t
 const DUMMY_TIMER = {} as ReturnType<typeof setTimeout>;
 
 describe("Google Ads WhatsApp conversion", () => {
-  test("humano conserva whatsapp_click y dispara una conversión", async () => {
+  test("comercial conserva whatsapp_click, agrega el token y dispara una conversión", async () => {
     let internal = 0; let conversions = 0; const navigations: string[] = [];
-    await completeTrackedWhatsAppClick("https://wa.me/523329142391", "humano", {
-      trackInternal: async () => { internal += 1; return { attributionId: null }; },
+    await completeTrackedWhatsAppClick("https://wa.me/523329621602", "comercial", {
+      trackInternal: async () => { internal += 1; return { attributionId: "WXYZ5678" }; },
       reportConversion: callback => { conversions += 1; callback(); },
       navigate: url => navigations.push(url),
     });
     assert.equal(internal, 1); assert.equal(conversions, 1); assert.equal(navigations.length, 1);
+    assert.match(decodeURIComponent(navigations[0]), /\[N:WXYZ5678\]/);
   });
 
   test("demo conserva whatsapp_click y el token, sin conversión Google", async () => {
@@ -58,10 +59,10 @@ describe("Google Ads WhatsApp conversion", () => {
     assert.equal(navigated, true);
   });
 
-  test("gtag inexistente no rompe los destinos humano ni demo", async () => {
+  test("gtag inexistente no rompe los destinos comercial ni demo", async () => {
     const destinations: string[] = [];
-    for (const destinationType of ["humano", "demo"] as const) {
-      await completeTrackedWhatsAppClick(`https://wa.me/${destinationType === "humano" ? "523329142391" : "523329621602"}`, destinationType, {
+    for (const destinationType of ["comercial", "demo"] as const) {
+      await completeTrackedWhatsAppClick("https://wa.me/523329621602", destinationType, {
         trackInternal: async () => ({ attributionId: null }),
         reportConversion: callback => reportGoogleAdsWhatsAppConversion(callback, { gtag: null }),
         navigate: url => destinations.push(url),

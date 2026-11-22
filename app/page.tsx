@@ -23,23 +23,20 @@ const EYEBROW = `${GOLD} text-[11px] font-pixel tracking-[0.22em] uppercase mb-6
 const SECTION =
   "relative py-10 md:py-14 px-6 scroll-mt-20 overflow-clip";
 /* ─────────────────────────────────────────────────────────────────────────
-   DOS números de WhatsApp, separados a propósito. No intercambiar.
+   UN solo número de WhatsApp en el sitio: +52 33 2962 1602, la línea
+   conectada a la WhatsApp Cloud API. Así todo prospecto entra al CRM
+   (whatsapp_leads), queda ligado a su campaña ([N:token]) y lo califica el
+   asistente. Cuando hay intención real se notifica al equipo y una persona
+   toma la conversación desde /admin/whatsapp (el bot se pausa en ese hilo).
 
-   HUMANO (+52 33 2914 2391) — WhatsApp Business normal. Atiende una persona.
-     Destino de todo CTA comercial: "Hablar con Nasus", "Contactar",
-     formulario de contacto, CTAs al final de las demos.
+   El +52 33 2914 2391 (WhatsApp Business normal) ya no se anuncia: lo que
+   llega ahí no entra al CRM ni se puede atribuir a una campaña.
 
-   ASISTENTE (+52 33 2962 1602) — línea conectada a la WhatsApp Cloud API de
-     Meta. Aquí NO responde una persona: es el producto Nasus WhatsApp
-     Assistant. Solo dos destinos, ambos apuntan al producto en sí:
-       · el CTA "Probar asistente" de la tarjeta flagship
-       · el enlace de su ficha en Casos reales
+   Los enlaces de "probar el asistente" llevan data-wa="demo": cuentan como
+   demo en las métricas y no disparan la conversión de Google Ads.
    ───────────────────────────────────────────────────────────────────────── */
-const WHATSAPP_HUMANO = "https://wa.me/523329142391";
-const WHATSAPP_ASSISTANT = "https://wa.me/523329621602";
-
-/** Alias del número humano: es el destino por defecto de los CTA. */
-const WHATSAPP_URL = WHATSAPP_HUMANO;
+const WHATSAPP_URL = "https://wa.me/523329621602";
+const WHATSAPP_ASSISTANT = WHATSAPP_URL;
 
 const SOCIAL_LINKS = [
   {
@@ -243,7 +240,7 @@ const cases: Caso[] = [
     name: "Nasus WhatsApp Assistant",
     category: "IA / Atención y operación",
     desc: "Asistente conectado a la WhatsApp Cloud API que distingue prospectos de clientes, responde con el contexto de cada negocio y convierte las solicitudes reales en tickets con resumen y urgencia.",
-    note: "En producción sobre una línea real: el enlace abre una conversación con el sistema, no con una persona.",
+    note: "En producción sobre nuestra propia línea: es el mismo asistente que te atiende cuando nos escribes, y te pasa con una persona cuando hace falta.",
     stack: ["WhatsApp Cloud API", "Claude API", "Supabase"],
     href: WHATSAPP_ASSISTANT,
     external: true,
@@ -471,6 +468,7 @@ function ProductCard({
           )}
           <a
             href={ctaHref ?? WHATSAPP_URL}
+            data-wa={ctaHref === WHATSAPP_ASSISTANT ? "demo" : undefined}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 text-xs md:text-sm font-mono font-bold text-[#050508] bg-[#c4a882] hover:bg-[#d4b892] px-4 md:px-5 py-2 md:py-2.5 rounded-lg transition-colors"
@@ -517,8 +515,8 @@ const SCHEMA_ORG = {
   ],
 };
 
-/** Número de la línea humana, tal como se muestra en pantalla. */
-const WHATSAPP_DISPLAY = "+52 33 2914 2391";
+/** Número de WhatsApp de Nasus, tal como se muestra en pantalla. */
+const WHATSAPP_DISPLAY = "+52 33 2962 1602";
 
 /** Nasus Intelligence: experiencia interactiva en su propio subdominio. */
 const MUNDO_URL = "https://mundo.nasus.lat";
@@ -903,6 +901,7 @@ export default function LandingPage() {
                   )}
                   <a
                     href={c.href}
+                    data-wa={c.href === WHATSAPP_ASSISTANT ? "demo" : undefined}
                     {...(c.external
                       ? { target: "_blank", rel: "noopener noreferrer" }
                       : {})}
@@ -996,7 +995,7 @@ export default function LandingPage() {
           <ContactForm />
           <div className="mt-10 rounded-xl border border-zinc-800 p-5">
             <p className="font-mono text-[11px] uppercase tracking-[0.25em] text-zinc-600 mb-2">
-              O escríbenos directo · atiende una persona
+              O escríbenos directo por WhatsApp
             </p>
             <a
               href={WHATSAPP_URL}

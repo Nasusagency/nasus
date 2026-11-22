@@ -42,7 +42,7 @@ async function track(eventType: string, metadata: Record<string, string> = {}) {
   return response.json() as Promise<{ attributionId: string | null }>;
 }
 
-export async function openTrackedWhatsApp(url: string, destinationType: "humano" | "demo", ctaLocation: string, ctaText?: string) {
+export async function openTrackedWhatsApp(url: string, destinationType: "comercial" | "demo", ctaLocation: string, ctaText?: string) {
   const pending = window.open("about:blank", "_blank");
   await completeTrackedWhatsAppClick(url, destinationType, {
     trackInternal: () => track("whatsapp_click", {
@@ -63,10 +63,11 @@ export default function AcquisitionTracker() {
       const anchor = (event.target as Element | null)?.closest<HTMLAnchorElement>('a[href*="wa.me/"]');
       if (!anchor || event.defaultPrevented) return;
       event.preventDefault();
-      const demo = anchor.href.includes("523329621602");
+      // Solo los enlaces marcados como demo ("probar el asistente") no son comerciales.
+      const demo = anchor.dataset.wa === "demo";
       void openTrackedWhatsApp(
         anchor.href,
-        demo ? "demo" : "humano",
+        demo ? "demo" : "comercial",
         anchor.dataset.ctaLocation || "link",
         anchor.textContent?.trim() || undefined,
       );
