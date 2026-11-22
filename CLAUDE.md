@@ -300,6 +300,9 @@ ZOHO_ACCOUNTS_DOMAIN       — Opcional (default: https://accounts.zoho.com)
 ZOHO_API_DOMAIN            — Opcional (default: https://zohoapis.com)
 NEXT_PUBLIC_META_PIXEL_ID  — Opcional: ID del Pixel de Meta (solo dígitos). Sin ella no se carga. Eventos: PageView, Lead (formulario enviado), Contact (clic comercial a WhatsApp). Sin advanced matching: nunca se mandan datos personales. Ver lib/meta/pixel.ts
 NEXT_PUBLIC_META_DOMAIN_VERIFICATION — Opcional: código de verificación de nasus.lat en el Business Manager (meta tag facebook-domain-verification)
+META_ADS_ACCESS_TOKEN      — Token de un usuario del sistema con permiso ads_read (SENSIBLE: solo en Vercel). Con META_ADS_ACCOUNT_ID activa la sincronización diaria de gasto, impresiones y clics por campaña (cron 9:30 UTC → /api/internal/meta-ads/sync) a acquisition_campaign_metrics con platform='meta'. También resuelve el nombre de campaña de los anuncios clic-a-WhatsApp. Ver lib/meta-ads/
+META_ADS_ACCOUNT_ID        — ID de la cuenta publicitaria (con o sin prefijo act_)
+META_ADS_CAMPAIGN_MAP / META_GRAPH_VERSION — Opcionales: JSON id→nombre canónico de campaña; versión de la Graph API (default v23.0)
 ```
 
 #### Admin
