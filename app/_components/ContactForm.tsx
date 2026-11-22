@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { currentAttribution, openTrackedWhatsApp } from "./AcquisitionTracker";
+import { CONSENT_TEXT } from "@/lib/crm/consent-text";
 
 export default function ContactForm() {
-  const [form, setForm] = useState({ name: "", company: "", problem: "", phone: "", email: "", website: "" });
+  const [form, setForm] = useState({ name: "", company: "", problem: "", phone: "", email: "", website: "", consentEmail: false, consentWhatsapp: false });
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
 
@@ -22,6 +23,7 @@ export default function ContactForm() {
         body: JSON.stringify({
           nombre: form.name, empresa: form.company, problema: form.problem,
           telefono: form.phone, email: form.email, website: form.website,
+          consents: { email: form.consentEmail && form.email.trim() !== "", whatsapp: form.consentWhatsapp },
           attribution: currentAttribution(),
         }),
       });
@@ -94,6 +96,25 @@ export default function ContactForm() {
           placeholder="Describe el problema técnico que quieres resolver..."
         />
       </div>
+      {/* Permisos de marketing: opcionales y SIN marcar. No condicionan el envío del formulario. */}
+      <fieldset className="space-y-3 rounded-lg border border-zinc-800 p-4">
+        <legend className="px-1 text-xs text-zinc-500">Opcional</legend>
+        <label className="flex items-start gap-3 text-sm text-zinc-400">
+          <input type="checkbox" checked={form.consentEmail} disabled={!form.email.trim()}
+            onChange={(e) => setForm({ ...form, consentEmail: e.target.checked })}
+            className="mt-1 h-4 w-4 shrink-0 accent-[#c4a882] disabled:opacity-40" />
+          <span>{CONSENT_TEXT.email}{!form.email.trim() && <span className="text-zinc-600"> (escribe tu correo para activarla)</span>}</span>
+        </label>
+        <label className="flex items-start gap-3 text-sm text-zinc-400">
+          <input type="checkbox" checked={form.consentWhatsapp}
+            onChange={(e) => setForm({ ...form, consentWhatsapp: e.target.checked })}
+            className="mt-1 h-4 w-4 shrink-0 accent-[#c4a882]" />
+          <span>{CONSENT_TEXT.whatsapp}</span>
+        </label>
+        <p className="text-xs text-zinc-600">
+          Más detalles en nuestro <a href="/privacidad" target="_blank" className="underline hover:text-zinc-400">aviso de privacidad</a>.
+        </p>
+      </fieldset>
       {error && <p role="alert" className="text-sm text-red-400">{error}</p>}
       <button
         type="submit"

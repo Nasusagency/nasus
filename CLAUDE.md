@@ -198,6 +198,11 @@ Antes (v1.0, ago-2026) los CTA comerciales iban al 2391 porque en el 1602 no pod
    - **Nunca en consola.** El contenido de los mensajes y el número completo no aparecen en ningún `console.*`; los errores del módulo registran solo el mensaje de error.
    - Las imágenes no se copian: se guarda el `media_id` de Meta como referencia, no el archivo.
 
+   **Excepción documentada — Permisos de contacto (`crm_consents`, migración 0021, `lib/crm/consents.ts`):** se guarda el correo o teléfono al que aplica cada permiso de marketing, el texto exacto aceptado, su origen y fecha. Mismas condiciones: RLS activo sin políticas (solo service role), nunca en consola, registro de solo-alta (aceptar y retirar son filas nuevas; la más reciente por canal + destino manda, vista `crm_consent_status`).
+   - El permiso **nunca se pide dentro de WhatsApp** (la conversación debe ser fluida): llega por las casillas del formulario (sin marcar por defecto) o, más adelante, por un enlace en correos. Los textos viven en `lib/crm/consent-text.ts` y se guardan tal cual.
+   - Si alguien escribe solo "BAJA" (o "stop", "cancelar") al 1602, se registra el retiro del permiso de WhatsApp y se confirma; cualquier otro mensaje sigue igual. Lo promete `/privacidad`.
+   - Todo envío masivo (correo o plantillas de WhatsApp) debe filtrar por `crm_consent_status` con `status = 'granted'`.
+
    Al agregar un módulo nuevo que necesite persistir PII, documentar la excepción aquí con las mismas condiciones.
 
 5. **Variables sensibles:** Solo en `.env.local` (local) y panel de Vercel (producción). Nunca en código ni en Git. `.env.local` está en `.gitignore`.

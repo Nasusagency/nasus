@@ -4,6 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServiceClient } from "@/lib/supabase/service";
 import { normalizePhoneNumber } from "@/lib/whatsapp/groq-allowlist";
 import { buildLookupCandidates } from "@/lib/whatsapp/qa-reset-candidates";
+import { recordConsents, type ConsentGrant } from "./consents";
 import { recordCrmActivity } from "./service";
 
 const PHONE_RE = /^\d{10,15}$/;
@@ -15,11 +16,13 @@ export interface WebLeadInput {
   problema: string;
   telefono: string;
   email?: string | null;
+  /** Casillas del formulario (sin marcar por defecto). Solo se guarda lo que aceptó. */
+  consents?: { email?: boolean; whatsapp?: boolean };
   attribution?: { source?: string | null; medium?: string | null; campaign?: string | null; content?: string | null; term?: string | null; landingPath?: string | null };
 }
 
 export type WebLeadResult =
-  | { ok: true; leadId: string; created: boolean }
+  | { ok: true; leadId: string; created: boolean; consentsSaved: boolean }
   | { ok: false; error: "database_unavailable" | "invalid_phone" | "invalid_email" | "save_failed" };
 
 /** Teléfono canónico (52 + 10 dígitos para México) o null si no es válido. */
@@ -78,7 +81,8 @@ export async function createWebLead(
       metadata: { returning: true, utm_source: a.source ?? null, utm_campaign: a.campaign ?? null },
       idempotencyKey: `web-form:${existing.id}:${now}`,
     }, client);
-    return { ok: true, leadId: existing.id, created: false };
+    const consentsSaved = await saveConsents(existing.id, numero, email, input, client);
+    return { ok: true, leadId: existing.id, created: false, consentsSaved };
   }
 
   const { data: lead, error } = await client.from("whatsapp_leads").insert({
@@ -103,5 +107,23 @@ export async function createWebLead(
     metadata: { returning: false, utm_source: a.source ?? null, utm_campaign: a.campaign ?? null },
     idempotencyKey: `web-form:${lead.id}:created`,
   }, client);
-  return { ok: true, leadId: lead.id, created: true };
+  const consentsSaved = await saveConsents(lead.id, numero, email, input, client);
+  return { ok: true, leadId: lead.id, created: true, consentsSaved };
+}
+
+/** El permiso de correo solo aplica si dejó correo; el de WhatsApp, a su número. */
+async function saveConsents(contactId: string, numero: string, email: string | null, input: WebLeadInput, client: SupabaseClient) {
+  const grants: ConsentGrant[] = [];
+  if (input.consents?.email && email) grants.push({ channel: "email", address: email });
+  if (input.consents?.whatsapp) grants.push({ channel: "whatsapp", address: numero });
+  if (grants.length === 0) return true;
+  const saved = await recordConsents({ contactId, grants, source: "web_form", campaign: input.attribution?.campaign ?? null }, client);
+  if (saved) {
+    await recordCrmActivity({
+      contactId, eventType: "consent_granted", actor: "system", source: "web_form",
+      metadata: { channels: grants.map((g) => g.channel) },
+      idempotencyKey: `consent:${contactId}:${grants.map((g) => g.channel).join("+")}:${Date.now()}`,
+    }, client);
+  }
+  return saved;
 }

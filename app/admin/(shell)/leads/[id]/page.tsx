@@ -4,6 +4,7 @@ import { getAdminLead } from "@/lib/admin/acquisition-data";
 import { calculateLeadAcquisitionCosts } from "@/lib/acquisition/costs";
 import { buildPublicPaymentUrl } from "@/lib/crm/payments";
 import { getLeadRelationsSummary } from "@/lib/crm/leads";
+import { getContactConsents } from "@/lib/crm/consents";
 import ContactDecisionActions from "./ContactDecisionActions";
 import NewPaymentAction from "./NewPaymentAction";
 import ArchiveLeadAction from "./ArchiveLeadAction";
@@ -23,13 +24,16 @@ const Badge = ({ children, tone = "observed" }: { children: React.ReactNode; ton
 export default async function LeadDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params; const data = await getAdminLead(id); if (!data) notFound();
   const relations = await getLeadRelationsSummary(id);
+  const consents = await getContactConsents(id);
+  const SOURCE_LABEL: Record<string, string> = { web_form: "formulario web", email_campaign: "correo", admin: "admin", whatsapp: "WhatsApp" };
+  const consentLabel = (channel: "email" | "whatsapp") => { const c = consents.find((item) => item.channel === channel); if (!c) return "Sin permiso"; return `${c.status === "granted" ? "Aceptado" : "Retirado"} · ${SOURCE_LABEL[c.source] ?? c.source} · ${date(c.decidedAt)}`; };
   const lead: any = data.lead; const acquisition: any = data.acquisition; const attr = acquisition.attribution; const performance = acquisition.campaignPerformance;
   const paid = Boolean(attr?.campaign && !["organic", "direct", "referral"].includes(attr?.source));
   const costs = calculateLeadAcquisitionCosts({ spend: performance?.spend ?? null, adClicks: performance?.adClicks ?? null, leads: performance?.leads ?? null, qualified: performance?.qualified ?? null, highIntent: performance?.highIntent ?? null, hasPaidCampaign: paid });
   const activeProposal = data.proposals.find((proposal: any) => ["draft", "sent"].includes(proposal.status));
   const pendingSuggestion = data.suggestions.find((suggestion: any) => suggestion.status === "pending");
   const whatsappMode = data.conversations[0]?.mode ?? "ai";
-  const fields = [["Lifecycle", lead.lifecycle], ["Stage", lead.stage], ["Nombre", lead.nombre_contacto], ["Teléfono", lead.numero], ["Empresa", lead.nombre_empresa], ["Sector", lead.sector], ["Responsable", lead.responsible], ["High intent", lead.high_intent_detected_at ? `Sí · ${date(lead.high_intent_detected_at)}` : "No"], ["Modo WhatsApp", whatsappMode], ["Problema", lead.problema_descrito], ["Servicio probable", lead.servicio_probable], ["Resumen vivo", lead.resumen], ["Requiere humano", lead.requiere_humano ? `Sí · ${lead.razon_handoff || "sin razón registrada"}` : "No"]];
+  const fields = [["Permiso correo", consentLabel("email")], ["Permiso WhatsApp", consentLabel("whatsapp")], ["Lifecycle", lead.lifecycle], ["Stage", lead.stage], ["Nombre", lead.nombre_contacto], ["Teléfono", lead.numero], ["Empresa", lead.nombre_empresa], ["Sector", lead.sector], ["Responsable", lead.responsible], ["High intent", lead.high_intent_detected_at ? `Sí · ${date(lead.high_intent_detected_at)}` : "No"], ["Modo WhatsApp", whatsappMode], ["Problema", lead.problema_descrito], ["Servicio probable", lead.servicio_probable], ["Resumen vivo", lead.resumen], ["Requiere humano", lead.requiere_humano ? `Sí · ${lead.razon_handoff || "sin razón registrada"}` : "No"]];
   return <div className="p-6 lg:p-8 max-w-6xl mx-auto font-mono"><p className="text-[10px] tracking-widest text-[#c4a882]">CONTACTO / FICHA ÚNICA</p><div className="flex flex-wrap items-center justify-between gap-4 mb-6"><h1 className="text-2xl font-bold mt-1">{lead.nombre_contacto || lead.nombre_empresa || "Contacto"}</h1><div className="flex flex-wrap items-center gap-3">{lead.archived_at ? <RestoreLeadAction leadId={lead.id} /> : <ArchiveLeadAction contactId={lead.id} relations={relations} />}<ContactDecisionActions contactId={lead.id} proposalId={activeProposal?.id} lifecycle={lead.lifecycle} /></div></div>
     {lead.archived_at && <section className="mb-5 rounded-xl border border-zinc-300 bg-zinc-50 p-4 text-sm text-zinc-700">Este contacto está archivado desde {date(lead.archived_at)} ({lead.archived_by || "admin"}). No aparece en el listado normal, pero conserva todo su historial. Usa “Restaurar” para reactivarlo.</section>}
     {pendingSuggestion && <section className="mb-5 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950"><strong>Recomendación pendiente</strong><p className="mt-1">{pendingSuggestion.reason}</p></section>}

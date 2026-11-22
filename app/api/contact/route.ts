@@ -46,7 +46,11 @@ export async function POST(request: Request) {
     content: text(at.content, 160) || null, term: text(at.term, 160) || null, landingPath: text(at.landingPath, 300) || null,
   };
 
-  const result = await createWebLead({ nombre, empresa, problema, telefono, email, attribution });
+  // Casillas sin marcar por defecto: solo `true` explícito cuenta como permiso.
+  const consentRaw = body.consents && typeof body.consents === "object" ? (body.consents as Record<string, unknown>) : {};
+  const consents = { email: consentRaw.email === true, whatsapp: consentRaw.whatsapp === true };
+
+  const result = await createWebLead({ nombre, empresa, problema, telefono, email, consents, attribution });
   if (!result.ok) {
     const status = result.error === "invalid_phone" || result.error === "invalid_email" ? 400 : 503;
     return NextResponse.json({ error: result.error }, { status });
@@ -54,7 +58,7 @@ export async function POST(request: Request) {
 
   // El correo al equipo nunca debe romper el alta ni la respuesta.
   try {
-    await notifyWebLead({ nombre, empresa, problema, telefono: canonicalPhone(telefono) ?? telefono, email, fuente: [attribution.source, attribution.campaign].filter(Boolean).join(" / ") || null });
+    await notifyWebLead({ nombre, empresa, problema, telefono: canonicalPhone(telefono) ?? telefono, email, fuente: [attribution.source, attribution.campaign].filter(Boolean).join(" / ") || null, permisos: [consents.email && email ? "correo" : "", consents.whatsapp ? "WhatsApp" : ""].filter(Boolean) });
   } catch (e) {
     console.error("[contact] notify_failed", e instanceof Error ? e.message : "unknown");
   }

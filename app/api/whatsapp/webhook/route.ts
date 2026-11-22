@@ -18,7 +18,7 @@ import { construirTicket, detectarSolicitud, formatearHistorial } from "@/lib/wh
 import { callLLM } from "@/lib/llm/provider";
 import { ALL_TOOLS } from "@/lib/llm/tools";
 import { executeToolCall, ensureLeadPersisted } from "@/lib/whatsapp/agent-handlers";
-import { isNumberInMasterAdminAllowlist, selectProvider, maskPhoneNumber } from "@/lib/whatsapp/groq-allowlist";
+import { isNumberInMasterAdminAllowlist, selectProvider, maskPhoneNumber, normalizePhoneNumber } from "@/lib/whatsapp/groq-allowlist";
 import { runConfiguredMasterAgent } from "@/lib/whatsapp/master-agent";
 import { observeConfiguredHumanMessage } from "@/lib/whatsapp/passive-observer";
 import type {
@@ -35,6 +35,9 @@ import type { ToolResult } from "@/lib/llm/tool-results";
 import { extractAttributionToken } from "@/lib/acquisition/attribution";
 import { resolveAndAssociateAttribution } from "@/lib/acquisition/server";
 import { bindCanonicalToolInput } from "@/lib/whatsapp/tool-context";
+import { isOptOutMessage, revokeConsent } from "@/lib/crm/consents";
+import { buildLookupCandidates } from "@/lib/whatsapp/qa-reset-candidates";
+import { createServiceClient } from "@/lib/supabase/service";
 
 export const maxDuration = 30;
 
@@ -48,6 +51,9 @@ const RESPUESTA_ASESOR =
 
 const RESPUESTA_NO_TEXTO =
   "Por ahora solo puedo leer mensajes de texto. Escríbeme tu pregunta y con gusto te ayudo.";
+
+const RESPUESTA_BAJA =
+  "Listo, ya no te enviaremos novedades por WhatsApp. Si nos escribes, te seguimos atendiendo con gusto.";
 
 const RESPUESTA_ERROR =
   "Tuve un problema para procesar tu mensaje. ¿Puedes intentarlo de nuevo?";
@@ -214,6 +220,20 @@ async function procesarMensaje(mensaje: IncomingMessage): Promise<void> {
     } catch (err) {
       logError("master_agent", err);
       await responder(conversationId, from, "No pude completar la operación administrativa; no apliqué cambios sensibles.");
+    }
+    return;
+  }
+
+  // "BAJA" retira el permiso de novedades por WhatsApp (lo promete el aviso de
+  // privacidad). Solo cuenta si es TODO el mensaje; cualquier otra plática sigue igual.
+  if (text && isOptOutMessage(text)) {
+    try {
+      const numero = normalizePhoneNumber(from);
+      const lead = await createServiceClient()?.from("whatsapp_leads").select("id").in("numero", buildLookupCandidates(numero)).limit(1).maybeSingle();
+      await revokeConsent({ contactId: lead?.data?.id ?? null, channel: "whatsapp", address: numero, source: "whatsapp" });
+      await responder(conversationId, from, RESPUESTA_BAJA);
+    } catch (err) {
+      logError("opt_out", err);
     }
     return;
   }
