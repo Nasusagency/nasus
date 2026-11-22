@@ -10,8 +10,8 @@ describe("Ads sync status", () => {
     const formatted = formatMexicoCityTimestamp("2026-08-22T15:30:00.000Z");
     assert.match(formatted, /22 ago 2026/); assert.match(formatted, /9:30/);
   });
-  test("Google y ChatGPT quedan pendientes sin historial", () => {
-    assert.deepEqual(defaultAdsSyncStatuses().map(item => [item.platform, item.status, item.lastSuccessAt]), [["google", "pending", null], ["chatgpt", "pending", null]]);
+  test("Google, Meta y ChatGPT quedan pendientes sin historial", () => {
+    assert.deepEqual(defaultAdsSyncStatuses().map(item => [item.platform, item.status, item.lastSuccessAt]), [["google", "pending", null], ["meta", "pending", null], ["chatgpt", "pending", null]]);
     assert.equal(formatMexicoCityTimestamp(null), "Sin sincronización exitosa");
   });
 });

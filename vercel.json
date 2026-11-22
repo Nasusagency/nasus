@@ -1,6 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "crons": [
-    { "path": "/api/internal/google-ads/sync", "schedule": "15 9 * * *" }
+    { "path": "/api/internal/google-ads/sync", "schedule": "15 9 * * *" },
+    { "path": "/api/internal/meta-ads/sync", "schedule": "30 9 * * *" }
   ]
 }

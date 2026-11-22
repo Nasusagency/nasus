@@ -1,4 +1,4 @@
-export type AdsPlatform = "google" | "chatgpt";
+export type AdsPlatform = "google" | "meta" | "chatgpt";
 export type AdsSyncState = "synced" | "error" | "pending";
 
 export type AdsSyncStatus = {
@@ -27,7 +27,7 @@ export function formatMexicoCityTimestamp(value: string | null): string {
 }
 
 export function defaultAdsSyncStatuses(): AdsSyncStatus[] {
-  return (["google", "chatgpt"] as const).map(platform => ({
+  return (["google", "meta", "chatgpt"] as const).map(platform => ({
     platform, status: "pending", lastSuccessAt: null, lastAttemptAt: null, lastErrorCode: null,
   }));
 }
