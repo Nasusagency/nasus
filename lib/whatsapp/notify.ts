@@ -174,3 +174,29 @@ export async function enviarTicket(ticket: Ticket): Promise<void> {
     html: ticketHtml(ticket),
   });
 }
+
+// ─── Lead del formulario web ──────────────────────────────────────────────────
+
+/** Aviso al equipo cuando alguien llena el formulario de contacto del sitio. */
+export async function notifyWebLead(params: {
+  nombre: string;
+  empresa: string;
+  problema: string;
+  telefono: string;
+  email?: string | null;
+  fuente?: string | null;
+}): Promise<void> {
+  const lineas = [
+    "Nuevo contacto desde el formulario de nasus.lat (ya está en el CRM).",
+    "",
+    `Nombre: ${params.nombre}`,
+    `Empresa: ${params.empresa}`,
+    `Teléfono: +${params.telefono}`,
+    ...(params.email ? [`Correo: ${params.email}`] : []),
+    ...(params.fuente ? [`Fuente: ${params.fuente}`] : []),
+    "",
+    "Problema:",
+    params.problema,
+  ];
+  await enviarCorreo({ subject: `Formulario web: ${params.nombre} (${params.empresa})`.slice(0, 150), text: lineas.join("\n") });
+}

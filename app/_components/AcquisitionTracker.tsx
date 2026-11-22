@@ -27,6 +27,12 @@ function firstTouch(params: URLSearchParams): Touch {
   return saved;
 }
 
+/** Primer contacto (UTMs) + página de entrada, para adjuntarlo al formulario de contacto. */
+export function currentAttribution() {
+  const touch = firstTouch(new URLSearchParams(location.search));
+  return { ...touch, landingPath: location.pathname };
+}
+
 async function track(eventType: string, metadata: Record<string, string> = {}) {
   const touch = firstTouch(new URLSearchParams(location.search));
   const response = await fetch("/api/acquisition/events", {
