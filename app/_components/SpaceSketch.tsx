@@ -7,9 +7,9 @@ import { useEffect, useRef } from "react";
  *
  * - Constelación: estrellas que derivan despacio, se unen con líneas finas
  *   cuando están cerca y se conectan con el cursor. Estrella fugaz dorada.
- * - Nave: de vez en cuando cruza en horizontal una nave arcade en 3D, hecha de
- *   cubos con aspecto de ficha de Tetris y sombreado plano. Gira sobre su eje,
- *   aletea y deja una estela de cuadritos dorados. Igual en todos los tamaños.
+ * - Nave: de vez en cuando cruza en horizontal una nave arcade en 2D, de perfil
+ *   y en pixel art. Aletea (el ala sube y baja en 8 cuadros) y deja una estela
+ *   de cuadritos dorados. Igual en todos los tamaños.
  *
  * - Tetris (solo en móvil): un par de piezas caen muy despacio y giran a saltos,
  *   con trazo fino y casi transparentes. En escritorio no hay piezas: solo la nave.
@@ -66,88 +66,46 @@ function rotar(celdas: Celda[]): Celda[] {
   return g.map(([x, y]) => [x - minX, y - minY] as Celda);
 }
 
-type V3 = [number, number, number];
-type Vox = {
-  x: number;
-  y: number;
-  z: number;
-  c: 0 | 1 | 3 | 4;
-  caras: number;
-  /** Solo las alas: distancia a la raíz y lado, para aletear. */
-  ala?: { d: number; lado: 1 | -1 };
-};
+// Nave arcade en 2D, de perfil, con la nariz a la derecha. Pixel art: cada letra es
+// un cuadro. W casco blanco, C cristal cian, G dorado.
+const ANCHO = 22;
+const CUERPO = [
+  "....GG",
+  "....GWW.....WWW",
+  "..GGWWWWWWWWWCCWWWW",
+  "GGGGWWWWWWWWWWWWWWWWWW",
+  "..GGWWWWWCCCWWWWWWWW",
+  "....WWWWWWWWWWWWWW",
+].map((f) => f.padEnd(ANCHO, "."));
+const EJE = 3; // fila de la nariz
 
-// Nave arcade hecha de cubos (voxels), vista de perfil con la nariz a la derecha.
-// X = casco, o = cabina dorada. Las alas se extruyen hacia los lados.
-const PERFIL = [
-  "....XX..........",
-  "....XXX.........",
-  "XXXXXXXXXXooX...",
-  "XXXXXXXXXXXXXXXX",
-  "XXXXXXXXXXXXXXX.",
-  "..XXXXXXXXXXX...",
-  "....XXXXXX......",
-];
+// El ala (la del lado que vemos) gira desde un punto del lomo. Se dibuja ya
+// rasterizada en cuadros, a 8 posiciones, para que el aleteo sea de pixel art.
+const PIVOTE = { i: 9, j: 2 };
+const LARGO_ALA = 10;
+const ANGULOS = [80, 50, 15, -20, -50, -20, 15, 50]; // arriba → abajo → arriba
+type CeldaAla = { i: number; j: number; punta: boolean };
 
-// Cada cara del cubo: dirección, y las esquinas de su cuadrado.
-const CARAS_CUBO: { n: V3; q: V3[] }[] = [
-  { n: [1, 0, 0], q: [[0.5, -0.5, -0.5], [0.5, 0.5, -0.5], [0.5, 0.5, 0.5], [0.5, -0.5, 0.5]] },
-  { n: [-1, 0, 0], q: [[-0.5, -0.5, 0.5], [-0.5, 0.5, 0.5], [-0.5, 0.5, -0.5], [-0.5, -0.5, -0.5]] },
-  { n: [0, 1, 0], q: [[-0.5, 0.5, -0.5], [-0.5, 0.5, 0.5], [0.5, 0.5, 0.5], [0.5, 0.5, -0.5]] },
-  { n: [0, -1, 0], q: [[-0.5, -0.5, 0.5], [-0.5, -0.5, -0.5], [0.5, -0.5, -0.5], [0.5, -0.5, 0.5]] },
-  { n: [0, 0, 1], q: [[-0.5, -0.5, 0.5], [0.5, -0.5, 0.5], [0.5, 0.5, 0.5], [-0.5, 0.5, 0.5]] },
-  { n: [0, 0, -1], q: [[0.5, -0.5, -0.5], [-0.5, -0.5, -0.5], [-0.5, 0.5, -0.5], [0.5, 0.5, -0.5]] },
-];
-
-function construirNave(): Vox[] {
-  type Color = 0 | 1 | 3 | 4;
-  const celdas = new Map<string, { c: Color; ala?: { d: number; lado: 1 | -1 } }>();
-  const alto = PERFIL.length;
-  const poner = (x: number, y: number, z: number, c: Color, ala?: { d: number; lado: 1 | -1 }) =>
-    celdas.set(`${x},${y},${z}`, { c, ala });
-
-  // Capa central: el perfil completo. Cabina clara y vientre en cian más oscuro.
-  PERFIL.forEach((fila, r) =>
-    [...fila].forEach((ch, x) => {
-      if (ch === ".") return;
-      poner(x, alto - 1 - r, 0, ch === "o" ? 4 : r >= 5 ? 1 : 0);
-    }),
-  );
-  // Capas laterales del fuselaje (sin la cabina, que queda angosta)
-  for (const z of [-1, 1]) {
-    PERFIL.forEach((fila, r) => {
-      if (r < 2 || r > 4) return;
-      [...fila].forEach((ch, x) => {
-        if (ch === "X" && x >= 2 && x <= 13) poner(x, alto - 1 - r, z, r >= 5 ? 1 : 0);
-      });
-    });
+function rasterizarAla(grados: number): CeldaAla[] {
+  const th = (grados * Math.PI) / 180;
+  const dx = -Math.cos(th); // hacia atrás
+  const dy = Math.sin(th); // y hacia arriba (si el ángulo es positivo)
+  const celdas: CeldaAla[] = [];
+  for (let i = -14; i <= 28; i++) {
+    for (let j = -16; j <= 16; j++) {
+      const cx = i + 0.5 - PIVOTE.i - 0.5;
+      const cy = -(j + 0.5 - PIVOTE.j - 0.5);
+      const u = cx * dx + cy * dy;
+      const v = cx * -dy + cy * dx;
+      const medio = 2.2 - (1.8 * u) / LARGO_ALA;
+      if (u >= 0 && u <= LARGO_ALA && Math.abs(v) <= medio) {
+        celdas.push({ i, j, punta: u > LARGO_ALA * 0.72 });
+      }
+    }
   }
-  // Alas en delta, doradas, que aletean desde la raíz (el costado del fuselaje)
-  for (const lado of [-1, 1] as const) {
-    const tramo = (x0: number, x1: number, d: number) => {
-      for (let x = x0; x <= x1; x++) poner(x, 3, lado * (1 + d), 3, { d, lado });
-    };
-    tramo(4, 11, 1);
-    tramo(3, 8, 2);
-    tramo(2, 5, 3);
-  }
-
-  // Centrar en el origen y marcar las caras expuestas (las alas dibujan todas)
-  const cx = 7.5;
-  const cy = (alto - 1) / 2;
-  const salida: Vox[] = [];
-  celdas.forEach((info, k) => {
-    const [x, y, z] = k.split(",").map(Number);
-    let caras = 0;
-    CARAS_CUBO.forEach((f, i) => {
-      if (info.ala || !celdas.has(`${x + f.n[0]},${y + f.n[1]},${z + f.n[2]}`)) caras |= 1 << i;
-    });
-    if (caras) salida.push({ x: x - cx, y: y - cy, z, c: info.c, caras, ala: info.ala });
-  });
-  return salida;
+  return celdas;
 }
-
-const NAVE_VOX = construirNave();
+const ALAS = ANGULOS.map(rasterizarAla);
 
 type Nave = {
   x: number;
@@ -226,96 +184,49 @@ export default function SpaceSketch({ tone = "dark" }: { tone?: Tono }) {
       if (piezas.length !== np) piezas = Array.from({ length: np }, () => crearPieza(true));
     };
 
-    // Colores de los cubos: casco, alas (cian más oscuro), cabina y puntas doradas
-    const COLOR_VOX: Record<0 | 1 | 3 | 4, number[]> = {
-      0: P.cian.split(",").map(Number),
-      1: (tone === "dark" ? "0,150,176" : "0,110,120").split(",").map(Number),
-      3: P.dorado.split(",").map(Number),
-      4: (tone === "dark" ? "235,248,250" : "255,255,255").split(",").map(Number),
+    // Paleta del sprite
+    const COL = {
+      W: tone === "dark" ? "244,250,252" : "40,44,56",
+      C: P.cian,
+      G: P.dorado,
+      ala: tone === "dark" ? "0,176,204" : "0,120,130",
     };
-    const LUZ: V3 = [0.35, 0.8, -0.5];
-    const LUZ_N = Math.hypot(...LUZ);
 
     const pintarNave = (t: number, n: Nave) => {
-      const u = n.k; // tamaño de cada cubo, en píxeles
+      const px = n.k; // tamaño de cada cuadro de pixel art
+      // Todo se ancla a la cuadrícula de píxeles para que se vea nítido
+      const baseX = Math.round((n.x - (ANCHO / 2) * px) / px) * px;
+      const baseY = Math.round(n.y / px) * px - EJE * px;
+      const celda = (i: number, j: number, col: string, alfa = 1) => {
+        const ii = n.dir === 1 ? i : ANCHO - 1 - i; // espejo si va hacia la izquierda
+        ctx.fillStyle = `rgba(${col},${alfa})`;
+        ctx.fillRect(baseX + ii * px, baseY + j * px, px, px);
+      };
 
-      // Estela arcade: cuadritos dorados que se apagan hacia atrás
+      // Estela de cuadritos dorados
       n.estela.forEach((e, i) => {
         if (i % 3 !== 0) return;
         ctx.fillStyle = `rgba(${P.dorado},${(i / n.estela.length) * 0.5})`;
-        ctx.fillRect(Math.round(e.x) - 1, Math.round(e.y) - 1, 3, 3);
+        ctx.fillRect(Math.round(e.x / px) * px, Math.round(e.y / px) * px, px, px);
       });
 
-      // Giro en 3D: la nave gira sobre su eje vertical mientras avanza
-      const dt = t - n.t0;
-      const guinada = dt * 0.0016;
-      const cabeceo = 0.42; // vista un poco desde arriba, para ver el lomo
-      const cy = Math.cos(guinada);
-      const sy = Math.sin(guinada);
-      const cp = Math.cos(cabeceo);
-      const sp = Math.sin(cabeceo);
-      const rot = (x: number, y: number, z: number): V3 => {
-        const x1 = x * cy + z * sy;
-        const z1 = -x * sy + z * cy;
-        return [x1, y * cp - z1 * sp, y * sp + z1 * cp];
-      };
-      const F = 520;
+      // Llama del propulsor: parpadea entre dos cuadros
+      const llama = Math.floor(t / 90) % 2 === 0;
+      celda(-1, EJE, P.dorado);
+      celda(-2, EJE, llama ? P.dorado : P.cian, 0.9);
+      if (llama) celda(-3, EJE, P.cian, 0.7);
 
-      // Aleteo: las alas suben y bajan desde la raíz, siempre en cubos
-      const aleteo = 0.62 * Math.sin(dt * 0.009);
-      const sa = Math.sin(aleteo);
-      const ca = Math.cos(aleteo);
-      const donde = (v: Vox): V3 =>
-        v.ala ? [v.x, v.y + v.ala.d * sa, v.ala.lado * (1 + v.ala.d * ca)] : [v.x, v.y, v.z];
-
-      // Propulsor parpadeante: un cubo dorado detrás de la cola
-      const llama: Vox[] = Math.floor(t / 110) % 2 === 0 ? [{ x: -9, y: 0, z: 0, c: 3, caras: 63 }] : [];
-
-      const cubos = [...NAVE_VOX, ...llama]
-        .map((v) => {
-          const p = donde(v);
-          return { v, p, z: rot(p[0] * n.dir, p[1], p[2])[2] };
-        })
-        .sort((a, b) => b.z - a.z); // primero los más lejanos
-
-      for (const { v, p } of cubos) {
-        const base = COLOR_VOX[v.c];
-        CARAS_CUBO.forEach((f, i) => {
-          if (!(v.caras & (1 << i))) return;
-          // Normal girada: solo se dibujan las caras que miran a la cámara
-          const nr = rot(f.n[0] * n.dir, f.n[1], f.n[2]);
-          if (nr[2] >= 0) return;
-          // Sombreado plano en tres niveles, como un juego retro
-          const d = (nr[0] * LUZ[0] + nr[1] * LUZ[1] + nr[2] * LUZ[2]) / LUZ_N;
-          const brillo = d > 0.55 ? 1 : d > 0.15 ? 0.72 : 0.48;
-          const pts = f.q.map((q) => {
-            const r = rot((p[0] + q[0]) * n.dir, p[1] + q[1], p[2] + q[2]);
-            const sc = F / (F + r[2] * u);
-            return [n.x + r[0] * u * sc, n.y - r[1] * u * sc] as const;
-          });
-          ctx.beginPath();
-          pts.forEach(([px, py], k) => (k === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py)));
-          ctx.closePath();
-          ctx.fillStyle = `rgb(${Math.round(base[0] * brillo)},${Math.round(base[1] * brillo)},${Math.round(base[2] * brillo)})`;
-          ctx.fill();
-          ctx.strokeStyle = `rgba(${base[0]},${base[1]},${base[2]},0.4)`;
-          ctx.lineWidth = 0.7;
-          ctx.stroke();
-          // Cuadrito interior más claro: el aspecto de una ficha de Tetris
-          const mx = pts.reduce((a, q) => a + q[0], 0) / 4;
-          const my = pts.reduce((a, q) => a + q[1], 0) / 4;
-          ctx.beginPath();
-          pts.forEach(([px, py], k) => {
-            const ix = mx + (px - mx) * 0.55;
-            const iy = my + (py - my) * 0.55;
-            if (k === 0) ctx.moveTo(ix, iy);
-            else ctx.lineTo(ix, iy);
-          });
-          ctx.closePath();
-          ctx.fillStyle = `rgba(255,255,255,${0.1 + brillo * 0.1})`;
-          ctx.fill();
+      // Casco
+      CUERPO.forEach((fila, j) => {
+        [...fila].forEach((ch, i) => {
+          if (ch === ".") return;
+          celda(i, j, COL[ch as "W" | "C" | "G"]);
         });
-      }
+      });
+
+      // Ala que aletea: 8 posiciones a ~12 cuadros por segundo
+      const cuadro = Math.floor((t - n.t0) / 85) % ALAS.length;
+      for (const c of ALAS[cuadro]) celda(c.i, c.j, c.punta ? P.dorado : COL.ala);
     };
 
     const pintarPieza = (pz: Pieza) => {
@@ -445,7 +356,7 @@ export default function SpaceSketch({ tone = "dark" }: { tone?: Tono }) {
       if (nave) {
         nave.x += nave.dir * (movil ? 1.3 : 1.8);
         nave.y = nave.y0 + Math.sin(nave.x / 150) * 14;
-        nave.estela.push({ x: nave.x - nave.dir * 10 * nave.k, y: nave.y });
+        nave.estela.push({ x: nave.x - nave.dir * 13 * nave.k, y: nave.y });
         if (nave.estela.length > 30) nave.estela.shift();
         if (nave.x < -130 || nave.x > w + 130) {
           nave = null;
