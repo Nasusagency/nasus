@@ -22,6 +22,19 @@ const nextConfig: NextConfig = {
    */
   async redirects() {
     return [
+      // Enlaces cortos para biografías y publicaciones: se ven limpios y llegan con la
+      // atribución puesta (el panel agrupa instagram/facebook como "meta"). Redirección
+      // temporal (307) para poder cambiar el destino sin que los navegadores la recuerden.
+      {
+        source: "/ig",
+        destination: "/?utm_source=instagram&utm_medium=bio",
+        permanent: false,
+      },
+      {
+        source: "/fb",
+        destination: "/?utm_source=facebook&utm_medium=bio",
+        permanent: false,
+      },
       {
         source: "/:path((?!api/).*)",
         has: [{ type: "host", value: "(www\\.)?nasus\\.lat" }],
