@@ -7,9 +7,10 @@ import { useEffect, useRef } from "react";
  *
  * - Constelación: estrellas que derivan despacio, se unen con líneas finas
  *   cuando están cerca y se conectan con el cursor. Estrella fugaz dorada.
- * - Nave: de vez en cuando cruza en horizontal una nave arcade en 2D, en pixel
- *   art. Rueda sobre su eje (de perfil → vista desde arriba → de perfil) en 12
- *   cuadros y deja una estela de cuadritos dorados. Igual en todos los tamaños.
+ * - Nave: de vez en cuando cruza una nave arcade en 2D, en pixel art. Planea
+ *   subiendo y bajando (la nariz se inclina hacia donde va) y, de vez en cuando,
+ *   da una vuelta completa sobre su eje. Deja una estela de cuadritos dorados.
+ *   Igual en todos los tamaños.
  *
  * - Tetris (solo en móvil): un par de piezas caen muy despacio y giran a saltos,
  *   con trazo fino y casi transparentes. En escritorio no hay piezas: solo la nave.
@@ -125,6 +126,15 @@ type Nave = {
   k: number;
   t0: number;
   estela: { x: number; y: number }[];
+  /** Planeo: la trayectoria es una onda (amplitud y periodo en píxeles). */
+  A: number;
+  periodo: number;
+  x0: number;
+  /** Inclinación de la nariz en radianes (positivo = hacia arriba). */
+  cabeceo: number;
+  /** Cuándo empezó el último giro completo, y cuándo toca el siguiente. */
+  giroDesde: number;
+  proximoGiro: number;
 };
 
 export default function SpaceSketch({ tone = "dark" }: { tone?: Tono }) {
@@ -203,16 +213,38 @@ export default function SpaceSketch({ tone = "dark" }: { tone?: Tono }) {
       alaLejos: tone === "dark" ? "0,104,132" : "0,80,92",
     };
 
+    // El sprite, ya armado, para cada posición del giro (celda → color "r,g,b")
+    const GRIDS = Array.from({ length: PASOS }, (_, paso) => {
+      const g = new Map<string, string>();
+      const poner = (i: number, j: number, col: string) => g.set(`${i},${j}`, col);
+      const cosA = Math.cos((paso * 2 * Math.PI) / PASOS);
+      for (const c of ALAS[paso]) {
+        poner(c.i, c.j, c.col === 2 ? P.dorado : c.col === 0 ? COL.alaCerca : COL.alaLejos);
+      }
+      FUSELAJE.forEach((fila, k) => {
+        [...fila].forEach((ch, i) => {
+          if (ch !== ".") poner(i, FILA0 + k, COL[ch as "W" | "C" | "G"]);
+        });
+      });
+      // Aleta de cola y cúpula: suben, pasan al centro y bajan al rodar
+      const jAleta = Math.round(EJE_Y - 3.5 * cosA - 1);
+      for (let i = 4; i <= 6; i++) for (let j = 0; j < 2; j++) poner(i, jAleta + j, P.dorado);
+      const jCupula = Math.round(EJE_Y - 3.0 * cosA - 1);
+      for (let i = 12; i <= 14; i++) {
+        poner(i, jCupula, cosA < 0 ? P.dorado : COL.W);
+        poner(i, jCupula + 1, cosA < 0 ? P.dorado : i === 12 ? COL.W : P.cian);
+      }
+      return g;
+    });
+    const REPOSO = 1; // en reposo se ve de tres cuartos: las alas asoman
+    const PASO_MS = 95;
+    const GRADO = Math.PI / 180;
+
     const pintarNave = (t: number, n: Nave) => {
       const px = n.k; // tamaño de cada cuadro de pixel art
       // Todo se ancla a la cuadrícula de píxeles para que se vea nítido
-      const baseX = Math.round((n.x - (ANCHO / 2) * px) / px) * px;
-      const baseY = Math.round(n.y / px) * px - EJE_J * px;
-      const celda = (i: number, j: number, col: string, alfa = 1) => {
-        const ii = n.dir === 1 ? i : ANCHO - 1 - i; // espejo si va hacia la izquierda
-        ctx.fillStyle = `rgba(${col},${alfa})`;
-        ctx.fillRect(baseX + ii * px, baseY + j * px, px, px);
-      };
+      const ax = Math.round(n.x / px) * px;
+      const ay = Math.round(n.y / px) * px;
 
       // Estela de cuadritos dorados
       n.estela.forEach((e, i) => {
@@ -221,36 +253,38 @@ export default function SpaceSketch({ tone = "dark" }: { tone?: Tono }) {
         ctx.fillRect(Math.round(e.x / px) * px, Math.round(e.y / px) * px, px, px);
       });
 
-      // Llama del propulsor: parpadea entre dos cuadros
+      // Giro: la nave planea y, de vez en cuando, da una vuelta completa
+      const rodando = t - n.giroDesde < PASOS * PASO_MS;
+      const paso = rodando ? (REPOSO + Math.floor((t - n.giroDesde) / PASO_MS)) % PASOS : REPOSO;
+      const grid = GRIDS[paso];
+
+      // Cabeceo en pasos de 6°, como un sprite girado de juego retro
+      const th = Math.round(n.cabeceo / (6 * GRADO)) * 6 * GRADO;
+      const c = Math.cos(th);
+      const sn = Math.sin(th);
       const llama = Math.floor(t / 90) % 2 === 0;
-      celda(-1, EJE_J, P.dorado);
-      celda(-2, EJE_J, llama ? P.dorado : P.cian, 0.9);
-      if (llama) celda(-3, EJE_J, P.cian, 0.7);
+      const R = 18;
 
-      // Posición del giro: una vuelta cada PASOS cuadros (~1.1 s)
-      const paso = Math.floor((t - n.t0) / 95) % PASOS;
-      const ang = (paso * 2 * Math.PI) / PASOS;
-      const cosA = Math.cos(ang);
-
-      // Alas (primero, quedan detrás del casco)
-      for (const c of ALAS[paso]) {
-        celda(c.i, c.j, c.col === 2 ? P.dorado : c.col === 0 ? COL.alaCerca : COL.alaLejos);
-      }
-
-      // Casco
-      FUSELAJE.forEach((fila, k) => {
-        [...fila].forEach((ch, i) => {
-          if (ch !== ".") celda(i, FILA0 + k, COL[ch as "W" | "C" | "G"]);
-        });
-      });
-
-      // Aleta de cola y cúpula: suben, pasan al centro y bajan al rodar
-      const jAleta = Math.round(EJE_Y - 3.5 * cosA - 1);
-      for (let i = 4; i <= 6; i++) for (let j = 0; j < 2; j++) celda(i, jAleta + j, P.dorado, cosA < 0 ? 0.75 : 1);
-      const jCupula = Math.round(EJE_Y - 3.0 * cosA - 1);
-      for (let i = 12; i <= 14; i++) {
-        celda(i, jCupula, cosA < 0 ? P.dorado : COL.W);
-        celda(i, jCupula + 1, cosA < 0 ? P.dorado : i === 12 ? COL.W : P.cian);
+      // Para cada cuadro de destino se busca qué cuadro del sprite le toca
+      // (rotación inversa): así el sprite girado nunca queda con huecos.
+      for (let dj = -R; dj < R; dj++) {
+        for (let di = -R; di < R; di++) {
+          const x = di + 0.5;
+          const y = dj + 0.5;
+          const si = Math.floor(x * c - y * sn + ANCHO / 2);
+          const sj = Math.floor(x * sn + y * c + EJE_Y);
+          let col = grid.get(`${si},${sj}`);
+          if (!col && sj === EJE_J) {
+            // Llama del propulsor: parpadea entre dos cuadros
+            if (si === -1) col = P.dorado;
+            else if (si === -2) col = llama ? P.dorado : P.cian;
+            else if (si === -3 && llama) col = P.cian;
+          }
+          if (!col) continue;
+          const X = n.dir === 1 ? ax + di * px : ax - (di + 1) * px; // espejo si va hacia la izquierda
+          ctx.fillStyle = `rgb(${col})`;
+          ctx.fillRect(X, ay + dj * px, px, px);
+        }
       }
     };
 
@@ -364,24 +398,48 @@ export default function SpaceSketch({ tone = "dark" }: { tone?: Tono }) {
         return pz.y > h + 20 ? crearPieza(false) : pz;
       });
 
-      // Nave: cruza en horizontal, con un vaivén suave
+      // Nave: planea cruzando en horizontal, subiendo y bajando
       if (!nave && t > proximaNave) {
         const dir: 1 | -1 = Math.random() < 0.5 ? 1 : -1;
-        const y0 = h * (0.14 + Math.random() * 0.42);
+        const A = (movil ? 18 : 26) + Math.random() * (movil ? 14 : 20);
+        const periodo = (movil ? 300 : 380) + Math.random() * (movil ? 140 : 180);
+        const piso = A + 80;
+        const techo = Math.max(piso + 10, h * 0.55);
+        const y0 = piso + Math.random() * (techo - piso);
+        const x0 = dir === 1 ? -80 : w + 80;
         nave = {
-          x: dir === 1 ? -80 : w + 80,
+          x: x0,
           y: y0,
           y0,
           dir,
           k: movil ? 3 : 4,
           t0: t,
           estela: [],
+          A,
+          periodo,
+          x0,
+          cabeceo: 0,
+          giroDesde: -1e9,
+          proximoGiro: t + 2500 + Math.random() * 3000,
         };
       }
       if (nave) {
         nave.x += nave.dir * (movil ? 1.3 : 1.8);
-        nave.y = nave.y0 + Math.sin(nave.x / 150) * 14;
-        nave.estela.push({ x: nave.x - nave.dir * 13 * nave.k, y: nave.y });
+        // Onda de planeo: la nariz apunta hacia donde sube o baja
+        const arg = (2 * Math.PI * (nave.x - nave.x0) * nave.dir) / nave.periodo;
+        nave.y = nave.y0 + nave.A * Math.sin(arg);
+        const pendiente = nave.A * ((2 * Math.PI) / nave.periodo) * Math.cos(arg);
+        const tope = (28 * Math.PI) / 180;
+        nave.cabeceo = Math.max(-tope, Math.min(tope, Math.atan(-pendiente)));
+        // De vez en cuando, una vuelta completa
+        if (t > nave.proximoGiro) {
+          nave.giroDesde = t;
+          nave.proximoGiro = t + 3500 + Math.random() * 4500;
+        }
+        nave.estela.push({
+          x: nave.x - nave.dir * 13 * nave.k * Math.cos(nave.cabeceo),
+          y: nave.y + 13 * nave.k * Math.sin(nave.cabeceo),
+        });
         if (nave.estela.length > 30) nave.estela.shift();
         if (nave.x < -130 || nave.x > w + 130) {
           nave = null;
