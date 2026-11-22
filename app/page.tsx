@@ -224,17 +224,16 @@ const cases: Caso[] = [
     delivery: "Entregado en 1 mes",
   },
   {
-    id: "theia",
-    name: "Theia",
-    category: "E-commerce / Operación",
-    desc: "E-commerce construido de extremo a extremo con catálogo, pagos, base de datos y fulfillment conectado con proveedor.",
-    stack: ["Next.js", "Supabase", "Vercel"],
-    href: "https://theia.lat",
+    id: "vazto",
+    name: "Vazto Industrial",
+    category: "Presencia digital / Cotización B2B",
+    desc: "Sitio comercial para un fabricante de piezas metálicas, con sus servicios, sectores y proceso, y cotización directa por WhatsApp.",
+    stack: [],
+    href: "https://www.vazto.net/es",
     external: true,
     cta: "Ver proyecto ↗",
-    domain: "theia.lat",
-    image: "/casos/theia.png",
-    delivery: "Entregado en 1 mes",
+    domain: "vazto.net",
+    image: "/casos/vazto.webp",
   },
   {
     id: "whatsapp-assistant",
@@ -377,7 +376,7 @@ const COMPACT: Tool[] = [
     cardClass: "border-zinc-800",
     title: "Páginas web y apps",
     tagline: "Del sitio que convierte al sistema que opera",
-    desc: "Diseñamos y construimos sitios, tiendas y aplicaciones a medida, conectados a tus sistemas desde el primer día. CEEMI y Theia, en la sección de casos, salieron de aquí.",
+    desc: "Diseñamos y construimos sitios, tiendas y aplicaciones a medida, conectados a tus sistemas desde el primer día. CEEMI y Vazto, en la sección de casos, salieron de aquí.",
     features: [],
     moreNoun: "",
     ctaText: "Cuéntanos tu proyecto →",
@@ -557,10 +556,11 @@ export default function LandingPage() {
           <h1
             data-reveal
             style={{ ["--reveal-delay" as string]: "0.08s" }}
-            className="font-display font-extrabold text-white leading-[1.08] max-md:leading-[1.15] text-[clamp(36px,6vw,78px)] max-md:text-[clamp(28px,7.6vw,40px)] max-w-[1100px] text-balance"
+            className="font-display font-extrabold text-white leading-[1.08] max-md:leading-[1.15] text-[clamp(38px,7vw,88px)] max-md:text-[clamp(26px,7.2vw,40px)] max-w-[1100px] text-balance"
           >
-            Crece tus ventas y tu conversión{" "}
-            <span className={GOLD}>en semanas</span>, no en medio año.
+            Menos trabajo manual.
+            <br />
+            <span className={GOLD}>Más clientes atendidos.</span>
           </h1>
 
           <p
@@ -568,8 +568,8 @@ export default function LandingPage() {
             style={{ ["--reveal-delay" as string]: "0.22s" }}
             className="max-w-[560px] mt-8 max-md:mt-7 font-mono text-[15px] max-md:text-[14px] leading-[1.9] text-white/65"
           >
-            Sitios, sistemas y agentes de IA que convierten visitas en clientes,
-            conectados a tu operación. Más de un proyecto entregado en un mes.
+            Agentes de IA que atienden al instante y automatizan lo manual. Listos
+            en semanas, no en medio año.
           </p>
 
           <div
@@ -616,7 +616,7 @@ export default function LandingPage() {
       <section className="px-6 pb-12 md:pb-16">
         <div className="max-w-5xl mx-auto">
           {/* Comparación de plazos. Los 1 a 2 meses salen de los proyectos reales
-              (CEEMI y Theia: 1 mes cada uno). El plazo de la agencia tradicional
+              (CEEMI: 1 mes de inicio a entrega). El plazo de la agencia tradicional
               es la referencia que Nasus usa al cotizar: mantenerlo defendible. */}
           <div
             data-dissolve
@@ -637,8 +637,8 @@ export default function LandingPage() {
               </p>
               <p className="text-white text-3xl md:text-4xl font-bold">1 a 2 meses</p>
               <p className="text-zinc-300 text-sm mt-3 leading-relaxed">
-                Agentes de IA trabajando junto a nuestro equipo. CEEMI y Theia: un mes
-                cada uno, de inicio a entrega.
+                Agentes de IA trabajando junto a nuestro equipo. CEEMI: de inicio a
+                entrega en un mes.
               </p>
             </div>
           </div>

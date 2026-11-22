@@ -8,7 +8,7 @@
 **Nasus Agency** es una agencia mexicana de soluciones tecnológicas artesanales. Este repositorio es el sistema operativo completo de la agencia: sitio principal, productos de IA para clientes B2B + infraestructura administrativa interna.
 
 **Sitio principal:**
-- `https://nasus.lat` — Landing comercial con portafolio de casos (CEEMI, Theia, WhatsApp Assistant) y servicios.
+- `https://nasus.lat` — Landing comercial con portafolio de casos (CEEMI, Vazto, WhatsApp Assistant) y servicios.
 - Mensaje: _"Soluciones tecnológicas artesanales para empresas en escala. Implementamos IA directamente en tus sistemas."_
 - Asistente de voz integrado (ElevenLabs TTS, Web Speech API).
 
