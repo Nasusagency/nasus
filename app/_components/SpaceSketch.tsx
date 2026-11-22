@@ -7,9 +7,9 @@ import { useEffect, useRef } from "react";
  *
  * - Constelación: estrellas que derivan despacio, se unen con líneas finas
  *   cuando están cerca y se conectan con el cursor. Estrella fugaz dorada.
- * - Nave: de vez en cuando cruza en horizontal una nave arcade en 2D, de perfil
- *   y en pixel art. Aletea (el ala sube y baja en 8 cuadros) y deja una estela
- *   de cuadritos dorados. Igual en todos los tamaños.
+ * - Nave: de vez en cuando cruza en horizontal una nave arcade en 2D, en pixel
+ *   art. Rueda sobre su eje (de perfil → vista desde arriba → de perfil) en 12
+ *   cuadros y deja una estela de cuadritos dorados. Igual en todos los tamaños.
  *
  * - Tetris (solo en móvil): un par de piezas caen muy despacio y giran a saltos,
  *   con trazo fino y casi transparentes. En escritorio no hay piezas: solo la nave.
@@ -66,46 +66,56 @@ function rotar(celdas: Celda[]): Celda[] {
   return g.map(([x, y]) => [x - minX, y - minY] as Celda);
 }
 
-// Nave arcade en 2D, de perfil, con la nariz a la derecha. Pixel art: cada letra es
-// un cuadro. W casco blanco, C cristal cian, G dorado.
+// Nave arcade en 2D, de pixel art, que rueda sobre su eje mientras avanza: pasa de
+// la vista de perfil a la vista desde arriba (como el clásico Galaga) y vuelve.
+// Cada letra es un cuadro. W casco blanco, C cristal cian, G dorado.
 const ANCHO = 22;
-const CUERPO = [
-  "....GG",
-  "....GWW.....WWW",
-  "..GGWWWWWWWWWCCWWWW",
+const EJE_Y = 4.5; // centro del casco (coordenadas de borde de celda)
+const EJE_J = 4; // fila de la nariz
+const FUSELAJE = [
+  "..GGWWWWWWWWWWWWWWW",
+  "GGGGWWWWWWWWWWWWWWWWW",
   "GGGGWWWWWWWWWWWWWWWWWW",
   "..GGWWWWWCCCWWWWWWWW",
   "....WWWWWWWWWWWWWW",
 ].map((f) => f.padEnd(ANCHO, "."));
-const EJE = 3; // fila de la nariz
+const FILA0 = 2; // el casco empieza en la fila 2
+const PASOS = 12; // posiciones del giro: una vuelta completa
+const SPAN = 8; // cuánto se abren las alas vistas desde arriba
 
-// El ala (la del lado que vemos) gira desde un punto del lomo. Se dibuja ya
-// rasterizada en cuadros, a 8 posiciones, para que el aleteo sea de pixel art.
-const PIVOTE = { i: 9, j: 2 };
-const LARGO_ALA = 10;
-const ANGULOS = [80, 50, 15, -20, -50, -20, 15, 50]; // arriba → abajo → arriba
-type CeldaAla = { i: number; j: number; punta: boolean };
+type CeldaAla = { i: number; j: number; col: 0 | 1 | 2 };
 
-function rasterizarAla(grados: number): CeldaAla[] {
-  const th = (grados * Math.PI) / 180;
-  const dx = -Math.cos(th); // hacia atrás
-  const dy = Math.sin(th); // y hacia arriba (si el ángulo es positivo)
-  const celdas: CeldaAla[] = [];
-  for (let i = -14; i <= 28; i++) {
-    for (let j = -16; j <= 16; j++) {
-      const cx = i + 0.5 - PIVOTE.i - 0.5;
-      const cy = -(j + 0.5 - PIVOTE.j - 0.5);
-      const u = cx * dx + cy * dy;
-      const v = cx * -dy + cy * dx;
-      const medio = 2.2 - (1.8 * u) / LARGO_ALA;
-      if (u >= 0 && u <= LARGO_ALA && Math.abs(v) <= medio) {
-        celdas.push({ i, j, punta: u > LARGO_ALA * 0.72 });
+function dentro(x: number, y: number, poly: [number, number][]): boolean {
+  let c = false;
+  for (let a = 0, b = poly.length - 1; a < poly.length; b = a++) {
+    const [xa, ya] = poly[a];
+    const [xb, yb] = poly[b];
+    if (ya > y !== yb > y && x < ((xb - xa) * (y - ya)) / (yb - ya) + xa) c = !c;
+  }
+  return c;
+}
+
+/** Alas en cada posición del giro, ya rasterizadas en cuadros. */
+function alasDe(paso: number): CeldaAla[] {
+  const h = SPAN * Math.sin((paso * 2 * Math.PI) / PASOS);
+  if (Math.abs(h) < 1.2) return []; // de canto: se ocultan tras el casco
+  const out: CeldaAla[] = [];
+  for (const lado of [-1, 1]) {
+    const ty = EJE_Y + lado * h; // altura de la punta del ala
+    const poly: [number, number][] = [[14, EJE_Y], [8, EJE_Y], [2, ty], [7, ty]];
+    const arriba = ty < EJE_Y;
+    const cercana = h > 0 === arriba; // el ala más cercana a la cámara va más clara
+    for (let i = 0; i <= 16; i++) {
+      for (let j = -6; j <= 15; j++) {
+        if (!dentro(i + 0.5, j + 0.5, poly)) continue;
+        const punta = Math.abs(j + 0.5 - EJE_Y) > Math.abs(h) * 0.72;
+        out.push({ i, j, col: punta ? 2 : cercana ? 0 : 1 });
       }
     }
   }
-  return celdas;
+  return out;
 }
-const ALAS = ANGULOS.map(rasterizarAla);
+const ALAS = Array.from({ length: PASOS }, (_, k) => alasDe(k));
 
 type Nave = {
   x: number;
@@ -189,14 +199,15 @@ export default function SpaceSketch({ tone = "dark" }: { tone?: Tono }) {
       W: tone === "dark" ? "244,250,252" : "40,44,56",
       C: P.cian,
       G: P.dorado,
-      ala: tone === "dark" ? "0,176,204" : "0,120,130",
+      alaCerca: tone === "dark" ? "0,176,204" : "0,120,130",
+      alaLejos: tone === "dark" ? "0,104,132" : "0,80,92",
     };
 
     const pintarNave = (t: number, n: Nave) => {
       const px = n.k; // tamaño de cada cuadro de pixel art
       // Todo se ancla a la cuadrícula de píxeles para que se vea nítido
       const baseX = Math.round((n.x - (ANCHO / 2) * px) / px) * px;
-      const baseY = Math.round(n.y / px) * px - EJE * px;
+      const baseY = Math.round(n.y / px) * px - EJE_J * px;
       const celda = (i: number, j: number, col: string, alfa = 1) => {
         const ii = n.dir === 1 ? i : ANCHO - 1 - i; // espejo si va hacia la izquierda
         ctx.fillStyle = `rgba(${col},${alfa})`;
@@ -212,21 +223,35 @@ export default function SpaceSketch({ tone = "dark" }: { tone?: Tono }) {
 
       // Llama del propulsor: parpadea entre dos cuadros
       const llama = Math.floor(t / 90) % 2 === 0;
-      celda(-1, EJE, P.dorado);
-      celda(-2, EJE, llama ? P.dorado : P.cian, 0.9);
-      if (llama) celda(-3, EJE, P.cian, 0.7);
+      celda(-1, EJE_J, P.dorado);
+      celda(-2, EJE_J, llama ? P.dorado : P.cian, 0.9);
+      if (llama) celda(-3, EJE_J, P.cian, 0.7);
+
+      // Posición del giro: una vuelta cada PASOS cuadros (~1.1 s)
+      const paso = Math.floor((t - n.t0) / 95) % PASOS;
+      const ang = (paso * 2 * Math.PI) / PASOS;
+      const cosA = Math.cos(ang);
+
+      // Alas (primero, quedan detrás del casco)
+      for (const c of ALAS[paso]) {
+        celda(c.i, c.j, c.col === 2 ? P.dorado : c.col === 0 ? COL.alaCerca : COL.alaLejos);
+      }
 
       // Casco
-      CUERPO.forEach((fila, j) => {
+      FUSELAJE.forEach((fila, k) => {
         [...fila].forEach((ch, i) => {
-          if (ch === ".") return;
-          celda(i, j, COL[ch as "W" | "C" | "G"]);
+          if (ch !== ".") celda(i, FILA0 + k, COL[ch as "W" | "C" | "G"]);
         });
       });
 
-      // Ala que aletea: 8 posiciones a ~12 cuadros por segundo
-      const cuadro = Math.floor((t - n.t0) / 85) % ALAS.length;
-      for (const c of ALAS[cuadro]) celda(c.i, c.j, c.punta ? P.dorado : COL.ala);
+      // Aleta de cola y cúpula: suben, pasan al centro y bajan al rodar
+      const jAleta = Math.round(EJE_Y - 3.5 * cosA - 1);
+      for (let i = 4; i <= 6; i++) for (let j = 0; j < 2; j++) celda(i, jAleta + j, P.dorado, cosA < 0 ? 0.75 : 1);
+      const jCupula = Math.round(EJE_Y - 3.0 * cosA - 1);
+      for (let i = 12; i <= 14; i++) {
+        celda(i, jCupula, cosA < 0 ? P.dorado : COL.W);
+        celda(i, jCupula + 1, cosA < 0 ? P.dorado : i === 12 ? COL.W : P.cian);
+      }
     };
 
     const pintarPieza = (pz: Pieza) => {
