@@ -42,6 +42,46 @@ export async function recordAcquisitionEvent(input: AcquisitionEventInput) {
   return { attributionId, stored: true };
 }
 
+/**
+ * Registra la llegada desde un anuncio "clic a WhatsApp" de Meta como un evento de
+ * adquisición (origen "meta"), igual que un clic desde el sitio, y devuelve su
+ * attribution_id para ligarlo al lead con resolveAndAssociateAttribution.
+ *
+ * Meta no manda el nombre de la campaña en el mensaje: se usa el titular del anuncio
+ * como campaña legible y el id del anuncio como `content`. Nada de esto es PII.
+ */
+export async function recordMetaAdReferral(referral: {
+  adId: string | null; sourceType: string | null; sourceUrl: string | null; headline: string | null; ctwaClid: string | null;
+}): Promise<string | null> {
+  const supabase = createServiceClient();
+  if (!supabase) return null;
+  const attributionId = shortId();
+  const clean = (value: string | null, max: number) => value?.trim().slice(0, max) || null;
+  const { error } = await supabase.from("acquisition_events").insert({
+    event_type: "whatsapp_click",
+    attribution_id: attributionId,
+    session_id: clean(`ctwa:${referral.ctwaClid ?? referral.adId ?? attributionId}`, 80),
+    source: "meta",
+    medium: "paid_social",
+    campaign: clean(referral.headline, 160) ?? (referral.adId ? `anuncio ${referral.adId}`.slice(0, 160) : "anuncio de meta"),
+    content: clean(referral.adId, 160),
+    term: null,
+    landing_path: "/whatsapp-ad",
+    referrer: clean(referral.sourceUrl, 500),
+    metadata: {
+      destination_type: "comercial",
+      cta_location: "meta_ctwa",
+      ...(referral.sourceType ? { source_type: referral.sourceType.slice(0, 40) } : {}),
+      ...(referral.ctwaClid ? { ctwa_clid: referral.ctwaClid.slice(0, 100) } : {}),
+    },
+  });
+  if (error) {
+    console.error(`[acquisition] meta_referral_failed code=${error.code}`);
+    return null;
+  }
+  return attributionId;
+}
+
 export async function resolveAndAssociateAttribution(attributionId: string, numero: string): Promise<void> {
   const supabase = createServiceClient();
   if (!supabase) return;

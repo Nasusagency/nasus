@@ -16,6 +16,17 @@ export interface WhatsAppTextMessage {
   type: string;
   text?: { body?: string };
   image?: WhatsAppMediaObject;
+  /** Solo en el primer mensaje que llega desde un anuncio "clic a WhatsApp" de Meta. */
+  referral?: WhatsAppAdReferral;
+}
+
+export interface WhatsAppAdReferral {
+  source_url?: string;
+  source_id?: string;
+  source_type?: string;
+  headline?: string;
+  body?: string;
+  ctwa_clid?: string;
 }
 
 export interface WhatsAppContact {
@@ -56,6 +67,16 @@ export interface IncomingMessage {
   /** Media id de Meta cuando el mensaje trae imagen. */
   mediaId?: string;
   mediaMime?: string;
+  /** Anuncio de Meta que originó la conversación (si vino de uno). */
+  adReferral?: AdReferral;
+}
+
+export interface AdReferral {
+  adId: string | null;
+  sourceType: string | null;
+  sourceUrl: string | null;
+  headline: string | null;
+  ctwaClid: string | null;
 }
 
 // ─── Persistencia ─────────────────────────────────────────────────────────────

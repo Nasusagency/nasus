@@ -33,7 +33,7 @@ import { providerTelemetryLabel, createGroqCallBudget, type ProviderType } from 
 import type { ToolName } from "@/lib/llm/tools";
 import type { ToolResult } from "@/lib/llm/tool-results";
 import { extractAttributionToken } from "@/lib/acquisition/attribution";
-import { resolveAndAssociateAttribution } from "@/lib/acquisition/server";
+import { recordMetaAdReferral, resolveAndAssociateAttribution } from "@/lib/acquisition/server";
 import { bindCanonicalToolInput } from "@/lib/whatsapp/tool-context";
 import { isOptOutMessage, revokeConsent } from "@/lib/crm/consents";
 import { buildLookupCandidates } from "@/lib/whatsapp/qa-reset-candidates";
@@ -166,6 +166,15 @@ function extractMessages(payload: WhatsAppWebhookPayload): IncomingMessage[] {
           profileName: nombres.get(msg.from),
           mediaId: esImagen ? msg.image?.id : undefined,
           mediaMime: esImagen ? msg.image?.mime_type : undefined,
+          adReferral: msg.referral
+            ? {
+                adId: msg.referral.source_id ?? null,
+                sourceType: msg.referral.source_type ?? null,
+                sourceUrl: msg.referral.source_url ?? null,
+                headline: msg.referral.headline ?? null,
+                ctwaClid: msg.referral.ctwa_clid ?? null,
+              }
+            : undefined,
         });
       }
     }
@@ -178,7 +187,7 @@ function extractMessages(payload: WhatsAppWebhookPayload): IncomingMessage[] {
 
 async function procesarMensaje(mensaje: IncomingMessage): Promise<void> {
   const { messageId, from, profileName, mediaId, mediaMime } = mensaje;
-  const { cleanText: text, attributionId } = extractAttributionToken(mensaje.text);
+  const { cleanText: text, attributionId: tokenAttributionId } = extractAttributionToken(mensaje.text);
   const isMasterAdmin = isNumberInMasterAdminAllowlist(
     from,
     process.env.WHATSAPP_MASTER_ADMIN_NUMBERS,
@@ -189,6 +198,13 @@ async function procesarMensaje(mensaje: IncomingMessage): Promise<void> {
   // Se resuelve el cliente antes del rate limit porque la cuota depende de si
   // está dado de alta: 100/hora para clientes, 30/hora para desconocidos.
   const cliente = isMasterAdmin ? null : await getCliente(from);
+
+  // Anuncio "clic a WhatsApp" de Meta: se registra como evento de adquisición y se
+  // liga al lead igual que el token [N:...] del sitio. Best-effort: nunca rompe el flujo.
+  let attributionId = tokenAttributionId;
+  if (!attributionId && mensaje.adReferral && !cliente && !isMasterAdmin) {
+    attributionId = await recordMetaAdReferral(mensaje.adReferral).catch(() => null);
+  }
 
   const conversationId = await resolveConversationId(from);
 
@@ -293,6 +309,7 @@ async function procesarMensaje(mensaje: IncomingMessage): Promise<void> {
         }
       }
       await escalarAAsesor(conversationId, from, profileName);
+      if (attributionId && !cliente) await resolveAndAssociateAttribution(attributionId, from).catch(() => {});
       return;
     }
 
