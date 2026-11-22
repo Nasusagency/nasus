@@ -548,103 +548,106 @@ export default function LandingPage() {
           una animación de carga escalonada, no de viewport. Ver globals.css. */}
       <section
         data-hero
-        className="relative flex flex-col justify-center px-6 md:px-[5vw] pt-14 pb-12 md:pt-24 md:pb-16 overflow-clip"
+        className="relative flex flex-col justify-center pt-14 pb-12 md:pt-20 md:pb-16 overflow-clip"
       >
-        {/* Zona de prueba: el agente de voz en una tarjeta, con las órbitas de fondo.
-            En pantallas grandes va a la derecha; en móvil, debajo del texto. */}
-        <div className="relative z-20 mt-10 max-lg:order-2 lg:absolute lg:right-[3vw] lg:top-1/2 lg:mt-0 lg:w-[400px] lg:-translate-y-1/2 xl:right-[5vw]">
-          <OrbitSketch className="pointer-events-none absolute left-1/2 top-1/2 hidden w-[620px] -translate-x-1/2 -translate-y-1/2 opacity-70 lg:block" />
-          <VoiceCard whatsappUrl={WHATSAPP_URL} className="relative z-10" />
-        </div>
-        <div className="relative max-w-[1150px] max-lg:order-1">
-          <p
-            data-reveal
-            className={`${GOLD} text-[11px] max-md:text-[10px] font-pixel tracking-[0.22em] max-md:tracking-[0.16em] uppercase mb-6`}
-          >
-            Agencia de tecnología artesanal
-          </p>
+        <div className="relative mx-auto w-full max-w-6xl px-6 lg:grid lg:grid-cols-[minmax(0,1fr)_360px] lg:items-center lg:gap-10 xl:grid-cols-[minmax(0,1fr)_400px] xl:gap-14">
+          <div className="relative">
+            <p
+              data-reveal
+              className={`${GOLD} text-[11px] max-md:text-[10px] font-pixel tracking-[0.22em] max-md:tracking-[0.16em] uppercase mb-6`}
+            >
+              Agencia de tecnología artesanal
+            </p>
 
-          <h1
-            data-reveal
-            style={{ ["--reveal-delay" as string]: "0.08s" }}
-            className="font-display font-extrabold text-white leading-[1.08] max-md:leading-[1.15] text-[clamp(34px,4.6vw,62px)] max-md:text-[clamp(26px,7.2vw,40px)] max-w-[1100px] text-balance"
-          >
-            Menos trabajo manual.
-            <br />
-            <span className={`relative inline-block ${GOLD}`}>
-              Más clientes atendidos.
-              {/* Subrayado a lápiz: se dibuja solo al cargar. */}
-              <svg
-                aria-hidden="true"
-                viewBox="0 0 340 14"
-                preserveAspectRatio="none"
-                className="absolute left-0 -bottom-2 h-[12px] w-full md:h-[16px]"
-                fill="none"
+            <h1
+              data-reveal
+              style={{ ["--reveal-delay" as string]: "0.08s" }}
+              className="font-display font-extrabold text-white leading-[1.08] max-md:leading-[1.15] text-[clamp(32px,4.2vw,56px)] max-md:text-[clamp(26px,7.2vw,40px)] max-w-[1100px] text-balance"
+            >
+              Menos trabajo manual.
+              <br />
+              <span className={`relative inline-block ${GOLD}`}>
+                Más clientes atendidos.
+                {/* Subrayado a lápiz: se dibuja solo al cargar. */}
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 340 14"
+                  preserveAspectRatio="none"
+                  className="absolute left-0 -bottom-2 h-[12px] w-full md:h-[16px]"
+                  fill="none"
+                >
+                  <path
+                    className="pencil-draw"
+                    pathLength={1}
+                    d="M2 9 C 60 3, 112 13, 172 7 S 290 12, 338 5"
+                    stroke="#00f2ff"
+                    strokeWidth="3.4"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </span>
+            </h1>
+
+            <p
+              data-reveal
+              style={{ ["--reveal-delay" as string]: "0.22s" }}
+              className="max-w-[560px] mt-8 max-md:mt-7 font-mono text-[15px] max-md:text-[14px] leading-[1.9] text-white/65"
+            >
+              Agentes de IA que atienden al instante y automatizan lo manual. Listos
+              en semanas, no en medio año.
+            </p>
+
+            <div
+              data-reveal
+              style={{ ["--reveal-delay" as string]: "0.3s" }}
+              className="mt-9 max-md:mt-8 flex flex-wrap items-center gap-x-6 gap-y-4"
+            >
+              <a
+                href="#contacto"
+                className="inline-flex items-center gap-3 px-8 py-4 max-md:px-4 max-md:w-full max-md:justify-center border border-[#c4a882] text-white font-mono text-[13px] max-md:text-[12px] tracking-[0.15em] max-md:tracking-[0.1em] transition-colors hover:bg-[#c4a882] hover:text-[#050508]"
               >
-                <path
-                  className="pencil-draw"
-                  pathLength={1}
-                  d="M2 9 C 60 3, 112 13, 172 7 S 290 12, 338 5"
-                  stroke="#00f2ff"
-                  strokeWidth="3.4"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </span>
-          </h1>
+                CUÉNTANOS QUÉ NECESITAS <span aria-hidden="true">→</span>
+              </a>
+              <a
+                href={WHATSAPP_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-mono text-sm text-zinc-300 transition-colors hover:text-[#c4a882] max-md:w-full max-md:text-center"
+              >
+                o por WhatsApp: <span className="text-white">{WHATSAPP_DISPLAY}</span>
+              </a>
+            </div>
 
-          <p
-            data-reveal
-            style={{ ["--reveal-delay" as string]: "0.22s" }}
-            className="max-w-[560px] mt-8 max-md:mt-7 font-mono text-[15px] max-md:text-[14px] leading-[1.9] text-white/65"
-          >
-            Agentes de IA que atienden al instante y automatizan lo manual. Listos
-            en semanas, no en medio año.
-          </p>
-
-          <div
-            data-reveal
-            style={{ ["--reveal-delay" as string]: "0.3s" }}
-            className="mt-9 max-md:mt-8 flex flex-wrap items-center gap-x-6 gap-y-4"
-          >
-            <a
-              href="#contacto"
-              className="inline-flex items-center gap-3 px-8 py-4 max-md:px-4 max-md:w-full max-md:justify-center border border-[#c4a882] text-white font-mono text-[13px] max-md:text-[12px] tracking-[0.15em] max-md:tracking-[0.1em] transition-colors hover:bg-[#c4a882] hover:text-[#050508]"
+            <div
+              data-reveal
+              style={{ ["--reveal-delay" as string]: "0.38s" }}
+              className="mt-12 max-md:hidden flex flex-wrap items-center gap-x-3 gap-y-2 font-mono text-[10px] sm:text-xs text-zinc-600 uppercase tracking-[0.2em]"
             >
-              CUÉNTANOS QUÉ NECESITAS <span aria-hidden="true">→</span>
-            </a>
-            <a
-              href={WHATSAPP_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-mono text-sm text-zinc-300 transition-colors hover:text-[#c4a882] max-md:w-full max-md:text-center"
-            >
-              o por WhatsApp: <span className="text-white">{WHATSAPP_DISPLAY}</span>
-            </a>
+              {CAPABILITIES.map((c, i) => (
+                <span key={c} className="flex items-center gap-3">
+                  {i > 0 && (
+                    <span className="text-zinc-800" aria-hidden="true">
+                      ·
+                    </span>
+                  )}
+                  {c}
+                </span>
+              ))}
+            </div>
           </div>
 
-          <div
-            data-reveal
-            style={{ ["--reveal-delay" as string]: "0.38s" }}
-            className="mt-12 max-md:hidden flex flex-wrap items-center gap-x-3 gap-y-2 font-mono text-[10px] sm:text-xs text-zinc-600 uppercase tracking-[0.2em]"
-          >
-            {CAPABILITIES.map((c, i) => (
-              <span key={c} className="flex items-center gap-3">
-                {i > 0 && (
-                  <span className="text-zinc-800" aria-hidden="true">
-                    ·
-                  </span>
-                )}
-                {c}
-              </span>
-            ))}
+          {/* Zona de prueba: el agente de voz en una tarjeta, pegada al titular, con
+              las órbitas de fondo. En móvil va debajo del texto. */}
+          <div className="relative z-20 mt-10 lg:mt-0">
+            <OrbitSketch className="pointer-events-none absolute left-1/2 top-1/2 hidden w-[560px] -translate-x-1/2 -translate-y-1/2 opacity-60 lg:block" />
+            <VoiceCard whatsappUrl={WHATSAPP_URL} className="relative z-10" />
           </div>
         </div>
       </section>
 
       {/* ── Plazos ─────────────────────────────────────────────────────── */}
-      <section className="px-6 pb-12 md:pb-16">
-        <div className="max-w-5xl mx-auto">
+      <section className="pb-12 md:pb-16">
+        <div className="mx-auto max-w-6xl px-6">
           {/* Comparación de plazos. Los 1 a 2 meses salen de los proyectos reales
               (CEEMI: 1 mes de inicio a entrega). El plazo de la agencia tradicional
               es la referencia que Nasus usa al cotizar: mantenerlo defendible. */}
@@ -676,8 +679,8 @@ export default function LandingPage() {
       </section>
 
       {/* ── Mundo Nasus: acceso visible, no solo en el pie ──────────────── */}
-      <section className="px-6 pb-16 md:pb-24">
-        <div className="max-w-5xl mx-auto">
+      <section className="pb-16 md:pb-24">
+        <div className="mx-auto max-w-6xl px-6">
           <a
             href={MUNDO_URL}
             target="_blank"
