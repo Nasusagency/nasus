@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Playfair_Display, Space_Mono } from "next/font/google";
+import { Chakra_Petch, Space_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import Script from "next/script";
 import VoiceAssistant from "./_components/VoiceAssistant";
@@ -7,13 +7,14 @@ import AcquisitionTracker from "./_components/AcquisitionTracker";
 import { Suspense } from "react";
 import "./globals.css";
 
-// Playfair para titulares editoriales, Space Mono para datos y etiquetas.
+// Chakra Petch para titulares (letras de bloque con esquinas cortadas, a juego
+// con el logo), Space Mono para el texto corrido, datos y etiquetas.
 // Se cargan con next/font (self-host + preload) en vez del <link> a Google
 // que trae el prototipo: evita una petición bloqueante a otro dominio.
-const displaySerif = Playfair_Display({
-  variable: "--font-display-serif",
+const displayBlock = Chakra_Petch({
+  variable: "--font-display-block",
   subsets: ["latin"],
-  weight: ["400", "600", "700", "800", "900"],
+  weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 
@@ -95,7 +96,7 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className={`${displaySerif.variable} ${monoSpace.variable} h-full antialiased`}
+      className={`${displayBlock.variable} ${monoSpace.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-[#050508] text-white">
         {children}

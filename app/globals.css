@@ -8,7 +8,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-display: var(--font-display-serif), Georgia, serif;
+  --font-display: var(--font-display-block), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-mono-space), "Courier New", monospace;
 }
 
@@ -244,7 +244,7 @@ body {
   top: 0.1em;
   right: 2vw;
   z-index: 0;
-  font-family: var(--font-display-serif), Georgia, serif;
+  font-family: var(--font-display-block), ui-sans-serif, system-ui, sans-serif;
   font-weight: 900;
   font-size: min(240px, 26vw);
   line-height: 1;
@@ -629,4 +629,15 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .pencil-draw { animation: none; stroke-dashoffset: 0; }
   .twinkle { animation: none; opacity: 0.8; }
+}
+
+/* ── Titulares: una sola letra de bloque, a juego con el logo ──────────── */
+/* Antes el titular era serif y los demás títulos usaban la mono del texto.
+   Ahora todos los títulos comparten la letra del logo (esquinas cortadas,
+   aire de videojuego) y el texto corrido sigue en mono. */
+.site-modules h1,
+.site-modules h2,
+.site-modules h3 {
+  font-family: var(--font-display);
+  letter-spacing: 0.005em;
 }

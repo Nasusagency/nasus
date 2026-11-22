@@ -92,6 +92,7 @@
 
 **Tokens de diseño (landing en tema claro, rama `rediseno-propuesta`):**
 - Papel: `#f6f3ec` · Tinta: `#0d0d14` · Dorado (texto): `#94702f` · Cian (texto): `#007f89`
+- Tipografía: títulos en **Chakra Petch** (letra de bloque con esquinas cortadas, a juego con el logo) y texto en **Space Mono**. Todos los `h1`–`h3` de la landing usan `--font-display` (ver `app/globals.css`).
 - El tema claro vive en `.theme-light` (`app/globals.css`): reasigna las variables de Tailwind (`--color-white`, `--color-zinc-*`) y ajusta los colores arbitrarios. Fondo animado en `SpaceSketch.tsx`; órbitas de la portada en `OrbitSketch.tsx`; logo (lápiz + corchetes) en `Logo.tsx`.
 
 **Tokens de diseño (tema oscuro original):**

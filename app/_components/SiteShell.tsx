@@ -106,7 +106,7 @@ export default function SiteShell({
       >
         <div className="mx-auto grid h-16 max-w-6xl grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 max-md:h-14 md:px-6">
           <a href={`#${inicial}`} aria-label="Nasus, inicio" className="justify-self-start">
-            <Logo height={40} />
+            <Logo height={36} />
           </a>
 
           {/* Botón central: el asistente de voz. */}
@@ -114,7 +114,7 @@ export default function SiteShell({
             <button
               type="button"
               onClick={abrirAsistente}
-              className="group/ia inline-flex items-center gap-2 rounded-full border border-[#00f2ff]/50 bg-[#00f2ff]/[0.06] px-4 py-2 font-mono text-[12px] tracking-wide text-[#00f2ff] transition-colors hover:bg-[#00f2ff] hover:text-[#050508] max-sm:px-3 max-sm:text-[11px]"
+              className="group/ia inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-[#00f2ff]/50 bg-[#00f2ff]/[0.06] px-4 py-2 font-mono text-[12px] tracking-wide text-[#00f2ff] transition-colors hover:bg-[#00f2ff] hover:text-[#050508] max-sm:gap-1.5 max-sm:px-2.5 max-sm:text-[10.5px]"
             >
               <span
                 aria-hidden="true"
