@@ -13,6 +13,36 @@ import { useEffect, useRef, useState } from "react";
  * (solo en punteros finos) y UN IntersectionObserver para toda la página.
  */
 
+const CHAPTERS = [
+  { id: "productos", label: "01 — PRODUCTOS" },
+  { id: "problema", label: "02 — PROBLEMA" },
+  { id: "construimos", label: "03 — SERVICIOS" },
+  { id: "casos", label: "04 — WORK" },
+  { id: "proceso", label: "05 — PROCESO" },
+  { id: "porque", label: "06 — POR QUÉ" },
+  { id: "contacto", label: "07 — CONTACTO" },
+];
+
+/**
+ * Partículas con valores fijos, no aleatorios: así el marcado es idéntico en
+ * servidor y cliente (sin desajuste de hidratación) y no hace falta estado.
+ * En móvil y con reduced-motion las oculta el CSS.
+ */
+const PARTICLES = [
+  { left: "6%", size: 3, dur: 22, delay: 0 },
+  { left: "14%", size: 2, dur: 27, delay: 6 },
+  { left: "23%", size: 4, dur: 18, delay: 12 },
+  { left: "31%", size: 2, dur: 25, delay: 3 },
+  { left: "42%", size: 3, dur: 20, delay: 9 },
+  { left: "50%", size: 2, dur: 29, delay: 15 },
+  { left: "58%", size: 4, dur: 17, delay: 2 },
+  { left: "66%", size: 2, dur: 24, delay: 11 },
+  { left: "74%", size: 3, dur: 21, delay: 5 },
+  { left: "83%", size: 2, dur: 28, delay: 14 },
+  { left: "91%", size: 3, dur: 19, delay: 8 },
+  { left: "97%", size: 2, dur: 26, delay: 17 },
+];
+
 export default function SiteChrome() {
   const [hovering, setHovering] = useState(false);
   const cursorRef = useRef<HTMLDivElement | null>(null);
@@ -55,11 +85,19 @@ export default function SiteChrome() {
     // Un único listener de scroll para navbar y capítulo activo. Escribe por
     // DOM en vez de por estado: la navbar se queda en el HTML del servidor.
     const nav = document.getElementById("site-nav");
+    const slot = document.getElementById("nav-chapter");
 
     const apply = () => {
       frame.current = null;
       if (nav) nav.dataset.scrolled = window.scrollY > 30 ? "true" : "false";
 
+      if (!slot) return;
+      let current = "00 — INTRO";
+      for (const { id, label } of CHAPTERS) {
+        const el = document.getElementById(id);
+        if (el && el.getBoundingClientRect().top <= 140) current = label;
+      }
+      if (slot.textContent !== current) slot.textContent = current;
     };
 
     const onScroll = () => {
@@ -105,6 +143,26 @@ export default function SiteChrome() {
   return (
     <>
       <div className="nasus-grain" aria-hidden="true" />
+
+      <div
+        className="fixed inset-0 z-0 overflow-hidden pointer-events-none"
+        aria-hidden="true"
+      >
+        {PARTICLES.map((p, i) => (
+          <span
+            key={i}
+            className="nasus-particle absolute bottom-[-10px] rounded-full"
+            style={{
+              left: p.left,
+              width: p.size,
+              height: p.size,
+              background: "#00f2ff",
+              boxShadow: "0 0 6px #00f2ff",
+              animation: `nasus-float-up ${p.dur}s linear ${p.delay}s infinite`,
+            }}
+          />
+        ))}
+      </div>
 
       {/* Se renderiza siempre; el CSS lo oculta salvo en punteros finos. */}
       <div
