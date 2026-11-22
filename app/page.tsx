@@ -4,13 +4,14 @@ import SiteChrome from "./_components/SiteChrome";
 import OrbitSketch from "./_components/OrbitSketch";
 import SiteShell from "./_components/SiteShell";
 import SpaceSketch from "./_components/SpaceSketch";
+import VoiceCard from "./_components/VoiceCard";
 import ContactForm from "./_components/ContactForm";
 import DemoIsland from "./_components/DemoIsland";
 
 const GOLD = "text-[#c4a882]";
 const CYAN = "text-[#00f2ff]";
 const BORDER = "border border-zinc-800";
-const EYEBROW = `${GOLD} text-xs font-mono tracking-[0.3em] uppercase mb-6`;
+const EYEBROW = `${GOLD} text-[11px] font-pixel tracking-[0.22em] uppercase mb-6`;
 /* py móvil > py desktop original a propósito: en pantallas pequeñas la pausa
    entre capítulos es lo que sustituye a la composición de dos columnas. */
 /* overflow-clip y NO overflow-hidden: `hidden` convierte la sección en un
@@ -521,6 +522,7 @@ const MODULES = [
 
 /** Secciones internas → módulo que las contiene (para enlaces como #construimos). */
 const MODULE_ALIASES: Record<string, string> = {
+  agentes: "inicio",
   problema: "servicios",
   construimos: "servicios",
   porque: "proceso",
@@ -528,7 +530,7 @@ const MODULE_ALIASES: Record<string, string> = {
 
 export default function LandingPage() {
   return (
-    <div className="site-modules theme-light min-h-screen relative">
+    <div className="site-modules bg-[#050508] text-white min-h-screen relative">
       <SiteChrome />
       <SpaceSketch />
 
@@ -548,11 +550,16 @@ export default function LandingPage() {
         data-hero
         className="relative flex flex-col justify-center px-6 md:px-[5vw] pt-14 pb-12 md:pt-24 md:pb-16 overflow-clip"
       >
-        <OrbitSketch className="pointer-events-none absolute right-[-70px] top-1/2 hidden w-[420px] -translate-y-1/2 lg:block xl:right-[1vw] xl:w-[480px]" />
-        <div className="relative max-w-[1150px]">
+        {/* Zona de prueba: el agente de voz en una tarjeta, con las órbitas de fondo.
+            En pantallas grandes va a la derecha; en móvil, debajo del texto. */}
+        <div className="relative z-20 mt-10 max-lg:order-2 lg:absolute lg:right-[3vw] lg:top-1/2 lg:mt-0 lg:w-[400px] lg:-translate-y-1/2 xl:right-[5vw]">
+          <OrbitSketch className="pointer-events-none absolute left-1/2 top-1/2 hidden w-[620px] -translate-x-1/2 -translate-y-1/2 opacity-70 lg:block" />
+          <VoiceCard whatsappUrl={WHATSAPP_URL} className="relative z-10" />
+        </div>
+        <div className="relative max-w-[1150px] max-lg:order-1">
           <p
             data-reveal
-            className={`${GOLD} text-xs max-md:text-[10px] font-mono tracking-[0.3em] max-md:tracking-[0.22em] uppercase mb-6`}
+            className={`${GOLD} text-[11px] max-md:text-[10px] font-pixel tracking-[0.22em] max-md:tracking-[0.16em] uppercase mb-6`}
           >
             Agencia de tecnología artesanal
           </p>
@@ -560,7 +567,7 @@ export default function LandingPage() {
           <h1
             data-reveal
             style={{ ["--reveal-delay" as string]: "0.08s" }}
-            className="font-display font-extrabold text-white leading-[1.08] max-md:leading-[1.15] text-[clamp(36px,5.3vw,70px)] max-md:text-[clamp(26px,7.2vw,40px)] max-w-[1100px] text-balance"
+            className="font-display font-extrabold text-white leading-[1.08] max-md:leading-[1.15] text-[clamp(34px,4.6vw,62px)] max-md:text-[clamp(26px,7.2vw,40px)] max-w-[1100px] text-balance"
           >
             Menos trabajo manual.
             <br />
@@ -578,7 +585,7 @@ export default function LandingPage() {
                   className="pencil-draw"
                   pathLength={1}
                   d="M2 9 C 60 3, 112 13, 172 7 S 290 12, 338 5"
-                  stroke="#00a9b5"
+                  stroke="#00f2ff"
                   strokeWidth="3.4"
                   strokeLinecap="round"
                 />
@@ -997,7 +1004,7 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 mb-8 pb-8 border-b border-zinc-900/50">
             <div>
-              <Logo />
+              <Logo tone="dark" />
               <p className="text-zinc-600 text-xs mt-3 max-w-xs">
                 Software, IA y automatización conectados a tu operación.
               </p>

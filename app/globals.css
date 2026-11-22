@@ -641,3 +641,77 @@ body {
   font-family: var(--font-display);
   letter-spacing: 0.005em;
 }
+
+/* ── Fondo oscuro del SpaceSketch (tema por defecto) ───────────────────── */
+.space-sketch[data-tone="dark"] .space-wash {
+  background:
+    radial-gradient(900px 600px at 86% -8%, rgba(196, 168, 130, 0.13), transparent 62%),
+    radial-gradient(760px 520px at -6% 104%, rgba(0, 242, 255, 0.08), transparent 62%);
+}
+.space-sketch[data-tone="dark"] .space-dots {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.09) 1px, transparent 1.3px);
+}
+/* La constelación del SpaceSketch reemplaza a las partículas cian de antes. */
+.site-modules .nasus-particle { display: none; }
+
+/* Letra pixelada, solo para etiquetas pequeñas: el toque arcade */
+.font-pixel {
+  font-family: var(--font-pixel), ui-monospace, monospace;
+}
+
+/* ── Tarjeta del agente de voz ─────────────────────────────────────────── */
+.voice-card {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(14, 14, 22, 0.95), rgba(8, 8, 14, 0.96));
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+}
+/* Esquinas tipo HUD: ocho degradados en un pseudo-elemento, sin elementos extra */
+.voice-card::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: 18px;
+  pointer-events: none;
+  opacity: 0.9;
+  background:
+    linear-gradient(#00f2ff, #00f2ff) top left / 18px 2px no-repeat,
+    linear-gradient(#00f2ff, #00f2ff) top left / 2px 18px no-repeat,
+    linear-gradient(#00f2ff, #00f2ff) top right / 18px 2px no-repeat,
+    linear-gradient(#00f2ff, #00f2ff) top right / 2px 18px no-repeat,
+    linear-gradient(#00f2ff, #00f2ff) bottom left / 18px 2px no-repeat,
+    linear-gradient(#00f2ff, #00f2ff) bottom left / 2px 18px no-repeat,
+    linear-gradient(#00f2ff, #00f2ff) bottom right / 18px 2px no-repeat,
+    linear-gradient(#00f2ff, #00f2ff) bottom right / 2px 18px no-repeat;
+}
+.voice-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  pointer-events: none;
+}
+/* --u y --a (0..1) los escribe VoiceCard en cada cuadro con el nivel de audio */
+.voice-ring-u {
+  border: 2px solid rgba(0, 242, 255, 0.75);
+  transform: scale(calc(1.02 + var(--u, 0) * 0.5));
+  opacity: calc(0.15 + var(--u, 0) * 0.85);
+  transition: transform 0.08s linear, opacity 0.08s linear;
+}
+.voice-ring-a {
+  border: 2px solid rgba(196, 168, 130, 0.85);
+  transform: scale(calc(1.14 + var(--a, 0) * 0.55));
+  opacity: calc(0.15 + var(--a, 0) * 0.85);
+  transition: transform 0.08s linear, opacity 0.08s linear;
+}
+.voice-idle .voice-ring-u { animation: voice-breathe 3.4s ease-in-out infinite; }
+.voice-idle .voice-ring-a { animation: voice-breathe 3.4s ease-in-out 0.9s infinite; }
+@keyframes voice-breathe {
+  0%, 100% { transform: scale(1.02); opacity: 0.18; }
+  50% { transform: scale(1.22); opacity: 0.5; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .voice-idle .voice-ring-u,
+  .voice-idle .voice-ring-a { animation: none; }
+}

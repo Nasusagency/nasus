@@ -4,7 +4,8 @@ import { hashIp, releaseLiveReservation, reserveLiveSession } from "@/lib/live/b
 import {
   LIVE_BACKEND_INSTRUCTIONS,
   LIVE_IDLE_TIMEOUT_S,
-  LIVE_INSTRUCTIONS,
+  LIVE_LANGS,
+  liveInstructions,
   liveLimits,
   liveModels,
 } from "@/lib/live/config";
@@ -48,9 +49,12 @@ export async function POST(req: NextRequest) {
   if (raw.length > MAX_BODY_BYTES) return fail(413, "Solicitud demasiado grande.", "too_large");
 
   let sdp: string;
+  let lang = "auto";
   try {
-    const body = JSON.parse(raw) as { sdp?: unknown };
+    const body = JSON.parse(raw) as { sdp?: unknown; lang?: unknown };
     sdp = typeof body.sdp === "string" ? body.sdp : "";
+    // Solo idiomas de la lista: el valor llega del navegador y entra al prompt.
+    if (typeof body.lang === "string" && body.lang in LIVE_LANGS) lang = body.lang;
   } catch {
     return fail(400, "Solicitud inválida.", "bad_request");
   }
@@ -89,7 +93,7 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         session: {
           model,
-          instructions: LIVE_INSTRUCTIONS,
+          instructions: liveInstructions(lang),
           audio: { output: { voice } },
           // Espera a que la persona hable y pasa a espera (más barata) si hay silencio.
           wake_policy: { type: "speech" },

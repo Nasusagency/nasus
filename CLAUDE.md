@@ -59,7 +59,7 @@
 | Ruta | Descripción |
 |------|-------------|
 | `POST /api/assistant` | Asistente de voz (respaldo en texto) — Claude + ElevenLabs TTS (público, 5/IP/hora) |
-| `POST /api/live/session` | Asistente de voz en vivo — GPT-Live por WebRTC. Reserva presupuesto en Supabase (`live_reserve`, migración 0020) antes de abrir sesión; falla cerrado |
+| `POST /api/live/session` | Asistente de voz en vivo (tarjeta `VoiceCard` en Inicio; sin botón flotante en `/`) — GPT-Live por WebRTC. Acepta `lang` opcional (auto por defecto). Reserva presupuesto en Supabase (`live_reserve`, migración 0020) antes de abrir sesión; falla cerrado |
 | `POST /api/validate` | Validación de documentos generales |
 | `POST /api/validate-photo` | Validación de fotografías |
 | `POST /api/facturas/extract` | Extracción de facturas PDF → JSON/Excel |
@@ -90,10 +90,10 @@
 | Despliegue | Vercel (Edge + Node.js runtime según ruta) |
 | Exports | SheetJS (XLSX) |
 
-**Tokens de diseño (landing en tema claro, rama `rediseno-propuesta`):**
+**Tokens de diseño (landing: oscuro por defecto; el tema claro `.theme-light` quedó disponible, sin usarse):**
 - Papel: `#f6f3ec` · Tinta: `#0d0d14` · Dorado (texto): `#94702f` · Cian (texto): `#007f89`
 - Tipografía: títulos en **Chakra Petch** (letra de bloque con esquinas cortadas, a juego con el logo) y texto en **Space Mono**. Todos los `h1`–`h3` de la landing usan `--font-display` (ver `app/globals.css`).
-- El tema claro vive en `.theme-light` (`app/globals.css`): reasigna las variables de Tailwind (`--color-white`, `--color-zinc-*`) y ajusta los colores arbitrarios. Fondo animado en `SpaceSketch.tsx`; órbitas de la portada en `OrbitSketch.tsx`; logo (lápiz + corchetes) en `Logo.tsx`.
+- El tema claro vive en `.theme-light` (`app/globals.css`): reasigna las variables de Tailwind (`--color-white`, `--color-zinc-*`) y ajusta los colores arbitrarios. Fondo animado "espacial arcade" en `SpaceSketch.tsx` (constelación + piezas de Tetris + nave pixelada); órbitas en `OrbitSketch.tsx`; logo (lápiz + corchetes) en `Logo.tsx`. Etiquetas pequeñas en Silkscreen (`font-pixel`).
 
 **Tokens de diseño (tema oscuro original):**
 - Fondo: `#050508`

@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from "react";
 
-import { ASSISTANT_BUTTON_ID, hayAsistente } from "./assistant-support";
+import { hayAsistente } from "./assistant-support";
 import Logo from "./Logo";
 
 export type ModuleDef = { id: string; label: string; hint: string };
@@ -88,11 +88,15 @@ export default function SiteShell({
     window.scrollTo({ top: 0 });
   }, []);
 
+  // El botón "Agentes de IA" lleva a la tarjeta de voz de Inicio y arranca la
+  // conversación. Se dispara dentro del clic para conservar el permiso de micrófono.
   const abrirAsistente = useCallback(() => {
     setMenuAbierto(false);
-    const boton = document.getElementById(ASSISTANT_BUTTON_ID);
-    boton?.focus();
-    boton?.click();
+    window.dispatchEvent(new Event("nasus:voice"));
+    window.location.hash = "agentes";
+    requestAnimationFrame(() =>
+      document.getElementById("agentes")?.scrollIntoView({ block: "center" }),
+    );
   }, []);
 
   return (
@@ -106,7 +110,7 @@ export default function SiteShell({
       >
         <div className="mx-auto grid h-16 max-w-6xl grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 max-md:h-14 md:px-6">
           <a href={`#${inicial}`} aria-label="Nasus, inicio" className="justify-self-start">
-            <Logo height={36} />
+            <Logo height={36} tone="dark" />
           </a>
 
           {/* Botón central: el asistente de voz. */}

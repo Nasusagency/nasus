@@ -533,7 +533,8 @@ export default function VoiceAssistant() {
   // El panel admin es una herramienta operativa del CRM, no la landing comercial:
   // el FAB del asistente de voz no debe flotar ahí. Se prueba desde
   // /internal/voice-test (misma auth admin, fuera del nav del CRM).
-  if (!soportado || pathname?.startsWith("/admin")) return null;
+  // En la landing la demo vive en una tarjeta (VoiceCard): sin botón flotante.
+  if (!soportado || pathname === "/" || pathname?.startsWith("/admin")) return null;
 
   const activo = estado === "listening" || estado === "live";
   const color = activo || estado === "speaking" ? CYAN : GOLD;

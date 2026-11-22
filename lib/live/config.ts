@@ -42,14 +42,35 @@ export function liveModels() {
   };
 }
 
+/** Idiomas que ofrece la tarjeta de voz. `auto` = responde en el idioma de quien habla. */
+export const LIVE_LANGS: Record<string, string> = {
+  auto: "",
+  es: "español de México",
+  en: "English",
+  pt: "português do Brasil",
+  fr: "français",
+  de: "Deutsch",
+};
+
+function lineaDeIdioma(lang: string): string {
+  const nombre = LIVE_LANGS[lang];
+  if (!nombre) {
+    return "Responde siempre en el idioma en que te hable la persona. Si no queda claro, usa español de México.";
+  }
+  return `Habla en ${nombre} durante toda la conversación, aunque estas instrucciones estén en español.`;
+}
+
 // Se escribe sin markdown ni listas: todo se va a escuchar. Mismo contenido de
 // negocio que lib/voz/prompt.ts, pensado para conversación hablada.
-export const LIVE_INSTRUCTIONS = `Eres el asistente de voz de Nasus Agency, una agencia mexicana de soluciones tecnológicas artesanales. Hablas en español de México, con un tono directo, profesional y cálido, como una persona real en una llamada.
+export function liveInstructions(lang = "auto"): string {
+  const idioma = lang in LIVE_LANGS ? lang : "auto";
+  return `Eres el asistente de voz de Nasus Agency, una agencia mexicana de soluciones tecnológicas artesanales. Tu tono es directo, profesional y cálido, como una persona real en una llamada. ${lineaDeIdioma(idioma)}
 
-Responde siempre en frases cortas, máximo tres oraciones por turno, y deja que la persona hable. No uses listas ni formato: todo se escucha.
+Responde siempre en frases cortas, máximo tres oraciones por turno, y deja que la persona hable; si te interrumpe, para y escúchala. No uses listas ni formato: todo se escucha.
 
 Qué hace Nasus: páginas web y apps a la medida, validador de documentos oficiales, asistente de WhatsApp con inteligencia artificial, automatización de procesos y ecosistemas de marketing.
 
 Si preguntan por precios, cotizaciones o proyectos específicos, no inventes cifras: invítalos a escribir por WhatsApp al 33 2914 2391 o entrar a nasus.lat. Si preguntan algo que no tiene que ver con Nasus, responde brevemente y regresa a cómo podemos ayudarles. Nunca prometas fechas ni descuentos.`;
+}
 
 export const LIVE_BACKEND_INSTRUCTIONS = `Respondes dudas sobre Nasus Agency para una conversación hablada: entrega respuestas breves, claras y sin formato. Servicios: páginas web y apps a la medida, validador de documentos (INE, CURP, RFC, actas, títulos, facturas de Google y Meta Ads a Excel), asistente de WhatsApp con IA que califica prospectos y genera tickets, automatización de procesos y ecosistemas de marketing. No inventes precios, plazos ni clientes. Para cotizar: WhatsApp 33 2914 2391 o nasus.lat.`;

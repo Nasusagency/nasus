@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Chakra_Petch, Space_Mono } from "next/font/google";
+import { Chakra_Petch, Silkscreen, Space_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import Script from "next/script";
 import VoiceAssistant from "./_components/VoiceAssistant";
@@ -15,6 +15,14 @@ const displayBlock = Chakra_Petch({
   variable: "--font-display-block",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
+
+// Pixelada: solo para etiquetas muy pequeñas (el toque arcade); nunca para texto.
+const pixel = Silkscreen({
+  variable: "--font-pixel",
+  subsets: ["latin"],
+  weight: ["400", "700"],
   display: "swap",
 });
 
@@ -96,7 +104,7 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className={`${displayBlock.variable} ${monoSpace.variable} h-full antialiased`}
+      className={`${displayBlock.variable} ${monoSpace.variable} ${pixel.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-[#050508] text-white">
         {children}
