@@ -1,7 +1,9 @@
 import Image from "next/image";
 import Logo from "./_components/Logo";
 import SiteChrome from "./_components/SiteChrome";
+import OrbitSketch from "./_components/OrbitSketch";
 import SiteShell from "./_components/SiteShell";
+import SpaceSketch from "./_components/SpaceSketch";
 import ContactForm from "./_components/ContactForm";
 import DemoIsland from "./_components/DemoIsland";
 
@@ -526,8 +528,9 @@ const MODULE_ALIASES: Record<string, string> = {
 
 export default function LandingPage() {
   return (
-    <div className="site-modules bg-[#050508] text-white min-h-screen relative">
+    <div className="site-modules theme-light min-h-screen relative">
       <SiteChrome />
+      <SpaceSketch />
 
       <SiteShell
         modules={MODULES}
@@ -545,6 +548,7 @@ export default function LandingPage() {
         data-hero
         className="relative flex flex-col justify-center px-6 md:px-[5vw] pt-14 pb-12 md:pt-24 md:pb-16 overflow-clip"
       >
+        <OrbitSketch className="pointer-events-none absolute right-[-70px] top-1/2 hidden w-[420px] -translate-y-1/2 lg:block xl:right-[1vw] xl:w-[480px]" />
         <div className="relative max-w-[1150px]">
           <p
             data-reveal
@@ -556,11 +560,30 @@ export default function LandingPage() {
           <h1
             data-reveal
             style={{ ["--reveal-delay" as string]: "0.08s" }}
-            className="font-display font-extrabold text-white leading-[1.08] max-md:leading-[1.15] text-[clamp(38px,7vw,88px)] max-md:text-[clamp(26px,7.2vw,40px)] max-w-[1100px] text-balance"
+            className="font-display font-extrabold text-white leading-[1.08] max-md:leading-[1.15] text-[clamp(36px,5.3vw,70px)] max-md:text-[clamp(26px,7.2vw,40px)] max-w-[1100px] text-balance"
           >
             Menos trabajo manual.
             <br />
-            <span className={GOLD}>Más clientes atendidos.</span>
+            <span className={`relative inline-block ${GOLD}`}>
+              Más clientes atendidos.
+              {/* Subrayado a lápiz: se dibuja solo al cargar. */}
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 340 14"
+                preserveAspectRatio="none"
+                className="absolute left-0 -bottom-2 h-[12px] w-full md:h-[16px]"
+                fill="none"
+              >
+                <path
+                  className="pencil-draw"
+                  pathLength={1}
+                  d="M2 9 C 60 3, 112 13, 172 7 S 290 12, 338 5"
+                  stroke="#00a9b5"
+                  strokeWidth="3.4"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </span>
           </h1>
 
           <p

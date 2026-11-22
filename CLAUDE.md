@@ -90,7 +90,11 @@
 | Despliegue | Vercel (Edge + Node.js runtime según ruta) |
 | Exports | SheetJS (XLSX) |
 
-**Tokens de diseño:**
+**Tokens de diseño (landing en tema claro, rama `rediseno-propuesta`):**
+- Papel: `#f6f3ec` · Tinta: `#0d0d14` · Dorado (texto): `#94702f` · Cian (texto): `#007f89`
+- El tema claro vive en `.theme-light` (`app/globals.css`): reasigna las variables de Tailwind (`--color-white`, `--color-zinc-*`) y ajusta los colores arbitrarios. Fondo animado en `SpaceSketch.tsx`; órbitas de la portada en `OrbitSketch.tsx`; logo (lápiz + corchetes) en `Logo.tsx`.
+
+**Tokens de diseño (tema oscuro original):**
 - Fondo: `#050508`
 - Dorado: `#c4a882`
 - Cian: `#00f2ff`

@@ -1,100 +1,123 @@
+import { useId } from "react";
+
 /**
- * Logo de Nasus: sello + nombre.
+ * Logo de Nasus: lápiz entre corchetes de código + NASUS en bloque.
  *
- * - Sello: cuadrado de esquinas suaves en dorado con una "N" en negativo.
- * - Nombre: NASUS dibujado con un trazo continuo y redondeado, igual que la N
- *   del sello. La "A" es un ángulo abierto en dorado con un nodo cian encima,
- *   como una chispa en la punta (la conexión con los sistemas y la IA).
+ * - El lápiz es lo artesanal y conservador: así trabajamos.
+ * - Los corchetes `< >` son el código y la IA: el toque juguetón.
+ * - La punta del lápiz es cian, el mismo color de los corchetes: une las dos ideas.
  *
- * Todo son paths, no texto: se ve idéntico en cualquier dispositivo y la
- * separación entre letras es la misma, sin depender de que cargue una fuente.
- * Las otras direcciones exploradas están en public/logo-opciones.html.
+ * Todo son paths (sin fuentes): se ve idéntico en cualquier dispositivo.
+ * El letrero NASUS se dibuja a mano, con esquinas cortadas, en estilo universitario.
  */
 
 const GOLD = "#c4a882";
+const GOLD_L = "#ecdcb9";
+const GOLD_D = "#a88b5c";
 const CYAN = "#00f2ff";
-const INK = "#050508";
+const CYAN_L = "#009fa8";
+const INK = "#0d0d14";
 
-export function LogoSello({ size = 30 }: { size?: number }) {
+const BLOCK: Record<string, string> = {
+  N: "M0 0H24L56 52V0H80V100H56L24 48V100H0Z",
+  A: "M0 100V28L14 0H66L80 28V100H56V72H24V100ZM26 24V48H54V24Z",
+  S: "M0 0H80V22H24V39H80V100H0V78H56V61H0Z",
+  U: "M0 0H24V72H56V0H80V92L72 100H8L0 92Z",
+};
+
+/** Lápiz inclinado + corchetes, centrados en (400, 290). Reutilizable en otras ilustraciones. */
+export function SimboloFormas({
+  uid,
+  bracket = CYAN_L,
+  lead = CYAN,
+}: {
+  uid: string;
+  bracket?: string;
+  lead?: string;
+}) {
+  return (
+    <>
+      <defs>
+        <linearGradient id={`lp-${uid}`} x1="0" x2="1" y1="0" y2="0">
+          <stop offset="0" stopColor={GOLD_D} />
+          <stop offset=".5" stopColor={GOLD} />
+          <stop offset="1" stopColor={GOLD_L} />
+        </linearGradient>
+      </defs>
+      <g fill="none" stroke={bracket} strokeWidth="22" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="267,215 205,290 267,365" />
+        <polyline points="533,215 595,290 533,365" />
+      </g>
+      <g transform="translate(400 290) rotate(25)">
+        <path d="M-39 -128 a39 11 0 0 1 78 0 V60 H-39Z" fill={`url(#lp-${uid})`} />
+        <ellipse cx="0" cy="-128" rx="39" ry="11" fill={GOLD_L} />
+        <ellipse cx="0" cy="-128" rx="26" ry="6.5" fill={GOLD_D} />
+        <path d="M-39 60 H39 L0 138Z" fill="#f3e9d2" />
+        <path d="M0 60 H39 L0 138Z" fill="#d9c79f" opacity=".7" />
+        <path d="M-14 110 H14 L0 138Z" fill={lead} />
+      </g>
+    </>
+  );
+}
+
+export function LogoSimbolo({
+  height = 36,
+  tone = "light",
+}: {
+  height?: number;
+  tone?: "light" | "dark";
+}) {
+  const uid = useId().replace(/[^a-zA-Z0-9]/g, "");
   return (
     <svg
-      width={size}
-      height={size}
-      viewBox="0 0 40 40"
+      height={height}
+      viewBox="184 139 432 302"
       fill="none"
       aria-hidden="true"
+      style={{ width: "auto" }}
       className="shrink-0"
     >
-      <rect width="40" height="40" rx="10" fill={GOLD} />
-      <path
-        d="M12 30V10L28 30V10"
-        stroke={INK}
-        strokeWidth="4.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <SimboloFormas uid={uid} bracket={tone === "light" ? CYAN_L : CYAN} />
     </svg>
   );
 }
 
-/** NASUS en trazo. `height` es el alto del cuadro; el ancho sale de la proporción. */
-export function LogoNombre({ height = 18 }: { height?: number }) {
+export function LogoLetrero({
+  height = 15,
+  tone = "light",
+}: {
+  height?: number;
+  tone?: "light" | "dark";
+}) {
+  const color = tone === "light" ? INK : "#ffffff";
+  const gap = 14;
   return (
     <svg
       height={height}
-      viewBox="-3 -3 102 27"
-      fill="none"
+      viewBox="0 0 456 100"
+      fill={color}
       role="img"
       aria-label="Nasus"
-      style={{ width: "auto", overflow: "visible" }}
+      style={{ width: "auto" }}
     >
-      <g stroke="#ffffff" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round">
-        {/* N */}
-        <path d="M1.5 20V1.5L14.5 20V1.5" />
-        {/* S */}
-        <path d="M53 5C53 2.5 50.5 1.5 47.5 1.5C44 1.5 41.5 3.2 41.5 6C41.5 9.6 45.2 10 47.5 10.7C50 11.4 53.5 12 53.5 15.5C53.5 18.3 51 20 47.5 20C44.2 20 41.5 18.6 41.5 15.6" />
-        {/* U */}
-        <path d="M61.5 1.5V13C61.5 17.5 64 20 68 20C72 20 74.5 17.5 74.5 13V1.5" />
-        {/* S */}
-        <path d="M93 5C93 2.5 90.5 1.5 87.5 1.5C84 1.5 81.5 3.2 81.5 6C81.5 9.6 85.2 10 87.5 10.7C90 11.4 93.5 12 93.5 15.5C93.5 18.3 91 20 87.5 20C84.2 20 81.5 18.6 81.5 15.6" />
-      </g>
-      {/* A: ángulo abierto en dorado, pegado a sus vecinas, con el nodo arriba. */}
-      <path
-        d="M19.5 20L28 1.5L36.5 20"
-        stroke={GOLD}
-        strokeWidth="3.4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      {/* El nodo va EN la punta de la A, no encima: así no se lee como acento. */}
-      <circle cx="28" cy="1.5" r="3.2" fill={CYAN} />
+      {"NASUS".split("").map((ch, i) => (
+        <path key={i} transform={`translate(${i * (80 + gap)} 0)`} d={BLOCK[ch]} />
+      ))}
     </svg>
   );
 }
 
 export default function Logo({
-  size = 30,
-  showAgency = true,
+  height = 36,
+  tone = "light",
 }: {
-  size?: number;
-  showAgency?: boolean;
+  height?: number;
+  tone?: "light" | "dark";
 }) {
   return (
     <span className="inline-flex items-center gap-3">
-      <LogoSello size={size} />
-      <span className="inline-flex flex-col">
-        <span className="inline-flex items-start gap-0.5">
-          <LogoNombre height={Math.round(size * 0.52)} />
-          <span aria-hidden="true" className="mt-[-2px] text-[8px] leading-none text-white/60">
-            ®
-          </span>
-        </span>
-        {showAgency && (
-          <span className="mt-1.5 font-mono text-[8px] leading-none tracking-[0.5em] text-white/40 max-sm:hidden">
-            AGENCY
-          </span>
-        )}
-      </span>
+      <LogoSimbolo height={height} tone={tone} />
+      <LogoLetrero height={Math.round(height * 0.42)} tone={tone} />
     </span>
   );
 }

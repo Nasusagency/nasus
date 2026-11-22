@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  Fragment,
   useCallback,
   useEffect,
   useState,
@@ -107,7 +106,7 @@ export default function SiteShell({
       >
         <div className="mx-auto grid h-16 max-w-6xl grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 max-md:h-14 md:px-6">
           <a href={`#${inicial}`} aria-label="Nasus, inicio" className="justify-self-start">
-            <Logo />
+            <Logo height={40} />
           </a>
 
           {/* Botón central: el asistente de voz. */}
@@ -266,7 +265,7 @@ export default function SiteShell({
       {/* ── Módulos: todos en el HTML, uno visible a la vez ──────────────── */}
       {/* `hidden` deja el contenido en el documento (indexable y con anclas
           funcionales) sin alargar la página con scroll. */}
-      <main>
+      <main className="relative z-10">
         {modules.map((m) => (
           <div key={m.id} data-module={m.id} hidden={m.id !== activo}>
             {panels[m.id]}
@@ -276,7 +275,7 @@ export default function SiteShell({
 
       {/* Elemento creado en el servidor: lleva key para que React no lo trate
           como hijo de lista sin identificar. */}
-      <Fragment key="footer">{footer}</Fragment>
+      <div key="footer" className="relative z-10">{footer}</div>
     </div>
   );
 }
