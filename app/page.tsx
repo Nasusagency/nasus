@@ -204,6 +204,8 @@ type Caso = {
   domain: string;
   /** Ruta en /public de la captura, cuando exista. */
   image?: string;
+  /** Plazo real de entrega, solo cuando está confirmado por Nasus. */
+  delivery?: string;
 };
 
 const cases: Caso[] = [
@@ -218,6 +220,7 @@ const cases: Caso[] = [
     cta: "Ver proyecto ↗",
     domain: "ceemispa.com",
     image: "/casos/ceemi.png",
+    delivery: "Entregado en 1 mes",
   },
   {
     id: "theia",
@@ -230,6 +233,7 @@ const cases: Caso[] = [
     cta: "Ver proyecto ↗",
     domain: "theia.lat",
     image: "/casos/theia.png",
+    delivery: "Entregado en 1 mes",
   },
   {
     id: "whatsapp-assistant",
@@ -597,6 +601,13 @@ export default function LandingPage() {
           >
             IA, software y automatización conectados directamente a tus sistemas.
           </p>
+          <p
+            data-reveal
+            style={{ ["--reveal-delay" as string]: "0.26s" }}
+            className={`${GOLD} max-w-[540px] mt-4 font-mono text-[15px] max-md:text-[14px] leading-[1.7]`}
+          >
+            Lo entregamos en 1 a 2 meses, no en 4 a 6.
+          </p>
 
           <div
             data-reveal
@@ -793,6 +804,11 @@ export default function LandingPage() {
                   <h3 className="text-white font-bold text-2xl md:text-3xl mb-4 max-md:mb-5">
                     {c.name}
                   </h3>
+                  {c.delivery && (
+                    <p className={`${GOLD} inline-block font-mono text-[11px] tracking-[0.18em] uppercase border border-[#c4a882]/40 rounded-full px-3 py-1 mb-4`}>
+                      {c.delivery}
+                    </p>
+                  )}
                   <p className="text-zinc-300 leading-relaxed mb-3 max-md:mb-5">{c.desc}</p>
                   {/* Segunda línea y stack: metadata secundaria, solo desktop.
                       En móvil el caso queda en imagen → nombre → desc → link. */}
@@ -862,9 +878,37 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto">
           <span aria-hidden="true" className="chapter-numeral">06</span>
           <p data-reveal className={EYEBROW}>N° 06 — Por qué Nasus</p>
-          <h2 data-dissolve className="text-3xl md:text-4xl font-bold text-white mb-16 text-balance">
+          <h2 data-dissolve className="text-3xl md:text-4xl font-bold text-white mb-10 text-balance">
             Diseñamos. Construimos. Integramos.
           </h2>
+
+          {/* Comparación de plazos. Los 1 a 2 meses salen de los proyectos reales
+              (CEEMI y Theia: 1 mes cada uno). El plazo de la agencia tradicional
+              es la referencia que Nasus usa al cotizar: mantenerlo defendible. */}
+          <div
+            data-dissolve
+            className="mb-16 grid md:grid-cols-2 gap-px bg-zinc-900 border border-zinc-900 rounded-2xl overflow-hidden"
+          >
+            <div className="bg-[#050508] p-6 md:p-8">
+              <p className="font-mono text-[11px] tracking-[0.25em] uppercase text-zinc-600 mb-4">
+                Agencia tradicional
+              </p>
+              <p className="text-white text-3xl md:text-4xl font-bold">4 a 6 meses</p>
+              <p className="text-zinc-500 text-sm mt-3 leading-relaxed">
+                Más personas y más traspasos entre etapas, de la idea a la entrega.
+              </p>
+            </div>
+            <div className="bg-[#c4a882]/[0.04] p-6 md:p-8">
+              <p className={`${CYAN} font-mono text-[11px] tracking-[0.25em] uppercase mb-4`}>
+                Nasus
+              </p>
+              <p className="text-white text-3xl md:text-4xl font-bold">1 a 2 meses</p>
+              <p className="text-zinc-300 text-sm mt-3 leading-relaxed">
+                Agentes de IA trabajando junto a nuestro equipo. CEEMI y Theia: un mes
+                cada uno, de inicio a entrega.
+              </p>
+            </div>
+          </div>
           <div className="grid md:grid-cols-3 gap-8 max-md:gap-6">
             {differentiators.map((d) => (
               <div data-dissolve key={d.title}>
