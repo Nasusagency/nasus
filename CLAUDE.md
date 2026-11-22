@@ -34,7 +34,7 @@
 #### Públicas (indexadas)
 | Ruta | Descripción |
 |------|-------------|
-| `/` | Landing con demos de los productos |
+| `/` | Landing en **módulos** (Inicio, Productos, Servicios, Casos, Proceso, Contacto) con menú fijo. Un módulo visible a la vez; todos están en el HTML y se abren por hash (`/#casos`). Ver `app/_components/SiteShell.tsx` |
 | `/validador` | Validador de documentos (requiere auth Supabase) |
 | `/facturas` | Extractor de facturas (requiere auth Supabase) |
 | `/fotos` | Validador de fotografías (requiere auth Supabase) |

@@ -503,3 +503,26 @@ body {
     transform: scaleY(1);
   }
 }
+
+/* ── Landing en módulos ────────────────────────────────────────────────── */
+/*
+   La landing dejó de ser un scroll largo: cada módulo es una pantalla corta y
+   el menú fijo cambia entre ellos. Se conserva la ENTRADA ligada al scroll,
+   pero se quita la salida: desvanecer el contenido al subir era un efecto para
+   páginas largas y aquí solo hace que los textos desaparezcan sin motivo.
+*/
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .site-modules [data-reveal]:not([data-hero] *),
+    .site-modules [data-dissolve] {
+      animation: nasus-dissolve-in linear both;
+      animation-timeline: view();
+      animation-range: entry 0px entry 220px;
+    }
+    .site-modules .case-reveal {
+      animation: nasus-case-reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0px entry 280px;
+    }
+  }
+}

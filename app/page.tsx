@@ -1,6 +1,7 @@
 import Image from "next/image";
-import AssistantHint from "./_components/AssistantHint";
+import Logo from "./_components/Logo";
 import SiteChrome from "./_components/SiteChrome";
+import SiteShell from "./_components/SiteShell";
 import ContactForm from "./_components/ContactForm";
 import DemoIsland from "./_components/DemoIsland";
 
@@ -17,7 +18,7 @@ const EYEBROW = `${GOLD} text-xs font-mono tracking-[0.3em] uppercase mb-6`;
    scrollea — y el dissolve quedaba inerte (animación adjunta, progreso fijo).
    `clip` recorta igual pero no crea scroll container. */
 const SECTION =
-  "relative chapter-seam py-24 md:py-36 px-6 scroll-mt-16 overflow-clip";
+  "relative py-10 md:py-14 px-6 scroll-mt-20 overflow-clip";
 /* ─────────────────────────────────────────────────────────────────────────
    DOS números de WhatsApp, separados a propósito. No intercambiar.
 
@@ -498,121 +499,83 @@ const SCHEMA_ORG = {
     "Diseñamos, construimos e integramos software, IA y automatización en los sistemas de nuestros clientes.",
 };
 
+/** Número de la línea humana, tal como se muestra en pantalla. */
+const WHATSAPP_DISPLAY = "+52 33 2914 2391";
+
+/** Nasus Intelligence: experiencia interactiva en su propio subdominio. */
+const MUNDO_URL = "https://mundo.nasus.lat";
+
+/**
+ * Módulos de la página. La landing ya no es un scroll largo: cada módulo es una
+ * pantalla corta y el menú fijo cambia entre ellos (ver SiteShell).
+ */
+const MODULES = [
+  { id: "inicio", label: "Inicio", hint: "Qué hacemos y en cuánto tiempo" },
+  { id: "productos", label: "Productos", hint: "Agentes de WhatsApp, validador y más" },
+  { id: "servicios", label: "Servicios", hint: "Qué construimos y por qué" },
+  { id: "casos", label: "Casos", hint: "Proyectos en producción" },
+  { id: "proceso", label: "Proceso", hint: "Cómo trabajamos" },
+  { id: "contacto", label: "Contacto", hint: "Cuéntanos qué necesitas" },
+];
+
+/** Secciones internas → módulo que las contiene (para enlaces como #construimos). */
+const MODULE_ALIASES: Record<string, string> = {
+  problema: "servicios",
+  construimos: "servicios",
+  porque: "proceso",
+};
+
 export default function LandingPage() {
   return (
-    <div className="bg-[#050508] text-white min-h-screen relative">
+    <div className="site-modules bg-[#050508] text-white min-h-screen relative">
       <SiteChrome />
 
-      {/* ── Navbar dinámica ────────────────────────────────────────── */}
-      {/* Se renderiza en el servidor; SiteChrome solo alterna data-scrolled. */}
-      <nav
-        id="site-nav"
-        data-scrolled="false"
-        className="group sticky top-0 z-50 transition-[background-color,backdrop-filter,border-color] duration-500 border-b border-transparent data-[scrolled=true]:bg-[#050508]/80 data-[scrolled=true]:backdrop-blur-xl data-[scrolled=true]:border-[#c4a882]/15"
-      >
-        {/* Alturas y tracking reducidos ≤768px: a 320px el logo y el CTA no
-            caben con las medidas de desktop y la barra se desborda. */}
-        <div className="max-w-5xl mx-auto px-6 max-md:px-4 h-16 max-md:h-14 flex items-center justify-between gap-4 max-md:gap-3">
-          <span className="font-mono text-[13px] max-md:text-[11px] tracking-[0.25em] max-md:tracking-[0.18em] text-white whitespace-nowrap">
-            NASUS<sup className="text-[0.6em] align-super ml-0.5">®</sup> AGENCY
-          </span>
-          <span
-            id="nav-chapter"
-            aria-hidden="true"
-            className="hidden lg:block font-mono text-[11px] tracking-[0.2em] text-white/30"
-          />
-          <div className="hidden md:flex items-center gap-7 font-mono text-xs text-zinc-500">
-            <a href="#productos" className="hover:text-[#c4a882] transition-colors">
-              Productos
-            </a>
-            <a href="#casos" className="hover:text-[#c4a882] transition-colors">
-              Casos
-            </a>
-            <a href="#contacto" className="hover:text-[#c4a882] transition-colors">
-              Contacto
-            </a>
-          </div>
-          <a
-            href={WHATSAPP_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm max-md:text-[12px] border border-[#c4a882] text-[#c4a882] px-4 py-2 max-md:px-3 max-md:py-1.5 rounded-lg hover:bg-[#c4a882] hover:text-[#050508] transition-colors whitespace-nowrap"
-          >
-            Hablar con Nasus
-          </a>
-        </div>
-      </nav>
-
-      {/* ── 1. HERO editorial ──────────────────────────────────────── */}
+      <SiteShell
+        modules={MODULES}
+        aliases={MODULE_ALIASES}
+        whatsappUrl={WHATSAPP_URL}
+        whatsappDisplay={WHATSAPP_DISPLAY}
+        mundoUrl={MUNDO_URL}
+        panels={{
+          inicio: (
+            <div>
+      {/* ── Hero ───────────────────────────────────────────────────────── */}
       {/* data-hero excluye este bloque del dissolve por scroll: su entrada es
           una animación de carga escalonada, no de viewport. Ver globals.css. */}
       <section
         data-hero
-        className="relative min-h-[65svh] md:min-h-[92svh] flex flex-col justify-center px-6 md:px-[5vw] py-16 md:py-24 overflow-clip"
+        className="relative flex flex-col justify-center px-6 md:px-[5vw] pt-14 pb-12 md:pt-24 md:pb-16 overflow-clip"
       >
-        {/* Glow cian sutil. Estático: sigue al scroll natural, sin listener.
-            Es el único elemento ambiental que sobrevive completo en móvil,
-            a menor escala y opacidad. */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -top-36 -right-24 max-md:-top-24 max-md:-right-16 w-[520px] h-[520px] max-md:w-[320px] max-md:h-[320px] max-md:opacity-60 rounded-full blur-[50px]"
-          style={{
-            background:
-              "radial-gradient(circle, rgba(0,242,255,.14), transparent 70%)",
-          }}
-        />
-        {/* Retícula que se desvanece hacia abajo — continuidad con el capítulo 01.
-            Oculta ≤768px: es decoración redundante y roba contraste al headline. */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 opacity-50 max-md:hidden"
-          style={{
-            backgroundImage:
-              "linear-gradient(rgba(196,168,130,.05) 1px, transparent 1px),linear-gradient(90deg, rgba(196,168,130,.05) 1px, transparent 1px)",
-            backgroundSize: "64px 64px",
-            maskImage: "linear-gradient(to bottom, black, transparent 65%)",
-            WebkitMaskImage: "linear-gradient(to bottom, black, transparent 65%)",
-          }}
-        />
-
         <div className="relative max-w-[1150px]">
           <p
             data-reveal
-            className={`${GOLD} text-xs max-md:text-[10px] font-mono tracking-[0.3em] max-md:tracking-[0.22em] uppercase mb-7`}
+            className={`${GOLD} text-xs max-md:text-[10px] font-mono tracking-[0.3em] max-md:tracking-[0.22em] uppercase mb-6`}
           >
-            N° 00 — Agencia de tecnología artesanal
+            Agencia de tecnología artesanal
           </p>
 
-          {/* El clamp de desktop arranca en 44px, que a 375px son 6 líneas.
-              El override ≤768px lo baja a 30–44px: 3 líneas o menos. */}
           <h1
             data-reveal
             style={{ ["--reveal-delay" as string]: "0.08s" }}
-            className="font-display font-extrabold text-white leading-[1.08] max-md:leading-[1.15] text-[clamp(44px,8.5vw,100px)] max-md:text-[clamp(30px,8.2vw,44px)] max-w-[1150px]"
+            className="font-display font-extrabold text-white leading-[1.08] max-md:leading-[1.15] text-[clamp(40px,7.4vw,92px)] max-md:text-[clamp(30px,8.2vw,44px)] max-w-[1100px] text-balance"
           >
-            Construimos <span className={GOLD}>tecnología</span> que mueve
-            empresas.
+            Software e IA en producción en{" "}
+            <span className={GOLD}>1 a 2 meses</span>.
           </h1>
 
           <p
             data-reveal
             style={{ ["--reveal-delay" as string]: "0.22s" }}
-            className="max-w-[540px] mt-9 max-md:mt-10 font-mono text-[15px] max-md:text-[14px] leading-[1.9] text-white/65"
+            className="max-w-[560px] mt-8 max-md:mt-7 font-mono text-[15px] max-md:text-[14px] leading-[1.9] text-white/65"
           >
-            IA, software y automatización conectados directamente a tus sistemas.
-          </p>
-          <p
-            data-reveal
-            style={{ ["--reveal-delay" as string]: "0.26s" }}
-            className={`${GOLD} max-w-[540px] mt-4 font-mono text-[15px] max-md:text-[14px] leading-[1.7]`}
-          >
-            Lo entregamos en 1 a 2 meses, no en 4 a 6.
+            Webs, sistemas y agentes de IA conectados a tu operación. Sin esperar
+            medio año a que una agencia termine.
           </p>
 
           <div
             data-reveal
             style={{ ["--reveal-delay" as string]: "0.3s" }}
-            className="mt-10 max-md:mt-8 flex flex-wrap items-center gap-3 max-md:gap-2"
+            className="mt-9 max-md:mt-8 flex flex-wrap items-center gap-x-6 gap-y-4"
           >
             <a
               href="#contacto"
@@ -620,14 +583,20 @@ export default function LandingPage() {
             >
               CUÉNTANOS QUÉ NECESITAS <span aria-hidden="true">→</span>
             </a>
+            <a
+              href={WHATSAPP_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-mono text-sm text-zinc-300 transition-colors hover:text-[#c4a882] max-md:w-full max-md:text-center"
+            >
+              o por WhatsApp: <span className="text-white">{WHATSAPP_DISPLAY}</span>
+            </a>
           </div>
 
-          {/* Metadata decorativa: fuera ≤768px. Lo que hacemos ya lo dicen la
-              descripción del hero y el capítulo 03. */}
           <div
             data-reveal
             style={{ ["--reveal-delay" as string]: "0.38s" }}
-            className="mt-14 max-md:hidden flex flex-wrap items-center gap-x-3 gap-y-2 font-mono text-[10px] sm:text-xs text-zinc-600 uppercase tracking-[0.2em]"
+            className="mt-12 max-md:hidden flex flex-wrap items-center gap-x-3 gap-y-2 font-mono text-[10px] sm:text-xs text-zinc-600 uppercase tracking-[0.2em]"
           >
             {CAPABILITIES.map((c, i) => (
               <span key={c} className="flex items-center gap-3">
@@ -640,24 +609,75 @@ export default function LandingPage() {
               </span>
             ))}
           </div>
+        </div>
+      </section>
 
-          {/* Redundante ≤768px: el botón flotante del asistente ya está en
-              pantalla (fixed, abajo a la izquierda). */}
+      {/* ── Plazos ─────────────────────────────────────────────────────── */}
+      <section className="px-6 pb-12 md:pb-16">
+        <div className="max-w-5xl mx-auto">
+          {/* Comparación de plazos. Los 1 a 2 meses salen de los proyectos reales
+              (CEEMI y Theia: 1 mes cada uno). El plazo de la agencia tradicional
+              es la referencia que Nasus usa al cotizar: mantenerlo defendible. */}
           <div
-            data-reveal
-            style={{ ["--reveal-delay" as string]: "0.46s" }}
-            className="mt-8 max-md:hidden"
+            data-dissolve
+            className="grid md:grid-cols-2 gap-px bg-zinc-900 border border-zinc-900 rounded-2xl overflow-hidden"
           >
-            <AssistantHint />
+            <div className="bg-[#050508] p-6 md:p-8">
+              <p className="font-mono text-[11px] tracking-[0.25em] uppercase text-zinc-600 mb-4">
+                Agencia tradicional
+              </p>
+              <p className="text-white text-3xl md:text-4xl font-bold">4 a 6 meses</p>
+              <p className="text-zinc-500 text-sm mt-3 leading-relaxed">
+                Más personas y más traspasos entre etapas, de la idea a la entrega.
+              </p>
+            </div>
+            <div className="bg-[#c4a882]/[0.04] p-6 md:p-8">
+              <p className={`${CYAN} font-mono text-[11px] tracking-[0.25em] uppercase mb-4`}>
+                Nasus
+              </p>
+              <p className="text-white text-3xl md:text-4xl font-bold">1 a 2 meses</p>
+              <p className="text-zinc-300 text-sm mt-3 leading-relaxed">
+                Agentes de IA trabajando junto a nuestro equipo. CEEMI y Theia: un mes
+                cada uno, de inicio a entrega.
+              </p>
+            </div>
           </div>
         </div>
       </section>
 
+      {/* ── Mundo Nasus: acceso visible, no solo en el pie ──────────────── */}
+      <section className="px-6 pb-16 md:pb-24">
+        <div className="max-w-5xl mx-auto">
+          <a
+            href={MUNDO_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group block rounded-2xl border border-[#00f2ff]/30 bg-[#00f2ff]/[0.03] p-6 md:p-10 transition-colors hover:border-[#00f2ff]/70"
+          >
+            <p className="font-mono text-[11px] tracking-[0.3em] uppercase text-[#00f2ff] mb-3">
+              Nasus Intelligence
+            </p>
+            <h2 className="font-display text-2xl md:text-4xl font-bold text-white mb-3 text-balance">
+              Entra al mundo Nasus
+            </h2>
+            <p className="text-zinc-400 max-w-xl leading-relaxed mb-6">
+              Un laboratorio interactivo donde ves la IA, la automatización y
+              WhatsApp funcionando, no solo descritos.
+            </p>
+            <span className="font-mono text-sm text-[#c4a882] transition-colors group-hover:text-[#00f2ff]">
+              Entrar a mundo.nasus.lat ↗
+            </span>
+          </a>
+        </div>
+      </section>
+            </div>
+          ),
+          productos: (
+            <div>
       {/* ── 2. PRODUCTOS EN PRODUCCIÓN ─────────────────────────────── */}
       <section id="productos" className={SECTION}>
         <div className="max-w-5xl mx-auto">
-          <span aria-hidden="true" className="chapter-numeral">01</span>
-          <p data-reveal className={EYEBROW}>N° 01 — Productos en producción</p>
+          <p data-reveal className={EYEBROW}>Productos en producción</p>
           <h2 data-dissolve className="text-3xl md:text-4xl font-bold text-white mb-4 max-w-2xl text-balance">
             Ya construimos soluciones que puedes usar hoy.
           </h2>
@@ -690,12 +710,14 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
-
+            </div>
+          ),
+          servicios: (
+            <div>
       {/* ── 3. EL PROBLEMA ─────────────────────────────────────────── */}
       <section id="problema" className={SECTION}>
         <div className="max-w-5xl mx-auto">
-          <span aria-hidden="true" className="chapter-numeral">02</span>
-          <p data-reveal className={EYEBROW}>N° 02 — El problema</p>
+          <p data-reveal className={EYEBROW}>El problema</p>
           <h2 data-dissolve className="text-3xl md:text-4xl font-bold text-white mb-16 max-w-xl text-balance">
             Tu equipo técnico está saturado. Los proyectos se acumulan.
           </h2>
@@ -714,8 +736,7 @@ export default function LandingPage() {
       {/* ── 4. QUÉ CONSTRUIMOS ─────────────────────────────────────── */}
       <section id="construimos" className={SECTION}>
         <div className="max-w-5xl mx-auto">
-          <span aria-hidden="true" className="chapter-numeral">03</span>
-          <p data-reveal className={EYEBROW}>N° 03 — Qué construimos</p>
+          <p data-reveal className={EYEBROW}>Qué construimos</p>
           <h2 data-dissolve className="text-3xl md:text-4xl font-bold text-white mb-16 max-w-xl text-balance">
             Lo que podemos construir contigo.
           </h2>
@@ -740,12 +761,14 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
-
+            </div>
+          ),
+          casos: (
+            <div>
       {/* ── 5. CASOS REALES ────────────────────────────────────────── */}
       <section id="casos" className={SECTION}>
         <div className="max-w-5xl mx-auto">
-          <span aria-hidden="true" className="chapter-numeral">04</span>
-          <p data-reveal className={EYEBROW}>N° 04 — Casos reales</p>
+          <p data-reveal className={EYEBROW}>Casos reales</p>
           <h2 data-dissolve className="text-3xl md:text-4xl font-bold text-white mb-4 max-w-xl text-balance">
             Proyectos en producción.
           </h2>
@@ -844,12 +867,14 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
-
+            </div>
+          ),
+          proceso: (
+            <div>
       {/* ── 6. CÓMO TRABAJAMOS ─────────────────────────────────────── */}
       <section className={SECTION}>
         <div className="max-w-5xl mx-auto">
-          <span aria-hidden="true" className="chapter-numeral">05</span>
-          <p data-reveal className={EYEBROW}>N° 05 — Cómo trabajamos</p>
+          <p data-reveal className={EYEBROW}>Cómo trabajamos</p>
           <h2 data-dissolve className="text-3xl md:text-4xl font-bold text-white mb-16 text-balance">
             Proceso directo. Sin fricción.
           </h2>
@@ -876,39 +901,12 @@ export default function LandingPage() {
       {/* ── 7. POR QUÉ NASUS ───────────────────────────────────────── */}
       <section className={SECTION}>
         <div className="max-w-5xl mx-auto">
-          <span aria-hidden="true" className="chapter-numeral">06</span>
-          <p data-reveal className={EYEBROW}>N° 06 — Por qué Nasus</p>
-          <h2 data-dissolve className="text-3xl md:text-4xl font-bold text-white mb-10 text-balance">
-            Diseñamos. Construimos. Integramos.
+          <p data-reveal className={EYEBROW}>Por qué Nasus</p>
+          <h2 data-dissolve className="text-3xl md:text-4xl font-bold text-white mb-12 text-balance">
+            Quien define la solución es quien la construye.
           </h2>
 
-          {/* Comparación de plazos. Los 1 a 2 meses salen de los proyectos reales
-              (CEEMI y Theia: 1 mes cada uno). El plazo de la agencia tradicional
-              es la referencia que Nasus usa al cotizar: mantenerlo defendible. */}
-          <div
-            data-dissolve
-            className="mb-16 grid md:grid-cols-2 gap-px bg-zinc-900 border border-zinc-900 rounded-2xl overflow-hidden"
-          >
-            <div className="bg-[#050508] p-6 md:p-8">
-              <p className="font-mono text-[11px] tracking-[0.25em] uppercase text-zinc-600 mb-4">
-                Agencia tradicional
-              </p>
-              <p className="text-white text-3xl md:text-4xl font-bold">4 a 6 meses</p>
-              <p className="text-zinc-500 text-sm mt-3 leading-relaxed">
-                Más personas y más traspasos entre etapas, de la idea a la entrega.
-              </p>
-            </div>
-            <div className="bg-[#c4a882]/[0.04] p-6 md:p-8">
-              <p className={`${CYAN} font-mono text-[11px] tracking-[0.25em] uppercase mb-4`}>
-                Nasus
-              </p>
-              <p className="text-white text-3xl md:text-4xl font-bold">1 a 2 meses</p>
-              <p className="text-zinc-300 text-sm mt-3 leading-relaxed">
-                Agentes de IA trabajando junto a nuestro equipo. CEEMI y Theia: un mes
-                cada uno, de inicio a entrega.
-              </p>
-            </div>
-          </div>
+          
           <div className="grid md:grid-cols-3 gap-8 max-md:gap-6">
             {differentiators.map((d) => (
               <div data-dissolve key={d.title}>
@@ -920,23 +918,17 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
-
+            </div>
+          ),
+          contacto: (
+            <div>
       {/* ── 8. CTA / CONTACTO ──────────────────────────────────────── */}
       {/* data-dissolve-keep: entra con dissolve, pero no se desvanece al salir.
           Es el último bloque del documento. Ver globals.css. */}
       <section id="contacto" data-dissolve-keep className={SECTION}>
         <div className="max-w-2xl mx-auto">
           {/* Único numeral que desaparece del todo ≤768px. */}
-          <span aria-hidden="true" className="chapter-numeral max-md:hidden">07</span>
-          <p
-            data-reveal
-            className="font-mono text-[11px] tracking-[0.3em] max-md:tracking-[0.24em] text-white/35 mb-4 max-md:mb-6"
-          >
-            {"// READY WHEN YOU ARE"}
-          </p>
-          {/* El momento más limpio de la página en móvil: se queda la línea
-              READY WHEN YOU ARE y se va el eyebrow numerado. */}
-          <p data-reveal className={`${EYEBROW} max-md:hidden`}>N° 07 — Contacto</p>
+          <p data-reveal className={EYEBROW}>Contacto</p>
           <h2
             data-reveal
             style={{ ["--reveal-delay" as string]: "0.1s" }}
@@ -953,6 +945,19 @@ export default function LandingPage() {
             Cuéntanos el problema. Nosotros vemos la parte técnica.
           </p>
           <ContactForm />
+          <div className="mt-10 rounded-xl border border-zinc-800 p-5">
+            <p className="font-mono text-[11px] uppercase tracking-[0.25em] text-zinc-600 mb-2">
+              O escríbenos directo · atiende una persona
+            </p>
+            <a
+              href={WHATSAPP_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-display text-2xl md:text-3xl font-bold text-white transition-colors hover:text-[#c4a882]"
+            >
+              {WHATSAPP_DISPLAY}
+            </a>
+          </div>
           <div className="mt-12 pt-8 border-t border-zinc-900">
             <p className="text-zinc-600 text-xs font-mono uppercase tracking-widest mb-4">
               Síguenos
@@ -961,46 +966,40 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
-
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(SCHEMA_ORG) }}
-      />
-
-      {/* ── Footer ─────────────────────────────────────────────────── */}
-      {/* pb extra en móvil para que el asistente flotante no tape el contenido. */}
+            </div>
+          ),
+        }}
+        footer={
       <footer className="py-10 pb-20 md:pb-10 px-6 border-t border-zinc-900">
         <div className="max-w-5xl mx-auto">
-          {/* Sección principal: Nasus + contacto */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 mb-8 pb-8 border-b border-zinc-900/50">
             <div>
-              <span className={`${GOLD} font-mono font-bold text-sm`}>NASUS<sup className="text-[0.6em] align-super ml-0.5">®</sup> AGENCY</span>
-              <p className="text-zinc-600 text-xs mt-2">
-                Diseñamos, construimos e integramos
+              <Logo />
+              <p className="text-zinc-600 text-xs mt-3 max-w-xs">
+                Software, IA y automatización conectados a tu operación.
               </p>
             </div>
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-3">
               <a
                 href={WHATSAPP_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-zinc-400 text-sm hover:text-[#c4a882] transition-colors font-mono"
+                className="text-white text-base hover:text-[#c4a882] transition-colors font-mono"
               >
-                Hablar con Nasus →
+                WhatsApp {WHATSAPP_DISPLAY} →
               </a>
               <a
                 href="mailto:contacto@nasus.lat"
-                className="text-zinc-600 text-xs hover:text-zinc-400 transition-colors font-mono"
+                className="text-zinc-500 text-xs hover:text-zinc-300 transition-colors font-mono"
               >
                 contacto@nasus.lat
               </a>
             </div>
           </div>
 
-          {/* Sección secundaria: Intelligence World + redes */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             <a
-              href="https://mundo.nasus.lat"
+              href={MUNDO_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="group"
@@ -1018,9 +1017,15 @@ export default function LandingPage() {
               </nav>
             </div>
           </div>
-
         </div>
       </footer>
+        }
+      />
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(SCHEMA_ORG) }}
+      />
     </div>
   );
 }
