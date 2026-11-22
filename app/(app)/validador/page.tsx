@@ -7,12 +7,12 @@ export const metadata: Metadata = {
   title: "Validador de Documentos Oficiales — NASUS® Agency",
   description:
     "Valida INE, CURP, RFC, Pasaporte y Acta de Nacimiento automáticamente con IA. Extrae campos y cruza contra bases de datos oficiales en segundos.",
-  alternates: { canonical: "https://nasus.lat/validador" },
+  alternates: { canonical: "https://nasus.mx/validador" },
   openGraph: {
     title: "Validador de Documentos Oficiales — NASUS® Agency",
     description:
       "Valida INE, CURP, RFC, Pasaporte y Acta de Nacimiento automáticamente con IA. Extrae campos y cruza contra bases de datos oficiales en segundos.",
-    url: "https://nasus.lat/validador",
+    url: "https://nasus.mx/validador",
   },
 };
 

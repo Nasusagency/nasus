@@ -31,7 +31,7 @@ export function normalizeSource(source: string | null | undefined, referrer?: st
     if (host.includes("google.")) return "organic";
     if (host.includes("chatgpt.com") || host.includes("openai.com")) return "chatgpt";
     if (host.endsWith("facebook.com") || host.endsWith("instagram.com") || host === "fb.me" || host.endsWith("fb.com")) return "meta";
-    if (host.endsWith("nasus.lat")) return "direct";
+    if (host.endsWith("nasus.mx") || host.endsWith("nasus.lat")) return "direct";
   } catch { /* referrer inválido: se clasifica como otros */ }
   return "otros";
 }

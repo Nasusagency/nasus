@@ -6,12 +6,12 @@ export const metadata = {
   title: "Extractor de Facturas Google Ads y Meta a Excel — NASUS® Agency",
   description:
     "Convierte tu factura de Google Ads o Meta Ads de PDF a Excel en segundos. Desglose por campaña, cuenta y período listo para contabilidad.",
-  alternates: { canonical: "https://nasus.lat/facturas" },
+  alternates: { canonical: "https://nasus.mx/facturas" },
   openGraph: {
     title: "Extractor de Facturas Google Ads y Meta a Excel — NASUS® Agency",
     description:
       "Convierte tu factura de Google Ads o Meta Ads de PDF a Excel en segundos. Desglose por campaña, cuenta y período listo para contabilidad.",
-    url: "https://nasus.lat/facturas",
+    url: "https://nasus.mx/facturas",
   },
 };
 

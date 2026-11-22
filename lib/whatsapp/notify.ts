@@ -188,7 +188,7 @@ export async function notifyWebLead(params: {
   permisos?: string[];
 }): Promise<void> {
   const lineas = [
-    "Nuevo contacto desde el formulario de nasus.lat (ya está en el CRM).",
+    "Nuevo contacto desde el formulario de nasus.mx (ya está en el CRM).",
     "",
     `Nombre: ${params.nombre}`,
     `Empresa: ${params.empresa}`,

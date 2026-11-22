@@ -8,7 +8,7 @@
 **Nasus Agency** es una agencia mexicana de soluciones tecnológicas artesanales. Este repositorio es el sistema operativo completo de la agencia: sitio principal, productos de IA para clientes B2B + infraestructura administrativa interna.
 
 **Sitio principal:**
-- `https://nasus.lat` — Landing comercial con portafolio de casos (CEEMI, Vazto, WhatsApp Assistant) y servicios.
+- `https://nasus.mx` — Landing comercial (dominio principal desde nov-2026; `nasus.lat` redirige con 308 conservando ruta y query, **excepto `/api/*`**, que responde en ambos dominios porque webhooks de Meta/Mercado Pago apuntan a nasus.lat y no siguen redirecciones — ver `next.config.ts`) con portafolio de casos (CEEMI, Vazto, WhatsApp Assistant) y servicios.
 - Mensaje: _"Soluciones tecnológicas artesanales para empresas en escala. Implementamos IA directamente en tus sistemas."_
 - Asistente de voz integrado (ElevenLabs TTS, Web Speech API).
 
@@ -23,7 +23,7 @@
 - Control de requerimientos/tickets de clientes.
 - En construcción: Dashboard unificado (ver Roadmap).
 
-**URL de producción:** `https://nasus.lat`
+**URL de producción:** `https://nasus.mx` (antes `https://nasus.lat`, que nunca debe soltarse: propuestas y pagos ya enviados usan ese dominio)
 **Repo:** `github.com/Nasusagency/nasus`
 
 ---

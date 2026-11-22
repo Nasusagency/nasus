@@ -5,4 +5,4 @@ Allow: /facturas
 Disallow: /api/
 Disallow: /auth/
 
-Sitemap: https://nasus.lat/sitemap.xml
+Sitemap: https://nasus.mx/sitemap.xml

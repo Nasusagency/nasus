@@ -19,7 +19,7 @@ export default async function VoiceTestPage() {
         <p className="font-mono text-xs tracking-widest text-[#c4a882]">HERRAMIENTA INTERNA</p>
         <h1 className="mt-3 text-2xl font-semibold">Prueba del asistente de voz</h1>
         <p className="mt-3 text-sm text-zinc-400">
-          El botón flotante del asistente (esquina inferior derecha) es el mismo componente que corre en nasus.lat.
+          El botón flotante del asistente (esquina inferior derecha) es el mismo componente que corre en nasus.mx.
           Esta página solo existe para probarlo sin que aparezca dentro del panel de administración.
         </p>
       </div>

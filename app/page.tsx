@@ -494,11 +494,11 @@ const SCHEMA_ORG = {
   "@graph": [
     {
       "@type": "Organization",
-      "@id": "https://nasus.lat/#organizacion",
+      "@id": "https://nasus.mx/#organizacion",
       name: "Nasus Agency",
-      url: "https://nasus.lat",
-      logo: "https://nasus.lat/android-chrome-512x512.png",
-      image: "https://nasus.lat/og-image.png",
+      url: "https://nasus.mx",
+      logo: "https://nasus.mx/android-chrome-512x512.png",
+      image: "https://nasus.mx/og-image.png",
       email: "nasusagency@gmail.com",
       description:
         "Diseñamos, construimos e integramos software, IA y automatización en los sistemas de nuestros clientes.",
@@ -506,11 +506,11 @@ const SCHEMA_ORG = {
     {
       // Nombre del sitio que Google muestra junto al ícono en los resultados.
       "@type": "WebSite",
-      "@id": "https://nasus.lat/#sitio",
+      "@id": "https://nasus.mx/#sitio",
       name: "Nasus",
-      alternateName: ["NASUS Agency", "nasus.lat"],
-      url: "https://nasus.lat",
-      publisher: { "@id": "https://nasus.lat/#organizacion" },
+      alternateName: ["NASUS Agency", "nasus.mx", "nasus.lat"],
+      url: "https://nasus.mx",
+      publisher: { "@id": "https://nasus.mx/#organizacion" },
     },
   ],
 };

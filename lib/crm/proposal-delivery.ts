@@ -31,7 +31,7 @@ export async function deliverProposal(input:{proposalId:string;actorUserId:strin
     const {data:claimed,error:claimError}=await reclaim.select("id").maybeSingle();
     if(claimError||!claimed)return {ok:false as const,error:"delivery_in_progress"};
   }
-  try {const sent=await provider.send({to:p.recipient_email,subject:`Propuesta: ${p.title}`,text:`Hola,\n\nAdjuntamos el enlace a la propuesta: ${process.env.NEXT_PUBLIC_SITE_URL||"https://nasus.lat"}/propuesta/${p.slug}\n\nInversión aprobada: ${p.currency} ${Number(p.value).toLocaleString("es-MX")}\n\n${p.content.slice(0,3000)}`,idempotencyKey:attemptKey});const now=new Date().toISOString();
+  try {const sent=await provider.send({to:p.recipient_email,subject:`Propuesta: ${p.title}`,text:`Hola,\n\nAdjuntamos el enlace a la propuesta: ${process.env.NEXT_PUBLIC_SITE_URL||"https://nasus.mx"}/propuesta/${p.slug}\n\nInversión aprobada: ${p.currency} ${Number(p.value).toLocaleString("es-MX")}\n\n${p.content.slice(0,3000)}`,idempotencyKey:attemptKey});const now=new Date().toISOString();
     const {error:finalizeError}=await client.rpc("crm_finalize_proposal_delivery",{p_idempotency_key:attemptKey,p_proposal_id:p.id,p_message_id:sent.messageId,p_thread_id:sent.threadId,p_sent_at:now,p_provider:provider.name});
     if(finalizeError)return {ok:false as const,error:"delivery_persist_failed",messageId:sent.messageId,threadId:sent.threadId};
     await recordCrmActivity({contactId:p.contact_id,eventType:"proposal_sent",actor:"human",actorUserId:input.actorUserId,metadata:{proposal_id:p.id,provider:provider.name,message_id:sent.messageId,thread_id:sent.threadId},idempotencyKey:`proposal-sent:${attemptKey}`},client);

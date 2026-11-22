@@ -1,7 +1,7 @@
 const UTM_PARAMS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"] as const;
 
 const COOKIE_DURATION_DAYS = 30;
-const COOKIE_DOMAIN = "nasus.lat";
+const COOKIE_DOMAIN = "nasus.mx";
 
 interface UTMData {
   [key: string]: string;

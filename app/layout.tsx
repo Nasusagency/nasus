@@ -57,7 +57,7 @@ export const metadata: Metadata = {
     "extractor facturas Google Ads Excel",
     "validar INE CURP RFC",
   ],
-  metadataBase: new URL("https://nasus.lat"),
+  metadataBase: new URL("https://nasus.mx"),
   alternates: { canonical: "/" },
   icons: {
     icon: [
@@ -77,7 +77,7 @@ export const metadata: Metadata = {
     description: DESCRIPTION,
     type: "website",
     siteName: "NASUS® Agency",
-    url: "https://nasus.lat",
+    url: "https://nasus.mx",
     locale: "es_MX",
     images: [
       {

@@ -12,6 +12,24 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  /**
+   * nasus.mx es el dominio principal; nasus.lat redirige conservando la ruta y la
+   * query (propuestas, pagos y enlaces ya enviados siguen funcionando).
+   *
+   * /api NO se redirige: el webhook de WhatsApp en Meta, los avisos de Mercado Pago
+   * de pagos ya creados y otros servicios apuntan a nasus.lat/api/... y no siguen
+   * redirecciones en POST. Esas rutas responden igual en ambos dominios.
+   */
+  async redirects() {
+    return [
+      {
+        source: "/:path((?!api/).*)",
+        has: [{ type: "host", value: "(www\\.)?nasus\\.lat" }],
+        destination: "https://nasus.mx/:path",
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {

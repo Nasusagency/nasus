@@ -46,7 +46,7 @@ export async function confirmPaymentFromProvider(input: { providerPaymentId: str
 }
 
 export function buildPublicPaymentUrl(token: string): string {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://nasus.lat";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://nasus.mx";
   return `${siteUrl}/pagar/${token}`;
 }
 

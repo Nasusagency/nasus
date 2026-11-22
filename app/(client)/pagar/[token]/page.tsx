@@ -48,7 +48,7 @@ export default async function PagarPage({ params }: { params: Promise<{ token: s
       </main>
       <footer className="mt-12 border-t border-zinc-200 px-6 py-6">
         <div className="mx-auto max-w-lg">
-          <p className="text-xs text-zinc-400">© NASUS® Agency · nasusagency@gmail.com · nasus.lat</p>
+          <p className="text-xs text-zinc-400">© NASUS® Agency · nasusagency@gmail.com · nasus.mx</p>
         </div>
       </footer>
     </div>

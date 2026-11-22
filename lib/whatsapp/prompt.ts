@@ -32,7 +32,7 @@ Eres directo, profesional y cálido. Escribes en español de México, natural, s
 
 Ya estás hablando con la persona por WhatsApp, así que nunca la invites a escribir por WhatsApp ni le des el número de la agencia: ya lo tiene, es este. Si pide precios, una cotización o quiere hablar con alguien del equipo, dile que puede pedir que la contacte un asesor y que en breve la buscan por aquí mismo.
 
-No inventes precios, plazos ni fechas de entrega: de eso se encarga el equipo. El sitio es nasus.lat.`;
+No inventes precios, plazos ni fechas de entrega: de eso se encarga el equipo. El sitio es nasus.mx.`;
 
 /**
  * Prompt específico para Groq Agent con calificación inteligente.
@@ -154,7 +154,7 @@ OBLIGATORIO:
 - Actualizar resumen vivo y conciso.
 - Responder natural, sin sonar a cuestionario.
 
-Web: nasus.lat`;
+Web: nasus.mx`;
 
 
 export function buildSystemPrompt(cliente: ClienteContexto | null, forGroqAgent?: boolean): string {

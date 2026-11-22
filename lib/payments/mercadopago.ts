@@ -39,7 +39,7 @@ export function createMercadoPagoProvider(fetcher: Fetcher = fetch): PaymentProv
     name: "mercadopago",
     async createCheckout(input) {
       const token = required("MERCADOPAGO_ACCESS_TOKEN");
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://nasus.lat";
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://nasus.mx";
       const res = await fetcher("https://api.mercadopago.com/checkout/preferences", {
         method: "POST",
         headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
