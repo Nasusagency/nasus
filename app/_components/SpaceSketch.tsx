@@ -8,8 +8,8 @@ import { useEffect, useRef } from "react";
  * - Constelación: estrellas que derivan despacio, se unen con líneas finas
  *   cuando están cerca y se conectan con el cursor. Estrella fugaz dorada.
  * - Nave: de vez en cuando cruza en horizontal una nave arcade en 3D, hecha de
- *   cubos (voxels) con sombreado plano, que gira sobre su eje y deja una estela
- *   de cuadritos dorados.
+ *   cubos con aspecto de ficha de Tetris y sombreado plano. Gira sobre su eje,
+ *   aletea y deja una estela de cuadritos dorados. Igual en todos los tamaños.
  *
  * - Tetris (solo en móvil): un par de piezas caen muy despacio y giran a saltos,
  *   con trazo fino y casi transparentes. En escritorio no hay piezas: solo la nave.
@@ -67,7 +67,15 @@ function rotar(celdas: Celda[]): Celda[] {
 }
 
 type V3 = [number, number, number];
-type Vox = { x: number; y: number; z: number; c: 0 | 1 | 3; caras: number };
+type Vox = {
+  x: number;
+  y: number;
+  z: number;
+  c: 0 | 1 | 3 | 4;
+  caras: number;
+  /** Solo las alas: distancia a la raíz y lado, para aletear. */
+  ala?: { d: number; lado: 1 | -1 };
+};
 
 // Nave arcade hecha de cubos (voxels), vista de perfil con la nariz a la derecha.
 // X = casco, o = cabina dorada. Las alas se extruyen hacia los lados.
@@ -92,14 +100,17 @@ const CARAS_CUBO: { n: V3; q: V3[] }[] = [
 ];
 
 function construirNave(): Vox[] {
-  const celdas = new Map<string, 0 | 1 | 3>();
+  type Color = 0 | 1 | 3 | 4;
+  const celdas = new Map<string, { c: Color; ala?: { d: number; lado: 1 | -1 } }>();
   const alto = PERFIL.length;
-  const poner = (x: number, y: number, z: number, c: 0 | 1 | 3) => celdas.set(`${x},${y},${z}`, c);
+  const poner = (x: number, y: number, z: number, c: Color, ala?: { d: number; lado: 1 | -1 }) =>
+    celdas.set(`${x},${y},${z}`, { c, ala });
 
-  // Capa central: el perfil completo
+  // Capa central: el perfil completo. Cabina clara y vientre en cian más oscuro.
   PERFIL.forEach((fila, r) =>
     [...fila].forEach((ch, x) => {
-      if (ch !== ".") poner(x, alto - 1 - r, 0, ch === "o" ? 3 : 0);
+      if (ch === ".") return;
+      poner(x, alto - 1 - r, 0, ch === "o" ? 4 : r >= 5 ? 1 : 0);
     }),
   );
   // Capas laterales del fuselaje (sin la cabina, que queda angosta)
@@ -107,29 +118,31 @@ function construirNave(): Vox[] {
     PERFIL.forEach((fila, r) => {
       if (r < 2 || r > 4) return;
       [...fila].forEach((ch, x) => {
-        if (ch === "X" && x >= 2 && x <= 13) poner(x, alto - 1 - r, z, 0);
+        if (ch === "X" && x >= 2 && x <= 13) poner(x, alto - 1 - r, z, r >= 5 ? 1 : 0);
       });
     });
   }
-  // Alas en delta, más cortas hacia la punta
-  for (const z of [-1, 1]) {
-    for (let x = 4; x <= 11; x++) poner(x, 3, z * 2, 1);
-    for (let x = 3; x <= 8; x++) poner(x, 3, z * 3, 1);
-    for (let x = 2; x <= 5; x++) poner(x, 3, z * 4, 1);
-    poner(2, 3, z * 4, 3); // punta dorada
+  // Alas en delta, doradas, que aletean desde la raíz (el costado del fuselaje)
+  for (const lado of [-1, 1] as const) {
+    const tramo = (x0: number, x1: number, d: number) => {
+      for (let x = x0; x <= x1; x++) poner(x, 3, lado * (1 + d), 3, { d, lado });
+    };
+    tramo(4, 11, 1);
+    tramo(3, 8, 2);
+    tramo(2, 5, 3);
   }
 
-  // Centrar en el origen y marcar solo las caras expuestas
+  // Centrar en el origen y marcar las caras expuestas (las alas dibujan todas)
   const cx = 7.5;
   const cy = (alto - 1) / 2;
   const salida: Vox[] = [];
-  celdas.forEach((c, k) => {
+  celdas.forEach((info, k) => {
     const [x, y, z] = k.split(",").map(Number);
     let caras = 0;
     CARAS_CUBO.forEach((f, i) => {
-      if (!celdas.has(`${x + f.n[0]},${y + f.n[1]},${z + f.n[2]}`)) caras |= 1 << i;
+      if (info.ala || !celdas.has(`${x + f.n[0]},${y + f.n[1]},${z + f.n[2]}`)) caras |= 1 << i;
     });
-    if (caras) salida.push({ x: x - cx, y: y - cy, z, c, caras });
+    if (caras) salida.push({ x: x - cx, y: y - cy, z, c: info.c, caras, ala: info.ala });
   });
   return salida;
 }
@@ -214,10 +227,11 @@ export default function SpaceSketch({ tone = "dark" }: { tone?: Tono }) {
     };
 
     // Colores de los cubos: casco, alas (cian más oscuro), cabina y puntas doradas
-    const COLOR_VOX: Record<0 | 1 | 3, number[]> = {
+    const COLOR_VOX: Record<0 | 1 | 3 | 4, number[]> = {
       0: P.cian.split(",").map(Number),
-      1: (tone === "dark" ? "0,168,196" : "0,120,130").split(",").map(Number),
+      1: (tone === "dark" ? "0,150,176" : "0,110,120").split(",").map(Number),
       3: P.dorado.split(",").map(Number),
+      4: (tone === "dark" ? "235,248,250" : "255,255,255").split(",").map(Number),
     };
     const LUZ: V3 = [0.35, 0.8, -0.5];
     const LUZ_N = Math.hypot(...LUZ);
@@ -247,14 +261,24 @@ export default function SpaceSketch({ tone = "dark" }: { tone?: Tono }) {
       };
       const F = 520;
 
+      // Aleteo: las alas suben y bajan desde la raíz, siempre en cubos
+      const aleteo = 0.62 * Math.sin(dt * 0.009);
+      const sa = Math.sin(aleteo);
+      const ca = Math.cos(aleteo);
+      const donde = (v: Vox): V3 =>
+        v.ala ? [v.x, v.y + v.ala.d * sa, v.ala.lado * (1 + v.ala.d * ca)] : [v.x, v.y, v.z];
+
       // Propulsor parpadeante: un cubo dorado detrás de la cola
       const llama: Vox[] = Math.floor(t / 110) % 2 === 0 ? [{ x: -9, y: 0, z: 0, c: 3, caras: 63 }] : [];
 
       const cubos = [...NAVE_VOX, ...llama]
-        .map((v) => ({ v, c: rot(v.x * n.dir, v.y, v.z) }))
-        .sort((a, b) => b.c[2] - a.c[2]); // primero los más lejanos
+        .map((v) => {
+          const p = donde(v);
+          return { v, p, z: rot(p[0] * n.dir, p[1], p[2])[2] };
+        })
+        .sort((a, b) => b.z - a.z); // primero los más lejanos
 
-      for (const { v } of cubos) {
+      for (const { v, p } of cubos) {
         const base = COLOR_VOX[v.c];
         CARAS_CUBO.forEach((f, i) => {
           if (!(v.caras & (1 << i))) return;
@@ -264,21 +288,32 @@ export default function SpaceSketch({ tone = "dark" }: { tone?: Tono }) {
           // Sombreado plano en tres niveles, como un juego retro
           const d = (nr[0] * LUZ[0] + nr[1] * LUZ[1] + nr[2] * LUZ[2]) / LUZ_N;
           const brillo = d > 0.55 ? 1 : d > 0.15 ? 0.72 : 0.48;
-          ctx.beginPath();
-          f.q.forEach((q, k) => {
-            const r = rot((v.x + q[0]) * n.dir, v.y + q[1], v.z + q[2]);
-            const s = F / (F + r[2] * u);
-            const px = n.x + r[0] * u * s;
-            const py = n.y - r[1] * u * s;
-            if (k === 0) ctx.moveTo(px, py);
-            else ctx.lineTo(px, py);
+          const pts = f.q.map((q) => {
+            const r = rot((p[0] + q[0]) * n.dir, p[1] + q[1], p[2] + q[2]);
+            const sc = F / (F + r[2] * u);
+            return [n.x + r[0] * u * sc, n.y - r[1] * u * sc] as const;
           });
+          ctx.beginPath();
+          pts.forEach(([px, py], k) => (k === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py)));
           ctx.closePath();
           ctx.fillStyle = `rgb(${Math.round(base[0] * brillo)},${Math.round(base[1] * brillo)},${Math.round(base[2] * brillo)})`;
           ctx.fill();
-          ctx.strokeStyle = `rgba(${base[0]},${base[1]},${base[2]},0.35)`;
+          ctx.strokeStyle = `rgba(${base[0]},${base[1]},${base[2]},0.4)`;
           ctx.lineWidth = 0.7;
           ctx.stroke();
+          // Cuadrito interior más claro: el aspecto de una ficha de Tetris
+          const mx = pts.reduce((a, q) => a + q[0], 0) / 4;
+          const my = pts.reduce((a, q) => a + q[1], 0) / 4;
+          ctx.beginPath();
+          pts.forEach(([px, py], k) => {
+            const ix = mx + (px - mx) * 0.55;
+            const iy = my + (py - my) * 0.55;
+            if (k === 0) ctx.moveTo(ix, iy);
+            else ctx.lineTo(ix, iy);
+          });
+          ctx.closePath();
+          ctx.fillStyle = `rgba(255,255,255,${0.1 + brillo * 0.1})`;
+          ctx.fill();
         });
       }
     };
