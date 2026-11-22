@@ -2,6 +2,10 @@ import type { Metadata, Viewport } from "next";
 import { Chakra_Petch, Silkscreen, Space_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import Script from "next/script";
+import { META_PIXEL_ID, metaPixelSnippet } from "@/lib/meta/pixel";
+
+/** Verificación del dominio en el Business Manager de Meta (opcional, por variable de entorno). */
+const META_DOMAIN_VERIFICATION = process.env.NEXT_PUBLIC_META_DOMAIN_VERIFICATION?.trim().match(/^[a-z0-9]{10,64}$/i)?.[0];
 import VoiceAssistant from "./_components/VoiceAssistant";
 import AcquisitionTracker from "./_components/AcquisitionTracker";
 import { Suspense } from "react";
@@ -90,6 +94,7 @@ export const metadata: Metadata = {
     description: DESCRIPTION,
     images: ["/og-image.png"],
   },
+  ...(META_DOMAIN_VERIFICATION ? { other: { "facebook-domain-verification": META_DOMAIN_VERIFICATION } } : {}),
 };
 
 export const viewport: Viewport = {
@@ -125,6 +130,11 @@ function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
 gtag('config', 'AW-18354242244');`}
       </Script>
+      {META_PIXEL_ID && (
+        <Script id="meta-pixel" strategy="afterInteractive">
+          {metaPixelSnippet(META_PIXEL_ID)}
+        </Script>
+      )}
       <Script id="microsoft-clarity" strategy="afterInteractive">
         {`(function(c,l,a,r,i,t,y){
 c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};

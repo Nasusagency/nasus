@@ -295,6 +295,8 @@ ZOHO_BACKSTAGE_REFRESH_TOKEN
 ZOHO_BACKSTAGE_PORTAL_ID
 ZOHO_ACCOUNTS_DOMAIN       — Opcional (default: https://accounts.zoho.com)
 ZOHO_API_DOMAIN            — Opcional (default: https://zohoapis.com)
+NEXT_PUBLIC_META_PIXEL_ID  — Opcional: ID del Pixel de Meta (solo dígitos). Sin ella no se carga. Eventos: PageView, Lead (formulario enviado), Contact (clic comercial a WhatsApp). Sin advanced matching: nunca se mandan datos personales. Ver lib/meta/pixel.ts
+NEXT_PUBLIC_META_DOMAIN_VERIFICATION — Opcional: código de verificación de nasus.lat en el Business Manager (meta tag facebook-domain-verification)
 ```
 
 #### Admin

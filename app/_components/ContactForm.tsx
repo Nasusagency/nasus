@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { currentAttribution, openTrackedWhatsApp } from "./AcquisitionTracker";
 import { CONSENT_TEXT } from "@/lib/crm/consent-text";
+import { trackMeta } from "@/lib/meta/pixel";
 
 export default function ContactForm() {
   const [form, setForm] = useState({ name: "", company: "", problem: "", phone: "", email: "", website: "", consentEmail: false, consentWhatsapp: false });
@@ -27,6 +28,7 @@ export default function ContactForm() {
           attribution: currentAttribution(),
         }),
       });
+      if (res.ok) trackMeta("Lead", { content_name: "contact_form" });
       if (res.status === 400) {
         setError("Revisa tu teléfono (10 dígitos) y tu correo.");
         setSending(false);

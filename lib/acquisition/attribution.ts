@@ -21,6 +21,7 @@ export function normalizeSource(source: string | null | undefined, referrer?: st
   if (value) {
     if (value.includes("chatgpt") || value.includes("openai")) return "chatgpt";
     if (value.includes("google")) return "google";
+    if (["meta", "facebook", "instagram", "fb", "ig"].some((name) => value === name || value.startsWith(`${name}_`) || value.startsWith(`${name}-`)) || value.includes("facebook") || value.includes("instagram")) return "meta";
     if (["organic", "direct"].includes(value)) return value;
     return "otros";
   }
@@ -29,6 +30,7 @@ export function normalizeSource(source: string | null | undefined, referrer?: st
     const host = new URL(referrer).hostname.toLowerCase();
     if (host.includes("google.")) return "organic";
     if (host.includes("chatgpt.com") || host.includes("openai.com")) return "chatgpt";
+    if (host.endsWith("facebook.com") || host.endsWith("instagram.com") || host === "fb.me" || host.endsWith("fb.com")) return "meta";
     if (host.endsWith("nasus.lat")) return "direct";
   } catch { /* referrer inválido: se clasifica como otros */ }
   return "otros";

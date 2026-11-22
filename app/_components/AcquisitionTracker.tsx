@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { trackMeta } from "@/lib/meta/pixel";
 import { usePathname, useSearchParams } from "next/navigation";
 import { captureFirstTouch } from "@/lib/acquisition/attribution";
 import { completeTrackedWhatsAppClick } from "@/lib/acquisition/whatsapp-click";
@@ -43,6 +44,8 @@ async function track(eventType: string, metadata: Record<string, string> = {}) {
 }
 
 export async function openTrackedWhatsApp(url: string, destinationType: "comercial" | "demo", ctaLocation: string, ctaText?: string) {
+  // Meta: un clic comercial a WhatsApp cuenta como "Contact" (sin datos personales).
+  if (destinationType === "comercial") trackMeta("Contact", { content_name: ctaLocation.slice(0, 60) });
   const pending = window.open("about:blank", "_blank");
   await completeTrackedWhatsAppClick(url, destinationType, {
     trackInternal: () => track("whatsapp_click", {
@@ -57,7 +60,13 @@ export async function openTrackedWhatsApp(url: string, destinationType: "comerci
 export default function AcquisitionTracker() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  useEffect(() => { void track("page_view"); }, [pathname, searchParams]);
+  // El código base del pixel ya manda el primer PageView; aquí solo las navegaciones siguientes.
+  const firstView = useRef(true);
+  useEffect(() => {
+    void track("page_view");
+    if (firstView.current) firstView.current = false;
+    else trackMeta("PageView");
+  }, [pathname, searchParams]);
   useEffect(() => {
     const onClick = (event: MouseEvent) => {
       const anchor = (event.target as Element | null)?.closest<HTMLAnchorElement>('a[href*="wa.me/"]');

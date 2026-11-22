@@ -8,6 +8,11 @@ describe("atribución de adquisición", () => {
     assert.equal(normalizeSource("google_ads"), "google");
     assert.equal(normalizeSource(null, "https://www.google.com/search?q=nasus"), "organic");
     assert.equal(normalizeSource(null, null), "direct");
+    assert.equal(normalizeSource("instagram"), "meta");
+    assert.equal(normalizeSource("Facebook_Ads"), "meta");
+    assert.equal(normalizeSource("ig"), "meta");
+    assert.equal(normalizeSource("big-partner"), "otros");
+    assert.equal(normalizeSource(null, "https://l.instagram.com/?u=https%3A%2F%2Fnasus.lat"), "meta");
   });
   test("captura UTMs y conserva la atribución original", () => {
     const first = captureFirstTouch(null, new URLSearchParams("utm_source=chatgpt&utm_campaign=lanzamiento"), "https://chatgpt.com/");
