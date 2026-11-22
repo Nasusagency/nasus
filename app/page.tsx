@@ -557,10 +557,10 @@ export default function LandingPage() {
           <h1
             data-reveal
             style={{ ["--reveal-delay" as string]: "0.08s" }}
-            className="font-display font-extrabold text-white leading-[1.08] max-md:leading-[1.15] text-[clamp(40px,7.4vw,92px)] max-md:text-[clamp(30px,8.2vw,44px)] max-w-[1100px] text-balance"
+            className="font-display font-extrabold text-white leading-[1.08] max-md:leading-[1.15] text-[clamp(36px,6vw,78px)] max-md:text-[clamp(28px,7.6vw,40px)] max-w-[1100px] text-balance"
           >
-            Software e IA en producción en{" "}
-            <span className={GOLD}>1 a 2 meses</span>.
+            Crece tus ventas y tu conversión{" "}
+            <span className={GOLD}>en semanas</span>, no en medio año.
           </h1>
 
           <p
@@ -568,8 +568,8 @@ export default function LandingPage() {
             style={{ ["--reveal-delay" as string]: "0.22s" }}
             className="max-w-[560px] mt-8 max-md:mt-7 font-mono text-[15px] max-md:text-[14px] leading-[1.9] text-white/65"
           >
-            Webs, sistemas y agentes de IA conectados a tu operación. Sin esperar
-            medio año a que una agencia termine.
+            Sitios, sistemas y agentes de IA que convierten visitas en clientes,
+            conectados a tu operación. Más de un proyecto entregado en un mes.
           </p>
 
           <div
