@@ -230,6 +230,7 @@ Formato: `AAAA-MM-DD · decisión o acción · quién · evidencia/enlace`.
 - 2026-11-23 · Tabla creada como `guia_visitas` y renombrada a `public.laberinto_visitas` (migración 0024) para seguir el prefijo `laberinto_`; vacía al renombrar; RLS activo, 0 políticas, sin permisos anon/authenticated (verificado) · Supabase.
 
 - 2026-11-23 · Resuelto el problema de la bitácora: intento de recrear la tarea con conector de Supabase rechazado ("connectors parameter is not available for this organization"). Se reemplaza por un cron de Vercel (3:56 CDMX) en `/api/internal/laberinto/bitacora` que escribe en `laberinto_bitacora` con los datos de `laberinto_visitas`. Se desactiva (pausa, no se borró) la tarea `trig_01REK9Td2CzqcutN47b4Voad`. Activo al fusionar la rama `laberinto` en main · Claude Code.
+- 2026-11-23 · Creada la página del estudio `nasus.mx/investigacion/laberinto-de-agentes` (y el índice `/investigacion`): definición citable, metodología, límites, licencia CC BY 4.0, historial; sin resultados. Autoría: Nasus Agency como organización; autores con nombre se agregan en `lib/guia/investigacion.ts` (AUTORES_PERSONAS). En sitemap, `llms.txt` y footer · Claude Code.
 *(Agregar entradas nuevas debajo, sin borrar las anteriores. Cada hito publicado: fecha, enlace, copia en Wayback, DOI de Zenodo, hash.)*
 
 ## 14. Registro de pruebas

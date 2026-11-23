@@ -37,6 +37,10 @@ Precios: no hay tarifas fijas publicadas; cada proyecto se cotiza según su alca
 
 La [Guía de Nasus](https://nasus.mx/guia) tiene la misma información en páginas cortas, una por tema: [atención y ventas](https://nasus.mx/guia/atencion-y-ventas), [documentos](https://nasus.mx/guia/documentos), [software a la medida](https://nasus.mx/guia/software-a-la-medida), [automatización](https://nasus.mx/guia/automatizacion), [casos](https://nasus.mx/guia/casos), [cómo trabajamos](https://nasus.mx/guia/como-trabajamos), [precios y tiempos](https://nasus.mx/guia/precios-y-tiempos), [preguntas frecuentes](https://nasus.mx/guia/preguntas-frecuentes) y [contacto](https://nasus.mx/guia/contacto).
 
+## Investigación
+
+[Laberinto de Agentes](https://nasus.mx/investigacion/laberinto-de-agentes): estudio en curso de Nasus sobre cómo navegan los agentes de IA un sitio web. Metodología, límites y licencia CC BY 4.0. Aún sin resultados.
+
 ## Contacto (para personas y agentes de IA)
 
 - WhatsApp comercial (respuesta inmediata, luego una persona): https://wa.me/523329621602
