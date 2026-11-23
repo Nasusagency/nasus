@@ -59,17 +59,17 @@ Principios:
 - Solo información que **ya sea pública** en nasus.lat (sin clientes ni precios no publicados).
 - El contenido que ve un agente es el mismo que ve una persona (evitar cloaking: los buscadores lo penalizan).
 
-**Ramas vigentes (v0.3, dueño pidió ~40):** 46 páginas en 9 secciones bajo `nasus.mx/guia`, máximo 2 niveles. Fuente de verdad: `lib/guia/routes.ts` (árbol) y `lib/guia/content.ts` (texto).
+**Ramas vigentes (v0.3, dueño pidió ~40):** 46 páginas en 9 secciones, **en la raíz de nasus.mx** (`nasus.mx/precios`, `nasus.mx/casos/ceemi`), máximo 2 niveles; `nasus.mx/guia` es el índice. Rutas sensor (no se crean, cada petición queda como 404): `/pricing`, `/servicios`, `/about`, `/docs`, `/blog`. Fuente de verdad: `lib/guia/routes.ts` (árbol) y `lib/guia/content.ts` (texto).
 
 ```
-/guia
+/ (nasus.mx)
 ├─ atencion-y-ventas: whatsapp-prospectos, calificacion-de-leads, paso-a-humano, crm-agentic, asistente-de-voz
 ├─ documentos: identidad, academicos, facturas-ads, fotografias, privacidad-de-documentos
 ├─ software-a-la-medida: paginas-web, apps-y-plataformas, sistemas-internos, integrar-ia, por-donde-empezar
 ├─ automatizacion: flujos-de-trabajo, integraciones, reportes-y-analitica, captacion-y-atribucion
 ├─ casos: ceemi, vazto, whatsapp-assistant
 ├─ como-trabajamos: diagnostico, propuesta, desarrollo, lanzamiento, modalidades
-├─ precios-y-tiempos: como-se-cotiza, que-afecta-el-costo
+├─ precios: como-se-cotiza, que-afecta-el-costo
 ├─ preguntas-frecuentes: ia-o-software-tradicional, seguridad-y-datos, industrias, ubicacion-y-cobertura
 └─ contacto: whatsapp, formulario, para-agentes-de-ia
 ```
@@ -233,6 +233,7 @@ Formato: `AAAA-MM-DD · decisión o acción · quién · evidencia/enlace`.
 - 2026-11-23 · Creada la página del estudio `nasus.mx/investigacion/laberinto-de-agentes` (y el índice `/investigacion`): definición citable, metodología, límites, licencia CC BY 4.0, historial; sin resultados. Autoría: Nasus Agency como organización; autores con nombre se agregan en `lib/guia/investigacion.ts` (AUTORES_PERSONAS). En sitemap, `llms.txt` y footer · Claude Code.
 - 2026-11-23 · Decisiones del dueño sobre la investigación: (1) autoría "Nasus Agency" + Luis Oscar Alpizar como persona (falta su URL de LinkedIn); (2) **no se publica hasta tener 1–2 meses de datos**: la página `/investigacion/laberinto-de-agentes` queda como borrador (`PUBLICADA = false` en `lib/guia/investigacion.ts`: noindex, fuera de sitemap, llms.txt y footer); (3) se documenta todo desde el inicio, empezando por lo que se busca; (4) la parte de datos se actualizará con cifras agregadas del registro, y el análisis lo redacta y firma el autor · dueño.
 - 2026-11-23 · Corrección: la página decía que las páginas de la guía estaban "escritas a mano"; se quitó, porque no era cierto. Mantener la descripción del método factual · Claude Code.
+- 2026-11-23 · Corrección de rumbo (dueño): las ramas van **en la raíz** (`nasus.mx/precios`, `/contacto`), vivas para que los agentes las encuentren, no bajo `/guia`. Se mueven las 46 páginas; `/guia/...` redirige 308 a la ruta nueva; `precios-y-tiempos` pasa a `/precios`. Se dejan 5 rutas sensor sin crear (`/pricing`, `/servicios`, `/about`, `/docs`, `/blog`) para medir si los agentes adivinan rutas de forma natural; si tras semanas nadie las pide, también es un hallazgo. Probado en local: páginas 200, sensores 404 con registro único, `/` y `/privacidad` sin registro · Claude Code.
 *(Agregar entradas nuevas debajo, sin borrar las anteriores. Cada hito publicado: fecha, enlace, copia en Wayback, DOI de Zenodo, hash.)*
 
 ## 14. Registro de pruebas

@@ -2,7 +2,7 @@ import Link from "next/link";
 import Logo from "./_components/Logo";
 import { GUIA_BASE } from "@/lib/guia/routes";
 
-/** 404 de todo el sitio. El registro de la ruta pedida vive en app/[...missing]/page.tsx. */
+/** 404 de todo el sitio. El registro de la ruta pedida vive en app/[...slug]/page.tsx. */
 export default function NotFound() {
   return <div className="flex min-h-screen flex-col items-center justify-center bg-[#050508] px-6 text-center text-white">
     <Logo height={34} tone="dark" />

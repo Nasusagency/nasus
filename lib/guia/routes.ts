@@ -9,8 +9,7 @@
  * lo importa el middleware para saber si una ruta existe: el texto largo vive
  * en content.ts y no debe llegar al bundle del middleware.
  *
- * Para cambiar la ruta base basta con GUIA_BASE (y el registro en sitemap/llms).
- * Una vez publicada, no cambiarla: las URLs permanentes son parte del método.
+ * GUIA_BASE es solo el índice. Una vez publicadas, no cambiar las URLs: son parte del método.
  */
 export const GUIA_BASE = "/guia";
 
@@ -72,9 +71,9 @@ export const GUIA_NODES: GuiaNode[] = [
   node("como-trabajamos/lanzamiento", "Etapa 4: lanzamiento y seguimiento", "Entrega en producción, medición y ajustes."),
   node("como-trabajamos/modalidades", "Modalidades de colaboración", "Proyecto puntual o capacidad técnica adicional para un equipo."),
 
-  node("precios-y-tiempos", "Precios y tiempos", "Cómo se cotiza un proyecto y de qué dependen costo y plazo."),
-  node("precios-y-tiempos/como-se-cotiza", "Cómo se cotiza", "Por qué no hay tarifas fijas publicadas y qué pasa antes de una cotización."),
-  node("precios-y-tiempos/que-afecta-el-costo", "Qué afecta el costo y el plazo", "Los factores que hacen variar un proyecto."),
+  node("precios", "Precios y tiempos", "Cómo se cotiza un proyecto y de qué dependen costo y plazo."),
+  node("precios/como-se-cotiza", "Cómo se cotiza", "Por qué no hay tarifas fijas publicadas y qué pasa antes de una cotización."),
+  node("precios/que-afecta-el-costo", "Qué afecta el costo y el plazo", "Los factores que hacen variar un proyecto."),
 
   node("preguntas-frecuentes", "Preguntas frecuentes", "Respuestas cortas a dudas comunes."),
   node("preguntas-frecuentes/ia-o-software-tradicional", "¿IA o software tradicional?", "Cuándo conviene usar IA y cuándo no hace falta."),
@@ -98,13 +97,22 @@ export function guiaChildren(slug: string): GuiaNode[] {
   return GUIA_NODES.filter((n) => n.parent === slug);
 }
 
+/**
+ * Las páginas viven en la raíz (nasus.mx/precios, nasus.mx/casos/ceemi); solo
+ * la portada/índice cuelga de /guia. Rutas que NO se crean a propósito, para
+ * medir si los agentes las adivinan: ver RUTAS_SENSOR.
+ */
 export function guiaHref(slug: string): string {
-  return slug ? `${GUIA_BASE}/${slug}` : GUIA_BASE;
+  return slug ? `/${slug}` : GUIA_BASE;
 }
 
-/** "/guia/casos/ceemi" → "casos/ceemi"; null si no está bajo la guía. */
+/** Rutas que se dejan sin crear: cada petición queda como 404 en el registro. */
+export const RUTAS_SENSOR = ["/pricing", "/servicios", "/about", "/docs", "/blog"] as const;
+
+/** "/casos/ceemi" → "casos/ceemi"; "/guia" → ""; null si no es una página del árbol. */
 export function guiaSlugFromPath(path: string): string | null {
-  if (path === GUIA_BASE || path === `${GUIA_BASE}/`) return "";
-  if (!path.startsWith(`${GUIA_BASE}/`)) return null;
-  return path.slice(GUIA_BASE.length + 1).replace(/\/+$/, "");
+  const clean = path.replace(/\/+$/, "");
+  if (clean === GUIA_BASE) return "";
+  const slug = clean.replace(/^\//, "");
+  return slug && BY_SLUG.has(slug) ? slug : null;
 }

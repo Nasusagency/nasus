@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextFetchEvent, type NextRequest } from "next/server";
-import { guiaNode, guiaSlugFromPath } from "@/lib/guia/routes";
+import { guiaSlugFromPath } from "@/lib/guia/routes";
 import { AGENT_FILES, clientIp, logVisit } from "@/lib/guia/log";
 
 const PROTECTED = ["/fotos"];
@@ -17,7 +17,7 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
     if (!isPrefetch) {
       event.waitUntil(logVisit({
         path,
-        status: guiaSlug === null || guiaNode(guiaSlug) ? 200 : 404,
+        status: 200,
         origen: guiaSlug === null ? "archivo" : "guia",
         method: request.method,
         userAgent: request.headers.get("user-agent"),

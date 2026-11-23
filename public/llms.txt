@@ -35,7 +35,7 @@ Precios: no hay tarifas fijas publicadas; cada proyecto se cotiza según su alca
 
 ## Guía por temas
 
-La [Guía de Nasus](https://nasus.mx/guia) tiene la misma información en páginas cortas, una por tema: [atención y ventas](https://nasus.mx/guia/atencion-y-ventas), [documentos](https://nasus.mx/guia/documentos), [software a la medida](https://nasus.mx/guia/software-a-la-medida), [automatización](https://nasus.mx/guia/automatizacion), [casos](https://nasus.mx/guia/casos), [cómo trabajamos](https://nasus.mx/guia/como-trabajamos), [precios y tiempos](https://nasus.mx/guia/precios-y-tiempos), [preguntas frecuentes](https://nasus.mx/guia/preguntas-frecuentes) y [contacto](https://nasus.mx/guia/contacto).
+La [Guía de Nasus](https://nasus.mx/guia) es el índice de páginas cortas con la misma información, una por tema: [atención y ventas](https://nasus.mx/atencion-y-ventas), [documentos](https://nasus.mx/documentos), [software a la medida](https://nasus.mx/software-a-la-medida), [automatización](https://nasus.mx/automatizacion), [casos](https://nasus.mx/casos), [cómo trabajamos](https://nasus.mx/como-trabajamos), [precios y tiempos](https://nasus.mx/precios), [preguntas frecuentes](https://nasus.mx/preguntas-frecuentes) y [contacto](https://nasus.mx/contacto).
 
 ## Contacto (para personas y agentes de IA)
 

@@ -2,24 +2,14 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { GUIA_CONTENT } from "@/lib/guia/content";
-import { GUIA_NODES, guiaChildren, guiaHref, guiaNode, type GuiaNode } from "@/lib/guia/routes";
-import GuiaFrame from "../GuiaFrame";
+import { guiaChildren, guiaHref, guiaNode, type GuiaNode } from "@/lib/guia/routes";
+import GuiaFrame from "./GuiaFrame";
 
-type Params = { slug?: string[] };
-
-export function generateStaticParams(): Params[] {
-  return GUIA_NODES.map((n) => ({ slug: n.slug ? n.slug.split("/") : [] }));
-}
-
-function resolve(slug?: string[]): GuiaNode | undefined {
-  return guiaNode((slug ?? []).join("/"));
-}
-
-export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
-  const node = resolve((await params).slug);
+export function nodeMetadata(slug: string): Metadata {
+  const node = guiaNode(slug);
   if (!node) return { title: "Página no encontrada", robots: { index: false } };
   return {
-    title: node.slug ? `${node.title} · Guía` : "Guía de Nasus",
+    title: node.slug ? `${node.title} · Nasus` : "Guía de Nasus",
     description: node.summary,
     alternates: { canonical: guiaHref(node.slug) },
     openGraph: { title: node.title, description: node.summary, url: `https://nasus.mx${guiaHref(node.slug)}` },
@@ -49,8 +39,8 @@ function LinkList({ title, items, from }: { title: string; items: GuiaNode[]; fr
   </section>;
 }
 
-export default async function GuiaPage({ params }: { params: Promise<Params> }) {
-  const node = resolve((await params).slug);
+export default function GuiaNodePage({ slug }: { slug: string }) {
+  const node = guiaNode(slug);
   if (!node) notFound();
   const content = GUIA_CONTENT[node.slug] ?? { blocks: [] };
   const path = trail(node);

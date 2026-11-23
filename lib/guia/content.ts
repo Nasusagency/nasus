@@ -278,20 +278,20 @@ export const GUIA_CONTENT: Record<string, GuiaContent> = {
   },
 
   // ── Precios y tiempos ──────────────────────────────────────────────────
-  "precios-y-tiempos": {
+  "precios": {
     blocks: [
       "Nasus no publica tarifas fijas: cada proyecto se cotiza según su alcance después del diagnóstico.",
       "Esta sección explica cómo se llega a una cotización y de qué depende.",
     ],
   },
-  "precios-y-tiempos/como-se-cotiza": {
+  "precios/como-se-cotiza": {
     blocks: [
       "La cotización llega después del diagnóstico, cuando ya se conoce el problema, los sistemas involucrados y el alcance.",
       "Para solicitarla basta con describir el problema por WhatsApp o con el formulario de contacto.",
     ],
     related: ["como-trabajamos/diagnostico", "contacto"],
   },
-  "precios-y-tiempos/que-afecta-el-costo": {
+  "precios/que-afecta-el-costo": {
     blocks: [
       "Los factores que más cambian el costo y el plazo de un proyecto:",
       [

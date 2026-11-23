@@ -37,6 +37,9 @@ const nextConfig: NextConfig = {
         destination: "/?utm_source=facebook&utm_medium=bio",
         permanent: false,
       },
+      // La guía vivió un día bajo /guia/...; ahora las páginas están en la raíz.
+      { source: "/guia/precios-y-tiempos/:rest*", destination: "/precios/:rest*", permanent: true },
+      { source: "/guia/:path+", destination: "/:path+", permanent: true },
       {
         source: "/:path((?!api/).*)",
         has: [{ type: "host", value: "(www\\.)?nasus\\.lat" }],
