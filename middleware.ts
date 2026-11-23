@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextFetchEvent, type NextRequest } from "next/server";
 import { guiaSlugFromPath } from "@/lib/guia/routes";
 import { AGENT_FILES, clientIp, logVisit } from "@/lib/guia/log";
+import { classifyVisitor } from "@/lib/guia/classify";
 
 const PROTECTED = ["/fotos"];
 const ADMIN_COOKIE = "nasus_admin";
@@ -29,6 +30,26 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
     return NextResponse.next();
   }
 
+
+  // ── Inicio: solo se registra si lo visita un bot o agente (no personas). Es la
+  //    puerta de entrada del estudio; la visita sigue su curso normal. ──
+  if (path === "/") {
+    const ua = request.headers.get("user-agent");
+    const { tipo } = classifyVisitor(ua);
+    const isPrefetch = request.headers.get("next-router-prefetch") || request.headers.get("purpose") === "prefetch";
+    if (!isPrefetch && tipo !== "navegador" && tipo !== "desconocido") {
+      event.waitUntil(logVisit({
+        path,
+        status: 200,
+        origen: "guia",
+        method: request.method,
+        userAgent: ua,
+        ip: clientIp(request.headers),
+        ref: request.nextUrl.searchParams.get("ref"),
+        referer: request.headers.get("referer"),
+      }));
+    }
+  }
 
   // ── Admin routes: presence check only (shell layout does full JWT verify) ──
   const isAdminPage =
