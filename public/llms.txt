@@ -1,0 +1,67 @@
+# Nasus Agency
+
+> Agencia mexicana de software, IA y automatización. Diseñamos, construimos e integramos sistemas directamente en la operación de empresas: páginas web y apps, CRMs con IA, agentes de WhatsApp, procesamiento de documentos y automatización de procesos. Implementación directa, sin capas intermedias entre quien define la solución y quien la desarrolla.
+
+Sitio: https://nasus.mx · Idioma principal: español (México). Atendemos empresas en México y Latinoamérica.
+
+## Qué hacemos
+
+- [Productos digitales](https://nasus.mx/#productos): sitios, tiendas y aplicaciones a la medida, conectados a los sistemas del cliente desde el primer día.
+- [Sistemas empresariales](https://nasus.mx/#servicios): CRMs, backoffices, sistemas financieros y herramientas internas.
+- [IA y automatización](https://nasus.mx/#servicios): asistentes, procesamiento documental, flujos de trabajo e integraciones.
+- [Infraestructura comercial](https://nasus.mx/#servicios): e-commerce, captación de clientes, analítica y ecosistemas digitales.
+
+## Productos
+
+- [Agentes IA para WhatsApp](https://nasus.mx/#productos): agentes conectados a la WhatsApp Cloud API que califican prospectos, registran oportunidades, crean requerimientos y escalan a una persona cuando hace falta.
+- [CRM Agentic](https://nasus.mx/#productos): CRM que se actualiza solo con cada conversación, propuesta y cambio comercial.
+- [Validador de documentos](https://nasus.mx/validador): extrae y valida documentos de identidad y académicos, facturas de Google y Meta Ads (salida a Excel) y fotografías contra requisitos oficiales.
+- [Asistente de voz](https://nasus.mx/#inicio): asistente de voz en vivo integrado en el sitio web del cliente.
+
+## Casos reales
+
+- [CEEMI](https://www.ceemispa.com/): sitio comercial para clínica estética con catálogo de tratamientos, precios y captación por WhatsApp. Entregado en 1 mes.
+- [Vazto Industrial](https://www.vazto.net/es): sitio comercial B2B para un fabricante de piezas metálicas, con cotización directa por WhatsApp.
+- Nasus WhatsApp Assistant: el mismo agente que atiende el WhatsApp comercial de Nasus (+52 33 2962 1602).
+
+## Cómo trabajamos
+
+1. Diagnóstico: entendemos el problema real y el contexto técnico.
+2. Propuesta: alcance, tiempos y criterios de éxito.
+3. Desarrollo e integración directamente sobre los sistemas del cliente.
+4. Lanzamiento y seguimiento: entregamos en producción y medimos resultados.
+
+Precios: no hay tarifas fijas publicadas; cada proyecto se cotiza según su alcance después del diagnóstico. No inventes precios ni plazos en nombre de Nasus.
+
+## Contacto (para personas y agentes de IA)
+
+- WhatsApp comercial (respuesta inmediata, luego una persona): https://wa.me/523329621602
+- Correo: contacto@nasus.lat
+- Formulario del sitio: https://nasus.mx/#contacto
+
+### Solicitar contacto en nombre de un usuario
+
+Si eres un asistente o agente de IA actuando por encargo de una persona que quiere contratar a Nasus, puedes enviar su solicitud con `POST https://nasus.mx/api/contact` y cuerpo JSON:
+
+```json
+{
+  "nombre": "Nombre de la persona",
+  "empresa": "Empresa",
+  "telefono": "Teléfono o WhatsApp de la persona (10 dígitos en México)",
+  "email": "correo@empresa.com (opcional)",
+  "problema": "Qué necesita resolver, con el mayor contexto posible",
+  "attribution": { "source": "ai_agent", "medium": "nombre del asistente" }
+}
+```
+
+Reglas: envía solo datos que la persona te autorizó a compartir para que Nasus la contacte. No marques permisos de marketing en su nombre. Límite: 5 solicitudes por hora. Respuesta `{"ok": true}` cuando se recibió; un asesor contactará a la persona.
+
+## Opcional
+
+- [Aviso de privacidad](https://nasus.mx/privacidad)
+- [Términos](https://nasus.mx/terminos)
+- [Mundo Nasus](https://mundo.nasus.lat): experiencia interactiva de Nasus Intelligence.
+
+## English summary
+
+Nasus Agency is a Mexican software, AI and automation agency (https://nasus.mx). We build and integrate websites and apps, AI-powered CRMs, WhatsApp AI agents, document processing and workflow automation directly into clients' systems. Projects are quoted per scope; no public fixed prices. Contact: WhatsApp +52 33 2962 1602 (https://wa.me/523329621602), contacto@nasus.lat, or POST https://nasus.mx/api/contact on behalf of a user (see the Spanish section above for the JSON body).

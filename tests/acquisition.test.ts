@@ -8,6 +8,11 @@ describe("atribución de adquisición", () => {
     assert.equal(normalizeSource("google_ads"), "google");
     assert.equal(normalizeSource(null, "https://www.google.com/search?q=nasus"), "organic");
     assert.equal(normalizeSource(null, null), "direct");
+    assert.equal(normalizeSource(null, "https://www.perplexity.ai/search?q=agencia"), "asistentes_ia");
+    assert.equal(normalizeSource(null, "https://gemini.google.com/app"), "asistentes_ia");
+    assert.equal(normalizeSource(null, "https://claude.ai/chat/x"), "asistentes_ia");
+    assert.equal(normalizeSource("ai_agent"), "asistentes_ia");
+    assert.equal(normalizeSource(null, "https://www.google.com/search?q=nasus"), "organic");
     assert.equal(normalizeSource("instagram"), "meta");
     assert.equal(normalizeSource("Facebook_Ads"), "meta");
     assert.equal(normalizeSource("ig"), "meta");

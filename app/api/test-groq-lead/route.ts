@@ -6,6 +6,7 @@
  * POST /api/test-groq-lead → ejecuta prueba completa
  */
 
+import { isAdminRequest } from "@/lib/admin/require-admin";
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { executeToolCall } from "@/lib/whatsapp/agent-handlers";
@@ -26,6 +27,9 @@ async function deleteTestLead(numero: string) {
 }
 
 export async function POST(req: Request) {
+  // Ruta de diagnóstico: solo con sesión de admin. Sin ella responde 404 para no
+  // revelar que existe (antes era pública y permitía usar la IA o tocar datos reales).
+  if (!(await isAdminRequest(req))) return NextResponse.json({ error: "Not found" }, { status: 404 });
   const testNumber = "5599999999"; // Número de prueba
   const results = [];
 

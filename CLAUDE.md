@@ -187,6 +187,8 @@ Antes (v1.0, ago-2026) los CTA comerciales iban al 2391 porque en el 1602 no pod
 
 1. **Cambios en producción:** Nunca desplegar cambios que afecten a un cliente sin registrarlos primero en `/admin/cambios` con estado aprobado.
 
+1b. **Rutas de diagnóstico** (`/api/test-*`): solo con sesión de admin (`lib/admin/require-admin.ts`); sin ella responden 404. Nunca dejar rutas que llamen a la IA o escriban datos accesibles sin autenticación.
+
 2. **Endpoints por cliente:** Cada cliente B2B tiene su propia ruta aislada `app/api/[cliente]/`. Nunca compartir lógica de validación entre clientes distintos sin abstraer en `lib/`.
 
 3. **Seguridad antes de deploy:** Invocar el **Agente de Seguridad** (`.cloud/agents/security.md`) para auditar cualquier cambio que toque rutas de API, auth, o manejo de imágenes.
@@ -319,6 +321,13 @@ ADMIN_JWT_SECRET           — Secret para firmar tokens JWT httpOnly
 **Integración:** Enlazado desde el footer de nasus.lat como "Nasus Intelligence" → "Entrar al mundo".
 
 ---
+
+### 10b. Visibilidad para agentes de IA
+
+- **`/llms.txt`** (`public/llms.txt`): resumen en lenguaje natural para modelos (qué hace Nasus, productos, casos, cómo trabajamos, contacto) y cómo un agente puede enviar la solicitud de su usuario con `POST /api/contact`. Mantenerlo alineado con la landing: **nada que no esté publicado** (sin precios ni plazos inventados).
+- **`robots.txt`**: bienvenidos buscadores y asistentes de IA (OAI-SearchBot, ChatGPT-User, GPTBot, Claude-*, Perplexity*, Google-Extended, Applebot-Extended, Bingbot) al contenido público; `/api/contact` permitido para agentes; bloqueados `/admin`, `/api`, `/cliente`, `/propuesta`, `/pagar`, `/internal`.
+- **JSON-LD** en `app/page.tsx` (`SCHEMA_ORG`): Organization con `contactPoint`, `areaServed`, `knowsAbout` y `hasOfferCatalog` construido con las mismas listas que muestra la página.
+- **Atribución**: visitas desde perplexity.ai, claude.ai, gemini.google.com o copilot.microsoft.com (o `utm_source`/`attribution.source` con esos nombres o `ai_agent`) se agrupan como fuente `asistentes_ia`; ChatGPT sigue como `chatgpt`.
 
 ### 11. Experimento Rápido: Zoho Backstage
 

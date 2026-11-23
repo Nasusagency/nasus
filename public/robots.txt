@@ -1,8 +1,39 @@
+# Nasus — nasus.mx
+# Buscadores y asistentes de IA son bienvenidos al contenido público.
+# Resumen para modelos de lenguaje: https://nasus.mx/llms.txt
+
 User-agent: *
 Allow: /
-Allow: /validador
-Allow: /facturas
 Disallow: /api/
 Disallow: /auth/
+Disallow: /admin/
+Disallow: /internal/
+Disallow: /cliente/
+Disallow: /propuesta/
+Disallow: /pagar/
+
+# Asistentes y buscadores de IA: acceso explícito a lo público.
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: GPTBot
+User-agent: Claude-SearchBot
+User-agent: Claude-User
+User-agent: ClaudeBot
+User-agent: PerplexityBot
+User-agent: Perplexity-User
+User-agent: Google-Extended
+User-agent: Applebot-Extended
+User-agent: Bingbot
+Allow: /
+Allow: /llms.txt
+# Un agente puede enviar la solicitud de contacto de su usuario (ver llms.txt).
+Allow: /api/contact
+Disallow: /api/
+Disallow: /auth/
+Disallow: /admin/
+Disallow: /internal/
+Disallow: /cliente/
+Disallow: /propuesta/
+Disallow: /pagar/
 
 Sitemap: https://nasus.mx/sitemap.xml

@@ -7,7 +7,7 @@ import GoogleAdsSyncButton from "./GoogleAdsSyncButton";
 import { ADS_SYNC_LABELS, formatMexicoCityTimestamp } from "@/lib/acquisition/sync-status";
 import { CampaignPerformance, FunnelVisual, KpiCard, type CampaignView } from "./DashboardVisuals";
 
-const SOURCES = ["chatgpt", "google", "organic", "direct", "otros"];
+const SOURCES = ["chatgpt", "asistentes_ia", "google", "meta", "organic", "direct", "otros"];
 const show = (value: number | null, suffix = "") => value === null ? "—" : `${value.toLocaleString("es-MX", { maximumFractionDigits: 2 })}${suffix}`;
 const money = (value: number | null, currency: string) => value === null ? "—" : new Intl.NumberFormat("es-MX", { style: "currency", currency }).format(value);
 

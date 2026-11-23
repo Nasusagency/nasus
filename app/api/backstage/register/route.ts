@@ -125,7 +125,27 @@ async function createBackstageOrder(
   return data;
 }
 
+// Freno de abuso (en memoria, por instancia): esta ruta crea órdenes reales en Zoho.
+const hits = new Map<string, { count: number; resetAt: number }>();
+function allowed(ip: string): boolean {
+  const now = Date.now();
+  const entry = hits.get(ip);
+  if (!entry || now >= entry.resetAt) { hits.set(ip, { count: 1, resetAt: now + 60 * 60_000 }); return true; }
+  if (entry.count >= 5) return false;
+  entry.count++;
+  return true;
+}
+
 export async function POST(request: NextRequest) {
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  if (!allowed(ip)) return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  // Solo desde nuestro propio sitio: bloquea que otros sitios o scripts usen el endpoint.
+  const origin = request.headers.get("origin");
+  const host = request.headers.get("host");
+  let sameOrigin = false;
+  try { sameOrigin = !!origin && !!host && new URL(origin).host === host; } catch { sameOrigin = false; }
+  if (!sameOrigin) return NextResponse.json({ error: "Origin not allowed" }, { status: 403 });
+
   try {
     const body: RegisterRequest = await request.json();
 

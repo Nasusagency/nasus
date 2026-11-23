@@ -489,6 +489,11 @@ function ProductCard({
   );
 }
 
+/**
+ * Datos estructurados para buscadores y asistentes de IA. Solo describe lo que ya está
+ * visible en la página (servicios, productos, contacto): nada que no se muestre aquí.
+ * Complemento en lenguaje natural: /llms.txt.
+ */
 const SCHEMA_ORG = {
   "@context": "https://schema.org",
   "@graph": [
@@ -496,12 +501,40 @@ const SCHEMA_ORG = {
       "@type": "Organization",
       "@id": "https://nasus.mx/#organizacion",
       name: "Nasus Agency",
+      alternateName: "NASUS",
       url: "https://nasus.mx",
       logo: "https://nasus.mx/android-chrome-512x512.png",
       image: "https://nasus.mx/og-image.png",
       email: "nasusagency@gmail.com",
       description:
         "Diseñamos, construimos e integramos software, IA y automatización en los sistemas de nuestros clientes.",
+      areaServed: [{ "@type": "Country", name: "México" }, { "@type": "Place", name: "Latinoamérica" }],
+      knowsAbout: [
+        "Desarrollo de software a la medida", "Páginas web y aplicaciones", "CRM con inteligencia artificial",
+        "Agentes de IA para WhatsApp", "Automatización de procesos", "Procesamiento de documentos con IA",
+        "Asistentes de voz", "Integraciones de sistemas",
+      ],
+      contactPoint: [{
+        "@type": "ContactPoint",
+        contactType: "sales",
+        telephone: "+52-33-2962-1602",
+        url: "https://wa.me/523329621602",
+        availableLanguage: ["es", "en"],
+        areaServed: "MX",
+      }],
+      hasOfferCatalog: {
+        "@type": "OfferCatalog",
+        name: "Servicios de Nasus",
+        itemListElement: [
+          ...buildCategories.map((c) => ({ title: c.title, desc: c.desc })),
+          { title: "Agentes IA para WhatsApp", desc: "Califican leads, registran oportunidades, crean requerimientos y escalan a una persona." },
+          { title: "CRM Agentic", desc: "CRM que se actualiza solo con cada conversación, propuesta y cambio comercial." },
+          { title: "Validador de documentos", desc: "Extrae y valida documentos de identidad, académicos, facturas y fotografías con IA." },
+        ].map((item) => ({
+          "@type": "Offer",
+          itemOffered: { "@type": "Service", name: item.title, description: item.desc, provider: { "@id": "https://nasus.mx/#organizacion" } },
+        })),
+      },
     },
     {
       // Nombre del sitio que Google muestra junto al ícono en los resultados.
@@ -510,6 +543,7 @@ const SCHEMA_ORG = {
       name: "Nasus",
       alternateName: ["NASUS Agency", "nasus.mx", "nasus.lat"],
       url: "https://nasus.mx",
+      inLanguage: "es-MX",
       publisher: { "@id": "https://nasus.mx/#organizacion" },
     },
   ],

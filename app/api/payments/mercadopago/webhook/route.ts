@@ -18,6 +18,7 @@ export async function POST(req: NextRequest) {
     const result = await confirmPaymentFromProvider({ providerPaymentId: dataId }, provider);
     return NextResponse.json(result, { status: result.ok ? 200 : 400 });
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "webhook_processing_failed" }, { status: 400 });
+    console.error("[mercadopago/webhook]", error instanceof Error ? error.message : "unknown_error");
+    return NextResponse.json({ error: "webhook_processing_failed" }, { status: 400 });
   }
 }

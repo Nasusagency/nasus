@@ -5,6 +5,8 @@ const securityHeaders = [
   { key: "X-Frame-Options", value: "DENY" },
   { key: "X-XSS-Protection", value: "1; mode=block" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  // Obliga HTTPS en visitas futuras (2 años). Sin includeSubDomains a propósito.
+  { key: "Strict-Transport-Security", value: "max-age=63072000" },
   // `microphone=(self)` — el asistente de voz necesita getUserMedia desde
   // nuestro propio origen. Una lista vacía `microphone=()` lo bloquea incluso
   // con el permiso concedido en el navegador. Cámara y ubicación siguen cerradas.
@@ -48,6 +50,11 @@ const nextConfig: NextConfig = {
       {
         source: "/(.*)",
         headers: securityHeaders,
+      },
+      {
+        // Panel interno: que ningún buscador lo indexe aunque encuentre el enlace.
+        source: "/admin/:path*",
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
       },
     ];
   },

@@ -5,11 +5,15 @@
  * Forma simplificada - sin handlers aún.
  */
 
+import { isAdminRequest } from "@/lib/admin/require-admin";
 import { NextRequest, NextResponse } from "next/server";
 import { callLLM } from "@/lib/llm/provider";
 import { ALL_TOOLS } from "@/lib/llm/tools";
 
 export async function POST(req: NextRequest) {
+  // Ruta de diagnóstico: solo con sesión de admin. Sin ella responde 404 para no
+  // revelar que existe (antes era pública y permitía usar la IA o tocar datos reales).
+  if (!(await isAdminRequest(req))) return NextResponse.json({ error: "Not found" }, { status: 404 });
   try {
     const body = (await req.json()) as { test?: string; message?: string };
     const { test = "basic", message = "Hola" } = body;

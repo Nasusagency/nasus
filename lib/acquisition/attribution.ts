@@ -20,6 +20,7 @@ export function normalizeSource(source: string | null | undefined, referrer?: st
   const value = source?.trim().toLowerCase();
   if (value) {
     if (value.includes("chatgpt") || value.includes("openai")) return "chatgpt";
+    if (["perplexity", "claude", "anthropic", "gemini", "copilot", "ai_agent"].some((name) => value.includes(name))) return "asistentes_ia";
     if (value.includes("google")) return "google";
     if (["meta", "facebook", "instagram", "fb", "ig"].some((name) => value === name || value.startsWith(`${name}_`) || value.startsWith(`${name}-`)) || value.includes("facebook") || value.includes("instagram")) return "meta";
     if (["organic", "direct"].includes(value)) return value;
@@ -28,6 +29,8 @@ export function normalizeSource(source: string | null | undefined, referrer?: st
   if (!referrer) return "direct";
   try {
     const host = new URL(referrer).hostname.toLowerCase();
+    // Asistentes de IA antes que "google.": gemini.google.com no es búsqueda orgánica.
+    if (host.endsWith("perplexity.ai") || host.endsWith("claude.ai") || host === "gemini.google.com" || host.endsWith("copilot.microsoft.com")) return "asistentes_ia";
     if (host.includes("google.")) return "organic";
     if (host.includes("chatgpt.com") || host.includes("openai.com")) return "chatgpt";
     if (host.endsWith("facebook.com") || host.endsWith("instagram.com") || host === "fb.me" || host.endsWith("fb.com")) return "meta";
