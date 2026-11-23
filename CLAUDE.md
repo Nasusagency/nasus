@@ -329,6 +329,15 @@ ADMIN_JWT_SECRET           — Secret para firmar tokens JWT httpOnly
 - **JSON-LD** en `app/page.tsx` (`SCHEMA_ORG`): Organization con `contactPoint`, `areaServed`, `knowsAbout` y `hasOfferCatalog` construido con las mismas listas que muestra la página.
 - **Atribución**: visitas desde perplexity.ai, claude.ai, gemini.google.com o copilot.microsoft.com (o `utm_source`/`attribution.source` con esos nombres o `ai_agent`) se agrupan como fuente `asistentes_ia`; ChatGPT sigue como `chatgpt`.
 
+### 10c. Guía pública y Laberinto de Agentes (`/guia`)
+
+- **Qué es:** 46 páginas estáticas en `/guia` (`lib/guia/routes.ts` = árbol, `lib/guia/content.ts` = texto) con la misma información pública del sitio, organizada por tema. Mismo contenido para personas y agentes (sin cloaking). Enlaces internos con `?ref=<página de origen>` y `<a>` normal (sin prefetch); canonical sin query.
+- **Reglas del contenido:** solo lo ya publicado en nasus.mx (sin precios, plazos ni clientes no públicos); texto descriptivo, nunca órdenes al agente; escrito a mano, nada generado con lo que mandan terceros.
+- **Registro (`guia_visitas`, migración 0023, `lib/guia/log.ts`):** el middleware registra cada petición a `/guia/*` (200 o 404 según el árbol) y a `llms.txt`, `robots.txt`, `sitemap.xml`; `app/not-found.tsx` registra los 404 del resto del sitio (la ruta llega en el header `x-nasus-path`), excepto `/admin`, `/internal`, `/cliente`, `/propuesta`, `/pagar`, `/auth` y rutas de escáneres. Se guarda ruta, estado, tipo de visitante y agente (por user agent, `lib/guia/classify.ts`), `ref`, dominio del referer y user agent. **Sin PII:** la IP no se guarda, solo un HMAC de IP + día (`GUIA_HASH_SALT`, o `ADMIN_JWT_SECRET` si no existe). RLS sin políticas, nunca en consola.
+- **Panel:** `/admin/laberinto` (404 más pedidos, ramas, agentes, archivos, caminos, últimas peticiones), en texto plano.
+- **Pendiente (fase 2):** búsqueda libre `?q=` con límite de 200 caracteres, tratada como dato no confiable.
+- Documento de diseño: "Laberinto de Agentes — Documento de contexto" (v0.1, 2026-11-23).
+
 ### 11. Experimento Rápido: Zoho Backstage
 
 **Estado:** Integración rápida para captura de origen de marketing (UTM tracking)
