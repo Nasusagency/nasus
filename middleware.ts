@@ -29,13 +29,6 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
     return NextResponse.next();
   }
 
-  // La ruta viaja al render para que app/not-found.tsx registre los 404 del
-  // resto del sitio (el not-found no recibe la URL de otra forma).
-  const forward = () => {
-    const headers = new Headers(request.headers);
-    headers.set("x-nasus-path", path.slice(0, 200));
-    return NextResponse.next({ request: { headers } });
-  };
 
   // ── Admin routes: presence check only (shell layout does full JWT verify) ──
   const isAdminPage =
@@ -50,7 +43,7 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
   }
 
   // ── Supabase auth for user-facing protected routes ────────────────────────
-  let supabaseResponse = forward();
+  let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -62,7 +55,7 @@ export async function middleware(request: NextRequest, event: NextFetchEvent) {
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-          supabaseResponse = forward();
+          supabaseResponse = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           );
