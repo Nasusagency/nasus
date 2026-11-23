@@ -231,3 +231,19 @@ Formato: `AAAA-MM-DD · decisión o acción · quién · evidencia/enlace`.
 
 - 2026-11-23 · Resuelto el problema de la bitácora: intento de recrear la tarea con conector de Supabase rechazado ("connectors parameter is not available for this organization"). Se reemplaza por un cron de Vercel (3:56 CDMX) en `/api/internal/laberinto/bitacora` que escribe en `laberinto_bitacora` con los datos de `laberinto_visitas`. Se desactiva (pausa, no se borró) la tarea `trig_01REK9Td2CzqcutN47b4Voad`. Activo al fusionar la rama `laberinto` en main · Claude Code.
 *(Agregar entradas nuevas debajo, sin borrar las anteriores. Cada hito publicado: fecha, enlace, copia en Wayback, DOI de Zenodo, hash.)*
+
+## 14. Registro de pruebas
+
+Cada prueba con una IA: fecha y hora (UTC; CDMX = UTC−6), IA, instrucción exacta y qué se vio en `/admin/laberinto` o en `laberinto_visitas`. **Se llena con cada prueba nueva, sin borrar las anteriores.** Anotar siempre la hora: las visitas no traen la instrucción, solo se ligan por tiempo.
+
+Observación fija: la IA solo visita el sitio si tiene la búsqueda web activada; si no, responde de memoria y no deja rastro.
+
+| # | Fecha y hora (UTC) | IA | Instrucción | Qué se registró |
+|---|---|---|---|---|
+| 1 | 2026-11-23 ~06:08 | ChatGPT (con búsqueda web) | Entrar a nasus.mx/guia, decir qué ofrece Nasus para automatizar WhatsApp y revisar /llms.txt para ver si hay página de precios *(texto sugerido por Claude Code; el dueño confirmó que se lo pidió, sin copia literal)* | `ChatGPT-User` → `/guia`, `/llms.txt`; `OAI-SearchBot` → `/robots.txt`. Sin 404. |
+| 2 | 2026-11-23 ~06:08 | Muse (Meta) | Misma instrucción que la prueba 1 *(sin copia literal)* | `meta-webindexer` → `/llms.txt`, `/guia`, `/guia/atencion-y-ventas`. Sin 404. Se clasificó como `otro_bot`; pendiente reclasificar como agente de IA. |
+| 3 | 2026-11-23 (hora por anotar) | DeepSeek "virgen" (sin pistas de la guía) | *(pendiente: pegar la instrucción exacta)* | Hasta ahora, sin visitas nuevas (¿respondió de memoria o sin búsqueda web?). |
+
+Ruido a descontar: en la prueba 1 apareció también un `Googlebot` leyendo `/robots.txt` y una visita de "navegador" (el dueño); no son de la IA. Las 6 primeras filas de la tabla (ids 1–6) son pruebas de Claude Code y errores del primer despliegue (`/` anotada como 404); se dejaron sin borrar.
+
+**Pruebas por hacer:** "IA virgen" con la misma pregunta en varias IA (Claude, Gemini, Perplexity, Copilot) para comparar; pregunta de precios sin dar la dirección de la guía, para ver qué rutas inventa.
