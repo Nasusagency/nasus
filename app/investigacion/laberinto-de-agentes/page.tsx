@@ -1,12 +1,13 @@
 /* eslint-disable @next/next/no-html-link-for-pages -- ver app/guia/GuiaFrame.tsx */
 import type { Metadata } from "next";
 import GuiaFrame from "@/app/guia/GuiaFrame";
-import { AUTORES_PERSONAS, INVESTIGACION, URL_ESTUDIO } from "@/lib/guia/investigacion";
+import { AUTORES_PERSONAS, INVESTIGACION, PUBLICADA, URL_ESTUDIO } from "@/lib/guia/investigacion";
 
 export const metadata: Metadata = {
   title: "Laberinto de Agentes: cómo navegan los agentes de IA un sitio web",
   description: INVESTIGACION.definicion,
   alternates: { canonical: "/investigacion/laberinto-de-agentes" },
+  robots: PUBLICADA ? undefined : { index: false, follow: false },
   openGraph: { title: "Laberinto de Agentes", description: INVESTIGACION.definicion, url: URL_ESTUDIO, type: "article" },
 };
 
@@ -47,7 +48,7 @@ export default function LaberintoPage() {
 
     <h2 className={H2}>Qué se montó</h2>
     <ul className={UL}>
-      <li>Una <a className="text-[#c4a882] underline-offset-4 hover:underline" href="/guia">guía de 46 páginas</a> en nasus.mx, escritas a mano, con la información pública de Nasus. Es el mismo contenido para personas y agentes.</li>
+      <li>Una <a className="text-[#c4a882] underline-offset-4 hover:underline" href="/guia">guía de 46 páginas</a> en nasus.mx con la información pública de Nasus. Es el mismo contenido para personas y agentes.</li>
       <li>El archivo <a className="text-[#c4a882] underline-offset-4 hover:underline" href="/llms.txt">llms.txt</a>, el <a className="text-[#c4a882] underline-offset-4 hover:underline" href="/robots.txt">robots.txt</a> y el <a className="text-[#c4a882] underline-offset-4 hover:underline" href="/sitemap.xml">sitemap</a>, que los agentes suelen leer primero.</li>
       <li>Un registro de cada petición a la guía y a esos archivos, y de las rutas inexistentes (404) de todo el sitio.</li>
     </ul>

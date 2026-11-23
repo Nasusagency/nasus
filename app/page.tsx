@@ -1095,7 +1095,6 @@ export default function LandingPage() {
               <SocialIcons />
               <nav aria-label="Información legal" className="flex gap-4 font-mono text-xs text-zinc-600">
                 <a href="/guia" className="transition-colors hover:text-zinc-400">Guía</a>
-                <a href="/investigacion" className="transition-colors hover:text-zinc-400">Investigación</a>
                 <a href="/privacidad" className="transition-colors hover:text-zinc-400">Privacidad</a>
                 <a href="/terminos" className="transition-colors hover:text-zinc-400">Términos</a>
               </nav>

@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import GuiaFrame from "@/app/guia/GuiaFrame";
-import { INVESTIGACION } from "@/lib/guia/investigacion";
+import { INVESTIGACION, PUBLICADA } from "@/lib/guia/investigacion";
 
 export const metadata: Metadata = {
   title: "Investigación",
   description: "Estudios de Nasus Agency sobre IA, agentes y automatización.",
   alternates: { canonical: "/investigacion" },
+  robots: PUBLICADA ? undefined : { index: false, follow: false },
 };
 
 export default function InvestigacionPage() {

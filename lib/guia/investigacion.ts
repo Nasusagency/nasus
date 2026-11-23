@@ -14,7 +14,16 @@ export const INVESTIGACION = {
   licencia: { nombre: "Creative Commons BY 4.0", url: "https://creativecommons.org/licenses/by/4.0/deed.es" },
 } as const;
 
-/** Autores con nombre. Vacío por ahora: el estudio se publica a nombre de Nasus Agency. */
-export const AUTORES_PERSONAS: { nombre: string; url?: string }[] = [];
+/**
+ * BORRADOR: mientras sea false la página existe pero no se anuncia: noindex,
+ * fuera del sitemap, de llms.txt y del footer. Pasar a true solo cuando el
+ * dueño decida publicar (previsto con 1 o 2 meses de datos).
+ */
+export const PUBLICADA = false;
+
+/** Autores con nombre. Falta agregar `url` con el perfil de LinkedIn del autor. */
+export const AUTORES_PERSONAS: { nombre: string; url?: string }[] = [
+  { nombre: "Luis Oscar Alpizar" },
+];
 
 export const URL_ESTUDIO = `https://nasus.mx/investigacion/${INVESTIGACION.slug}`;
