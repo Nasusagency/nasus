@@ -21,9 +21,9 @@ export const INVESTIGACION = {
  */
 export const PUBLICADA = false;
 
-/** Autores con nombre. Falta agregar `url` con el perfil de LinkedIn del autor. */
+/** Autores con nombre (con su perfil de LinkedIn). */
 export const AUTORES_PERSONAS: { nombre: string; url?: string }[] = [
-  { nombre: "Luis Oscar Alpizar" },
+  { nombre: "Luis Oscar Alpizar", url: "https://www.linkedin.com/in/alpizaroscar" },
 ];
 
 export const URL_ESTUDIO = `https://nasus.mx/investigacion/${INVESTIGACION.slug}`;

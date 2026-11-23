@@ -235,6 +235,7 @@ Formato: `AAAA-MM-DD · decisión o acción · quién · evidencia/enlace`.
 - 2026-11-23 · Corrección: la página decía que las páginas de la guía estaban "escritas a mano"; se quitó, porque no era cierto. Mantener la descripción del método factual · Claude Code.
 - 2026-11-23 · Corrección de rumbo (dueño): las ramas van **en la raíz** (`nasus.mx/precios`, `/contacto`), vivas para que los agentes las encuentren, no bajo `/guia`. Se mueven las 46 páginas; `/guia/...` redirige 308 a la ruta nueva; `precios-y-tiempos` pasa a `/precios`. Se dejan 5 rutas sensor sin crear (`/pricing`, `/servicios`, `/about`, `/docs`, `/blog`) para medir si los agentes adivinan rutas de forma natural; si tras semanas nadie las pide, también es un hallazgo. Probado en local: páginas 200, sensores 404 con registro único, `/` y `/privacidad` sin registro · Claude Code.
 - 2026-11-23 · El inicio `nasus.mx/` se registra solo cuando lo visita un bot o agente (tipos agente_ia, buscador, otro_bot, herramienta, navegador_automatizado); navegadores y desconocidos no. Era un hueco: la puerta de entrada no quedaba en el registro · Claude Code.
+- 2026-11-23 · Autor con nombre: Luis Oscar Alpizar, perfil LinkedIn https://www.linkedin.com/in/alpizaroscar (en `lib/guia/investigacion.ts`). Prueba 3 (DeepSeek) descartada por el dueño · dueño.
 *(Agregar entradas nuevas debajo, sin borrar las anteriores. Cada hito publicado: fecha, enlace, copia en Wayback, DOI de Zenodo, hash.)*
 
 ## 14. Registro de pruebas
@@ -247,7 +248,7 @@ Observación fija: la IA solo visita el sitio si tiene la búsqueda web activada
 |---|---|---|---|---|
 | 1 | 2026-11-23 ~06:08 | ChatGPT (con búsqueda web) | Entrar a nasus.mx/guia, decir qué ofrece Nasus para automatizar WhatsApp y revisar /llms.txt para ver si hay página de precios *(texto sugerido por Claude Code; el dueño confirmó que se lo pidió, sin copia literal)* | `ChatGPT-User` → `/guia`, `/llms.txt`; `OAI-SearchBot` → `/robots.txt`. Sin 404. |
 | 2 | 2026-11-23 ~06:08 | Muse (Meta) | Misma instrucción que la prueba 1 *(sin copia literal)* | `meta-webindexer` → `/llms.txt`, `/guia`, `/guia/atencion-y-ventas`. Sin 404. Se clasificó como `otro_bot`; pendiente reclasificar como agente de IA. |
-| 3 | 2026-11-23 (hora por anotar) | DeepSeek "virgen" (sin pistas de la guía) | *(pendiente: pegar la instrucción exacta)* | Hasta ahora, sin visitas nuevas (¿respondió de memoria o sin búsqueda web?). |
+| 3 | 2026-11-23 | DeepSeek "virgen" (sin pistas de la guía) | *(descartada por el dueño: sin instrucción registrada)* | Sin visitas atribuibles. Prueba descartada; no usar como dato. |
 
 Ruido a descontar: en la prueba 1 apareció también un `Googlebot` leyendo `/robots.txt` y una visita de "navegador" (el dueño); no son de la IA. Las 6 primeras filas de la tabla (ids 1–6) son pruebas de Claude Code y errores del primer despliegue (`/` anotada como 404); se dejaron sin borrar.
 
