@@ -14,7 +14,7 @@ export default function GuiaFrame({ children }: { children: React.ReactNode }) {
         <a href="/" aria-label="Nasus, inicio"><Logo height={30} tone="dark" /></a>
         <nav aria-label="Guía" className="flex gap-5 text-sm text-zinc-400">
           <a href={GUIA_BASE} className="transition-colors hover:text-white">Guía</a>
-          <a href={`${GUIA_BASE}/contacto`} className="transition-colors hover:text-white">Contacto</a>
+          <a href="/contacto" className="transition-colors hover:text-white">Contacto</a>
         </nav>
       </div>
     </header>
