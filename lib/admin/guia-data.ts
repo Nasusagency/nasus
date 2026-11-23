@@ -51,3 +51,15 @@ export async function getGuiaDashboard({ days, tipo }: { days: number; tipo?: st
     recientes: rows.slice(0, 60),
   };
 }
+
+export type BitacoraRow = { id: number; fecha: string; tipo: string; resumen: string; detalle: unknown; creado_en: string };
+
+/** Entradas de la bitácora (laberinto_bitacora), de la más reciente a la más antigua. */
+export async function getBitacora(limit = 60): Promise<BitacoraRow[] | null> {
+  const supabase = createServiceClient();
+  if (!supabase) return null;
+  const { data, error } = await supabase.from("laberinto_bitacora")
+    .select("id,fecha,tipo,resumen,detalle,creado_en").order("id", { ascending: false }).limit(limit);
+  if (error) return null;
+  return (data ?? []) as BitacoraRow[];
+}

@@ -236,6 +236,7 @@ Formato: `AAAA-MM-DD · decisión o acción · quién · evidencia/enlace`.
 - 2026-11-23 · Corrección de rumbo (dueño): las ramas van **en la raíz** (`nasus.mx/precios`, `/contacto`), vivas para que los agentes las encuentren, no bajo `/guia`. Se mueven las 46 páginas; `/guia/...` redirige 308 a la ruta nueva; `precios-y-tiempos` pasa a `/precios`. Se dejan 5 rutas sensor sin crear (`/pricing`, `/servicios`, `/about`, `/docs`, `/blog`) para medir si los agentes adivinan rutas de forma natural; si tras semanas nadie las pide, también es un hallazgo. Probado en local: páginas 200, sensores 404 con registro único, `/` y `/privacidad` sin registro · Claude Code.
 - 2026-11-23 · El inicio `nasus.mx/` se registra solo cuando lo visita un bot o agente (tipos agente_ia, buscador, otro_bot, herramienta, navegador_automatizado); navegadores y desconocidos no. Era un hueco: la puerta de entrada no quedaba en el registro · Claude Code.
 - 2026-11-23 · Autor con nombre: Luis Oscar Alpizar, perfil LinkedIn https://www.linkedin.com/in/alpizaroscar (en `lib/guia/investigacion.ts`). Prueba 3 (DeepSeek) descartada por el dueño · dueño.
+- 2026-11-23 · `/admin/laberinto` tiene dos pestañas: Visitas y Bitácora diaria (lee `laberinto_bitacora`, texto plano) · Claude Code.
 *(Agregar entradas nuevas debajo, sin borrar las anteriores. Cada hito publicado: fecha, enlace, copia en Wayback, DOI de Zenodo, hash.)*
 
 ## 14. Registro de pruebas
