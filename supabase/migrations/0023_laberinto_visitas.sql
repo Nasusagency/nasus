@@ -5,7 +5,7 @@
 -- Sin datos personales: la IP no se guarda, solo un HMAC de IP + día.
 -- RLS activo y sin políticas: solo la service role (servidor) lee y escribe.
 
-create table if not exists public.guia_visitas (
+create table if not exists public.laberinto_visitas (
   id bigint generated always as identity primary key,
   ts timestamptz not null default now(),
   ruta text not null check (char_length(ruta) <= 160),
@@ -20,8 +20,8 @@ create table if not exists public.guia_visitas (
   ip_hash text
 );
 
-create index if not exists guia_visitas_ts_idx on public.guia_visitas (ts desc);
-create index if not exists guia_visitas_origen_ts_idx on public.guia_visitas (origen, ts desc);
+create index if not exists laberinto_visitas_ts_idx on public.laberinto_visitas (ts desc);
+create index if not exists laberinto_visitas_origen_ts_idx on public.laberinto_visitas (origen, ts desc);
 
-alter table public.guia_visitas enable row level security;
-revoke all on table public.guia_visitas from anon, authenticated;
+alter table public.laberinto_visitas enable row level security;
+revoke all on table public.laberinto_visitas from anon, authenticated;

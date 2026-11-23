@@ -29,7 +29,7 @@ export async function getGuiaDashboard({ days, tipo }: { days: number; tipo?: st
   const supabase = createServiceClient();
   if (!supabase) return null;
   const from = new Date(Date.now() - Math.max(1, Math.min(days, 365)) * 86400000).toISOString();
-  let query = supabase.from("guia_visitas")
+  let query = supabase.from("laberinto_visitas")
     .select("ts,ruta,estado,origen,tipo_visitante,agente,referencia,referer_host,ip_hash")
     .gte("ts", from).order("ts", { ascending: false }).limit(20000);
   if (tipo) query = query.eq("tipo_visitante", tipo);

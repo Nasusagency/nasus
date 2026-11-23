@@ -10,7 +10,7 @@ import { clientIp, logVisit, shouldLogPath } from "@/lib/guia/log";
 const SKIP = /^\/(admin|internal|cliente|propuesta|pagar|auth)(\/|$)/;
 
 /**
- * 404 de todo el sitio. Registra la ruta pedida en guia_visitas: lo que un
+ * 404 de todo el sitio. Registra la ruta pedida en laberinto_visitas: lo que un
  * agente busca y no encuentra (/precios, /pricing, /api/servicios…) es la
  * señal más útil del Laberinto de Agentes. La ruta llega desde el middleware
  * en x-nasus-path; la guía registra sus propios 404 en el middleware.

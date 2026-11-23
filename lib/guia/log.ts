@@ -3,7 +3,7 @@
  * sitemap.xml) y rutas inexistentes (404) de todo el sitio.
  *
  * Funciona en Edge (middleware) y Node (not-found): solo usa fetch y Web Crypto.
- * Escribe con la service role en `guia_visitas` (RLS sin políticas).
+ * Escribe con la service role en `laberinto_visitas` (RLS sin políticas).
  *
  * Privacidad: no se guarda la IP, solo un HMAC de IP + día (no permite seguir
  * a alguien más allá de un día ni revertirse sin el secreto). Nada de esto va a
@@ -92,7 +92,7 @@ export async function logVisit(input: VisitInput): Promise<void> {
       user_agent: input.userAgent?.slice(0, 300) ?? null,
       ip_hash: await hashIp(input.ip),
     };
-    await fetch(`${url}/rest/v1/guia_visitas`, {
+    await fetch(`${url}/rest/v1/laberinto_visitas`, {
       method: "POST",
       headers: {
         apikey: key,
