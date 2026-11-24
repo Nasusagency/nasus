@@ -1,0 +1,12 @@
+[
+  { "palabra_clave": "agente de WhatsApp con IA para empresas", "enfoque": "Qué es, qué hace distinto a un chatbot de menú y cuándo conviene a una empresa mediana.", "enlazar": ["/atencion-y-ventas/whatsapp-prospectos", "/casos/whatsapp-assistant"], "hecho": false },
+  { "palabra_clave": "cómo automatizar la atención al cliente por WhatsApp", "enfoque": "Pasos prácticos: qué automatizar primero, cuándo pasar a una persona.", "enlazar": ["/atencion-y-ventas/paso-a-humano", "/automatizacion/flujos-de-trabajo"], "hecho": false },
+  { "palabra_clave": "CRM con inteligencia artificial para pymes", "enfoque": "Qué cambia cuando el CRM se actualiza solo con cada conversación.", "enlazar": ["/atencion-y-ventas/crm-agentic"], "hecho": false },
+  { "palabra_clave": "cómo saber qué campaña trajo a cada cliente", "enfoque": "Atribución de campañas de Google Ads y Meta hasta el prospecto en WhatsApp.", "enlazar": ["/automatizacion/captacion-y-atribucion"], "hecho": false },
+  { "palabra_clave": "extraer facturas de Google Ads y Meta Ads a Excel", "enfoque": "El problema de conciliar facturas de publicidad y cómo se automatiza.", "enlazar": ["/documentos/facturas-ads"], "hecho": false },
+  { "palabra_clave": "validar INE y CURP automáticamente", "enfoque": "Qué se puede validar con IA en documentos de identidad y qué límites tiene.", "enlazar": ["/documentos/identidad", "/documentos/privacidad-de-documentos"], "hecho": false },
+  { "palabra_clave": "qué afecta el costo de una página web para empresa", "enfoque": "Factores de alcance y plazo. Sin cifras ni tarifas.", "enlazar": ["/precios/que-afecta-el-costo", "/software-a-la-medida/paginas-web"], "hecho": false },
+  { "palabra_clave": "cuándo usar inteligencia artificial y cuándo software tradicional", "enfoque": "Criterio para decidir; no todo problema necesita IA.", "enlazar": ["/preguntas-frecuentes/ia-o-software-tradicional"], "hecho": false },
+  { "palabra_clave": "integrar IA en el software que ya usa mi empresa", "enfoque": "Agregar IA sin reemplazar sistemas existentes.", "enlazar": ["/software-a-la-medida/integrar-ia", "/automatizacion/integraciones"], "hecho": false },
+  { "palabra_clave": "asistente de voz con IA para sitio web", "enfoque": "Qué aporta un asistente de voz en una página comercial y sus límites.", "enlazar": ["/atencion-y-ventas/asistente-de-voz"], "hecho": false }
+]

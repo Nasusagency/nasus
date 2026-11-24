@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { GUIA_NODES, guiaHref } from "@/lib/guia/routes";
 import { PUBLICADA } from "@/lib/guia/investigacion";
+import { listarArticulos } from "@/lib/articulos/store";
 
 const BASE = "https://nasus.mx";
 const UPDATED = "2026-11-23";
@@ -13,6 +14,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ...(PUBLICADA ? [
       { url: `${BASE}/investigacion`, lastModified: UPDATED, changeFrequency: "monthly" as const, priority: 0.5 },
       { url: `${BASE}/investigacion/laberinto-de-agentes`, lastModified: UPDATED, changeFrequency: "weekly" as const, priority: 0.6 },
+    ] : []),
+    ...(listarArticulos().length ? [
+      { url: `${BASE}/articulos`, lastModified: listarArticulos()[0].fecha, changeFrequency: "weekly" as const, priority: 0.6 },
+      ...listarArticulos().map((a) => ({ url: `${BASE}/articulos/${a.slug}`, lastModified: a.fecha, changeFrequency: "monthly" as const, priority: 0.5 })),
     ] : []),
     ...GUIA_NODES.map((n) => ({
       url: `${BASE}${guiaHref(n.slug)}`,
