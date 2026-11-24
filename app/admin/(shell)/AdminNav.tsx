@@ -13,6 +13,7 @@ const NAV = [
   { href: "/admin/leads", label: "CRM / Leads", icon: "◎" },
   { href: "/admin/propuestas", label: "Propuestas", icon: "◌" },
   { href: "/admin/acquisition", label: "Adquisición", icon: "◇" },
+  { href: "/admin/articulos", label: "Artículos", icon: "✎" },
   { href: "/admin/laberinto", label: "Laberinto", icon: "⌗" },
   { href: "/admin/configuracion", label: "Configuración", icon: "⊙" },
 ];

@@ -23,6 +23,8 @@ export type Articulo = {
   /** ISO yyyy-mm-dd */
   fecha: string;
   palabraClave: string;
+  /** Quién lo redactó (claude | muse | ...). Vacío si el archivo no lo indica. */
+  modelo: string;
   cuerpo: string;
 };
 
@@ -44,6 +46,7 @@ function parse(file: string): Articulo | null {
     descripcion,
     fecha,
     palabraClave: typeof data.palabra_clave === "string" ? data.palabra_clave : "",
+    modelo: typeof data.modelo === "string" ? data.modelo : "",
     cuerpo: content.trim(),
   };
 }
@@ -61,4 +64,17 @@ export function listarArticulos(): Articulo[] {
 
 export function obtenerArticulo(slug: string): Articulo | undefined {
   return listarArticulos().find((a) => a.slug === slug);
+}
+
+export type ColaEntrada = { palabraClave: string; hecho: boolean };
+
+/** Cola de palabras clave (content/articulos/cola.json), en el orden en que se escribirán. */
+export function leerCola(): ColaEntrada[] {
+  try {
+    const raw = JSON.parse(fs.readFileSync(path.join(ARTICULOS_DIR, "cola.json"), "utf8")) as unknown;
+    if (!Array.isArray(raw)) return [];
+    return raw.flatMap((e) => (e && typeof e.palabra_clave === "string" ? [{ palabraClave: e.palabra_clave, hecho: e.hecho === true }] : []));
+  } catch {
+    return [];
+  }
 }
