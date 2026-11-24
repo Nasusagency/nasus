@@ -3,7 +3,7 @@
  *
  * Toma la primera palabra clave sin `hecho` de content/articulos/cola.json,
  * escribe el artículo con `estado: publicado` y marca la entrada como hecha.
- * El flujo normal corre en GitHub Actions y abre un pull request: aprobarlo
+ * El flujo normal es una tarea programada de Claude que abre un pull request: aprobarlo
  * (merge) es lo que publica el artículo. Nada llega al sitio sin esa revisión.
  *
  * Uso:
