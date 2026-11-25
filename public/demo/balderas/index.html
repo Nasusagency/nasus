@@ -79,12 +79,16 @@
   /* visor */
   .app { display:grid; gap:14px; grid-template-columns:1fr; }
   @media (min-width: 1100px) { .app { grid-template-columns: 1.5fr 1fr; align-items:start; } }
-  .stage { position:relative; border:1px solid var(--line); overflow:hidden; background:radial-gradient(ellipse at 50% 35%, #1f2733 0%, #0b0e13 72%); height:min(62vh, 520px); min-height:300px; }
-  .stage::before { content:"VISTA 3D · ESCALA 1:1 CM"; position:absolute; left:12px; top:10px; font-family:var(--display); font-size:11px; letter-spacing:.2em; color:var(--blue2); z-index:1; }
+  .stage { position:relative; border:1px solid var(--line); overflow:hidden; background:radial-gradient(ellipse at 50% 35%, #ffffff 0%, #d5dae2 78%); height:min(62vh, 520px); min-height:300px; }
+  .stage.oscuro { background:radial-gradient(ellipse at 50% 35%, #1f2733 0%, #0b0e13 72%); }
+  .stage::before { content:"VISTA 3D · ESCALA 1:1 CM"; position:absolute; left:12px; top:10px; font-family:var(--display); font-size:11px; letter-spacing:.2em; color:#2c5d96; z-index:1; }
+  .stage.oscuro::before { color:var(--blue2); }
   canvas { display:block; width:100%; height:100%; touch-action:none; cursor:grab; }
   canvas:active { cursor:grabbing; }
-  .hint { position:absolute; left:12px; bottom:10px; font-size:11.5px; color:var(--muted); pointer-events:none; }
-  .size { position:absolute; right:12px; bottom:10px; font-family:var(--display); font-size:12.5px; letter-spacing:.06em; color:var(--text); background:rgba(0,0,0,.5); border:1px solid var(--line); padding:5px 10px; font-variant-numeric:tabular-nums; }
+  .hint { position:absolute; left:12px; bottom:10px; font-size:11.5px; color:#566173; pointer-events:none; }
+  .stage.oscuro .hint { color:var(--muted); }
+  .size { position:absolute; right:12px; bottom:10px; font-family:var(--display); font-size:12.5px; letter-spacing:.06em; color:#14202f; background:rgba(255,255,255,.85); border:1px solid #c2c9d4; padding:5px 10px; font-variant-numeric:tabular-nums; }
+  .stage.oscuro .size { color:var(--text); background:rgba(0,0,0,.5); border-color:var(--line); }
   .panel { background:var(--panel); border:1px solid var(--line); padding:16px; }
   .panel h4 { font-size:11.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--blue2); margin:0 0 10px; font-weight:600; }
   .group { margin-bottom:18px; }
@@ -317,8 +321,8 @@
     banco:  { nombre: "Banco",  dims: { l: ["Largo", 30, 60, 40],   a: ["Ancho", 30, 60, 40],  h: ["Alto", 30, 80, 45]   } }
   };
   var COLORES = [
-    ["Nogal", "#6b4423"], ["Roble", "#b98a4e"], ["Blanco hueso", "#ece8e1"],
-    ["Negro", "#262626"], ["Mármol claro", "#e3dfd8"], ["Gris humo", "#8a8d91"]
+    ["Nogal", "#6b4423", "madera"], ["Roble", "#b98a4e", "madera"], ["Blanco hueso", "#ece8e1", "liso"],
+    ["Negro", "#262626", "liso"], ["Mármol claro", "#e3dfd8", "marmol"], ["Gris humo", "#8a8d91", "liso"]
   ];
 
   var LED_COLORES = [
@@ -364,12 +368,74 @@
   var holder = new THREE.Group();
   scene.add(holder);
 
-  var material = new THREE.MeshStandardMaterial({ color: COLORES[0][1], roughness: 0.62, metalness: 0.04 });
+  var material = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.6, metalness: 0.03 });
+
+  // ---------- Texturas de acabado (generadas; se sustituyen por fotos reales de sus acabados) ----------
+  function azar(seed) { return function () { seed |= 0; seed = seed + 0x6D2B79F5 | 0; var t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  function sombrear(hex, k) {
+    var n = parseInt(hex.slice(1), 16), r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+    function f(v) { return Math.max(0, Math.min(255, Math.round(k >= 0 ? v + (255 - v) * k : v * (1 + k)))); }
+    return "rgb(" + f(r) + "," + f(g) + "," + f(b) + ")";
+  }
+  function texAcabado(c, idx) {
+    var cv = document.createElement("canvas"); cv.width = 512; cv.height = 512;
+    var x = cv.getContext("2d"), rnd = azar(100 + idx * 37), base = c[1], tipo = c[2], i, j;
+    x.fillStyle = tipo === "madera" ? sombrear(base, 0.3) : base; x.fillRect(0, 0, 512, 512);
+    if (tipo === "madera") {
+      for (i = 0; i < 150; i++) {
+        var y0 = rnd() * 512, a = 6 + rnd() * 18, f = 0.01 + rnd() * 0.02, ph = rnd() * 6.28;
+        x.strokeStyle = sombrear(base, rnd() < 0.7 ? -0.32 : 0.18); x.globalAlpha = 0.07 + rnd() * 0.18; x.lineWidth = 0.6 + rnd() * 2.2;
+        x.beginPath();
+        for (j = 0; j <= 512; j += 8) { var yy = y0 + Math.sin(j * f + ph) * a * 0.25 + Math.sin(j * f * 2.3 + ph) * 1.5; if (j === 0) x.moveTo(j, yy); else x.lineTo(j, yy); }
+        x.stroke();
+      }
+      for (i = 0; i < 4; i++) { // nudos suaves
+        var cx = rnd() * 512, cy = rnd() * 512, g = x.createRadialGradient(cx, cy, 1, cx, cy, 18 + rnd() * 14);
+        g.addColorStop(0, "rgba(40,22,8,0.35)"); g.addColorStop(1, "rgba(40,22,8,0)");
+        x.globalAlpha = 1; x.fillStyle = g; x.fillRect(cx - 40, cy - 40, 80, 80);
+      }
+    } else if (tipo === "marmol") {
+      x.lineCap = "round";
+      for (i = 0; i < 9; i++) {
+        var px = rnd() * 512, py = rnd() * 512;
+        x.strokeStyle = rnd() < 0.7 ? "#9aa0a8" : "#b8985a"; x.globalAlpha = 0.25 + rnd() * 0.35; x.lineWidth = 0.8 + rnd() * 2.2;
+        x.shadowColor = x.strokeStyle; x.shadowBlur = 4;
+        x.beginPath(); x.moveTo(px, py);
+        for (j = 0; j < 9; j++) { px += (rnd() - 0.35) * 90; py += (rnd() - 0.5) * 70; x.lineTo(px, py); }
+        x.stroke();
+      }
+      x.shadowBlur = 0;
+    } else {
+      for (i = 0; i < 2500; i++) { x.fillStyle = rnd() < 0.5 ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.06)"; x.fillRect(rnd() * 512, rnd() * 512, 2, 2); }
+    }
+    x.globalAlpha = 1;
+    var t = new THREE.CanvasTexture(cv);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    if (THREE.sRGBEncoding) t.encoding = THREE.sRGBEncoding;
+    if (renderer.capabilities && renderer.capabilities.getMaxAnisotropy) t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+    return t;
+  }
+  var texCache = {};
+  function aplicarColor(i) {
+    if (!texCache[i]) texCache[i] = texAcabado(COLORES[i], i);
+    material.map = texCache[i]; material.color.set(0xffffff); material.needsUpdate = true;
+  }
 
   // ---------- Construcción paramétrica (medidas en cm, escena en metros) ----------
   var S = 0.01;
   function box(parent, w, h, d, x, y, z) {
-    var m = new THREE.Mesh(new THREE.BoxGeometry(w * S, h * S, d * S), material);
+    var geo = new THREE.BoxGeometry(w * S, h * S, d * S), uv = geo.attributes.uv, vert = h >= Math.max(w, d), T = 100;
+    // caras en orden: +x, -x, +y, -y, +z, -z; la veta corre a lo largo de la pieza (vertical en patas)
+    var dims = [[d, h], [d, h], [w, d], [w, d], [w, h], [w, h]];
+    for (var f = 0; f < 6; f++) {
+      var du = dims[f][0] / T, dv = dims[f][1] / T;
+      if (vert && f !== 2 && f !== 3) { var tmp = du; du = dv; dv = tmp; }
+      for (var q = 0; q < 4; q++) {
+        var k = f * 4 + q, ux = uv.getX(k), vy = uv.getY(k);
+        if (vert && f !== 2 && f !== 3) uv.setXY(k, vy * du, ux * dv); else uv.setXY(k, ux * du, vy * dv);
+      }
+    }
+    var m = new THREE.Mesh(geo, material);
     m.position.set(x * S, y * S, z * S);
     m.castShadow = true; m.receiveShadow = true;
     parent.add(m);
@@ -566,6 +632,9 @@
     var t = TIPOS[state.tipo];
     document.getElementById("titColor").textContent = t.led ? "Luz LED" : "Color";
     document.getElementById("grpTexto").style.display = t.texto ? "block" : "none";
+    stage.classList.toggle("oscuro", !!t.led);
+    ring.material.color.set(t.led ? 0x3a3a46 : 0xaeb5c1);
+    floor.material.opacity = t.led ? 0.35 : 0.22;
   }
   function pintarColores() {
     var cont = document.getElementById("colores"); cont.innerHTML = "";
@@ -575,7 +644,7 @@
       b.className = "swatch"; b.style.background = c[1]; b.title = c[0]; b.setAttribute("aria-label", c[0]);
       b.setAttribute("aria-pressed", String(i === sel));
       b.addEventListener("click", function () {
-        if (led) { state.led = i; construir(); } else { state.color = i; material.color.set(c[1]); }
+        if (led) { state.led = i; construir(); } else { state.color = i; aplicarColor(i); }
         pintarColores();
       });
       cont.appendChild(b);
@@ -625,7 +694,7 @@
     requestAnimationFrame(loop);
   }
 
-  material.color.set(COLORES[0][1]);
+  aplicarColor(0);
   pintarTipos(); pintarColores(); pintarSliders(); construir(); ajustarPanel(); ajustar(); loop();
 })();
 </script>
