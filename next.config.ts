@@ -48,11 +48,21 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  // Demos para prospectos: páginas estáticas en public/demo/<nombre>/. Sin esto,
+  // /demo/balderas no encontraría el index.html de su carpeta.
+  async rewrites() {
+    return [{ source: "/demo/balderas", destination: "/demo/balderas/index.html" }];
+  },
   async headers() {
     return [
       {
         source: "/(.*)",
         headers: securityHeaders,
+      },
+      {
+        // Demos compartidas con prospectos: no se indexan.
+        source: "/demo/:path*",
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
       },
       {
         // Panel interno: que ningún buscador lo indexe aunque encuentre el enlace.
