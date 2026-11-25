@@ -14,6 +14,11 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // El panel /admin/articulos lee content/articulos/ del disco en tiempo de ejecución:
+  // sin esto Vercel no incluye esos archivos en la función.
+  outputFileTracingIncludes: {
+    "/admin/articulos": ["./content/articulos/**/*"],
+  },
   /**
    * nasus.mx es el dominio principal; nasus.lat redirige conservando la ruta y la
    * query (propuestas, pagos y enlaces ya enviados siguen funcionando).
