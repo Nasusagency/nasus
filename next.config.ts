@@ -56,7 +56,10 @@ const nextConfig: NextConfig = {
   // Demos para prospectos: páginas estáticas en public/demo/<nombre>/. Sin esto,
   // /demo/balderas no encontraría el index.html de su carpeta.
   async rewrites() {
-    return [{ source: "/demo/balderas", destination: "/demo/balderas/index.html" }];
+    return [
+      { source: "/demo/balderas", destination: "/demo/balderas/index.html" },
+      { source: "/demo/balderas-b", destination: "/demo/balderas-b/index.html" },
+    ];
   },
   async headers() {
     return [

@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Balderas CNC — Propuesta B (demo)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:ital,wght@0,400;0,500;0,600&display=swap" rel="stylesheet">
+<style>
+  :root { --crema:#f6f0e4; --papel:#efe6d6; --tinta:#1d2a33; --muted:#5b6670; --pizarra:#4a6272; --pizarra-d:#38505f; --madera:#8a5a2b; --line:#ddd2bd; --blue:#2f6f9f; --serif:'Fraunces',Georgia,'Times New Roman',serif; --body:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif; }
+  * { box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  html, body { margin:0; background:var(--crema); color:var(--tinta); font-family:var(--body); font-size:16px; line-height:1.6; }
+  a { color:var(--pizarra-d); }
+  h1,h2,h3,h4 { font-family:var(--serif); font-weight:500; letter-spacing:-.01em; margin:0; }
+  .demo-bar { background:var(--tinta); color:#e9e2d2; font-size:12.5px; text-align:center; padding:7px 12px; }
+  .wrap { max-width:1100px; margin:0 auto; padding:0 20px; }
+  .ph { color:#9a5f12; }
+
+  /* navegación */
+  .nav { position:sticky; top:0; z-index:30; background:rgba(246,240,228,.96); border-bottom:1px solid var(--line); }
+  .nav .wrap { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:64px; }
+  .logo-t { font-family:var(--serif); font-size:22px; font-weight:600; color:var(--tinta); text-decoration:none; letter-spacing:.01em; }
+  .logo-t span { color:var(--madera); }
+  .links { list-style:none; margin:0; padding:0; display:none; gap:26px; align-items:center; font-size:15px; }
+  .links a { color:var(--tinta); text-decoration:none; }
+  .links a:hover { color:var(--madera); }
+  .burger { width:44px; height:44px; border:1px solid var(--line); background:#fff; border-radius:10px; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:5px; cursor:pointer; padding:0; }
+  .burger span { width:20px; height:2px; background:var(--tinta); transition:transform .2s, opacity .2s; }
+  .nav.abierto .burger span:nth-child(1) { transform:translateY(7px) rotate(45deg); }
+  .nav.abierto .burger span:nth-child(2) { opacity:0; }
+  .nav.abierto .burger span:nth-child(3) { transform:translateY(-7px) rotate(-45deg); }
+  .nav.abierto .links { display:flex; flex-direction:column; align-items:stretch; gap:0; position:absolute; left:0; right:0; top:100%; background:var(--crema); border-bottom:1px solid var(--line); padding:6px 20px 14px; }
+  .nav.abierto .links li a { display:block; padding:13px 0; border-bottom:1px solid var(--line); }
+  @media (min-width: 900px) { .burger { display:none; } .links { display:flex; } }
+
+  .pill { display:inline-block; background:var(--crema); color:var(--tinta); text-decoration:none; font-weight:600; font-size:15px; padding:13px 26px; border-radius:999px; border:0; cursor:pointer; }
+  .pill.osc { background:var(--pizarra-d); color:#fff; }
+  .pill:hover { filter:brightness(.96); }
+  .pill.osc:hover { background:var(--pizarra); filter:none; }
+
+  /* portada */
+  .hero { position:relative; min-height:min(78vh,640px); display:flex; align-items:center; justify-content:center; text-align:center; background:linear-gradient(135deg,#3a2c22 0%,#5d4431 55%,#7a5a3f 100%); color:#fbf6ea; overflow:hidden; }
+  .hero::after { content:"[Foto principal: mueble terminado de Balderas CNC]"; position:absolute; left:50%; bottom:16px; transform:translateX(-50%); font-size:12.5px; color:#f0cf8a; white-space:nowrap; max-width:92%; overflow:hidden; text-overflow:ellipsis; }
+  .hero .in { position:relative; padding:60px 20px 80px; max-width:760px; }
+  .hero h1 { font-size:clamp(38px,6.5vw,68px); line-height:1.05; margin:0 0 16px; }
+  .hero p { font-size:18px; margin:0 auto 28px; max-width:44ch; color:#efe4cd; }
+
+  section { padding:72px 0 0; scroll-margin-top:72px; }
+  .kick { font-size:13px; color:var(--madera); font-weight:600; letter-spacing:.04em; }
+  h2 { font-size:clamp(28px,4.4vw,42px); line-height:1.1; margin:8px 0 12px; }
+  .lead { color:var(--muted); max-width:56ch; margin:0 0 28px; font-size:17px; }
+
+  /* piezas */
+  .piezas { display:grid; grid-template-columns:repeat(2,1fr); gap:20px 16px; }
+  @media (min-width: 900px) { .piezas { grid-template-columns:repeat(4,1fr); } }
+  .ph-img { background:var(--papel); border:1px dashed #b9a98a; border-radius:12px; display:flex; align-items:center; justify-content:center; text-align:center; color:#9a5f12; font-size:13px; padding:10px; }
+  .pieza .ph-img { aspect-ratio:4/5; margin-bottom:10px; }
+  .pieza h3 { font-size:18px; font-family:var(--body); font-weight:600; letter-spacing:0; }
+  .pieza p { margin:2px 0 0; color:var(--muted); font-size:14px; }
+
+  /* visor */
+  .app { display:grid; gap:16px; grid-template-columns:1fr; }
+  @media (min-width: 1000px) { .app { grid-template-columns:1.5fr 1fr; align-items:start; } }
+  .stage { position:relative; border-radius:18px; overflow:hidden; background:radial-gradient(ellipse at 50% 35%, #ffffff 0%, #e4dccb 80%); border:1px solid var(--line); height:min(62vh,520px); min-height:300px; }
+  .stage.oscuro { background:radial-gradient(ellipse at 50% 35%, #2b3440 0%, #11151b 75%); }
+  canvas { display:block; width:100%; height:100%; touch-action:none; cursor:grab; }
+  canvas:active { cursor:grabbing; }
+  .hint { position:absolute; left:14px; bottom:12px; font-size:12px; color:#6b655a; pointer-events:none; }
+  .stage.oscuro .hint { color:#a9b2bf; }
+  .size { position:absolute; right:12px; bottom:10px; font-size:12.5px; color:var(--tinta); background:rgba(255,255,255,.88); border:1px solid var(--line); border-radius:8px; padding:5px 10px; font-variant-numeric:tabular-nums; }
+  .stage.oscuro .size { color:#eef1f6; background:rgba(0,0,0,.55); border-color:#2e3844; }
+  .autob { position:absolute; right:10px; top:10px; z-index:2; }
+  .panel { background:#fffaf0; border:1px solid var(--line); border-radius:18px; padding:18px; }
+  .panel h4 { font-family:var(--body); font-size:13px; font-weight:600; color:var(--madera); margin:0 0 10px; letter-spacing:.02em; }
+  .group { margin-bottom:18px; }
+  .row { display:flex; flex-wrap:wrap; gap:8px; }
+  .chip { border:1px solid #cfc3aa; background:#fff; color:var(--tinta); border-radius:999px; padding:8px 15px; font-family:var(--body); font-size:14px; font-weight:500; cursor:pointer; }
+  .chip[aria-pressed="true"] { border-color:var(--pizarra-d); background:var(--pizarra-d); color:#fff; }
+  .swatch { width:38px; height:38px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 0 1px #cfc3aa; cursor:pointer; padding:0; }
+  .swatch[aria-pressed="true"] { box-shadow:0 0 0 2px var(--pizarra-d); }
+  .swname { font-size:13px; color:var(--muted); margin-top:8px; min-height:16px; }
+  .slider { margin-bottom:12px; }
+  .slider label { display:flex; justify-content:space-between; font-size:14px; margin-bottom:4px; }
+  .slider output { color:var(--pizarra-d); font-weight:600; font-variant-numeric:tabular-nums; }
+  input[type=range] { width:100%; accent-color:#38505f; height:28px; }
+  .fallback { display:none; padding:24px; font-size:14px; color:var(--muted); }
+
+  /* LED */
+  .led { margin-top:72px; background:#161c23; color:#ece6d8; scroll-margin-top:72px; }
+  .led .wrap { padding-top:64px; padding-bottom:64px; display:grid; gap:28px; grid-template-columns:1fr; align-items:center; }
+  @media (min-width: 900px) { .led .wrap { grid-template-columns:1.1fr 1fr; } }
+  .led .kick { color:#e2b36a; }
+  .led h2 { color:#fbf6ea; }
+  .led p { color:#b9b3a6; margin:0; }
+  .led-actions { display:flex; flex-direction:column; gap:10px; }
+  .led-actions button { text-align:left; background:#1f2730; border:1px solid #2f3a47; border-radius:14px; color:#ece6d8; padding:16px 18px; cursor:pointer; font-family:var(--body); font-size:14px; }
+  .led-actions button:hover { border-color:#e2b36a; }
+  .led-actions strong { display:block; font-family:var(--serif); font-weight:500; font-size:19px; margin-bottom:2px; color:#fbf6ea; }
+  .led-actions span { color:#b9b3a6; }
+
+  /* servicios */
+  .lista { border-top:1px solid var(--line); }
+  .lista .fila { display:grid; grid-template-columns:76px 1fr; gap:6px 16px; padding:18px 0; border-bottom:1px solid var(--line); align-items:center; }
+  @media (min-width: 760px) { .lista .fila { grid-template-columns:96px 220px 1fr; gap:6px 24px; } }
+  .lista .ph-img { width:76px; height:76px; font-size:10px; padding:4px; }
+  @media (min-width: 760px) { .lista .ph-img { width:96px; height:80px; } }
+  .lista h3 { font-size:21px; }
+  .lista p { margin:0; color:var(--muted); grid-column:2; }
+  @media (min-width: 760px) { .lista p { grid-column:auto; } }
+
+  /* nosotros / proyectos */
+  .dos { display:grid; gap:28px; grid-template-columns:1fr; align-items:center; }
+  @media (min-width: 900px) { .dos { grid-template-columns:1fr 1fr; gap:48px; } }
+  .dos .ph-img { aspect-ratio:4/5; }
+  .dos p { color:var(--muted); font-size:17px; margin:0 0 14px; max-width:52ch; }
+  .gal { display:grid; gap:14px; grid-template-columns:repeat(2,1fr); }
+  @media (min-width: 760px) { .gal { grid-template-columns:repeat(3,1fr); } }
+  .gal .ph-img { aspect-ratio:1/1; }
+
+  /* contacto */
+  .final { margin-top:72px; background:var(--pizarra-d); color:#f3ecdc; text-align:center; padding:72px 20px; scroll-margin-top:72px; }
+  .final h2 { color:#fbf6ea; }
+  .final p { margin:0 auto 24px; color:#d6d9d6; max-width:46ch; }
+  .final .cta { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; }
+  .final .redes { margin-top:18px; font-size:14px; color:#cfd6d9; }
+  .final .ph { color:#f0cf8a; }
+  footer { background:#11161b; color:#a9a39a; padding:34px 20px 44px; text-align:center; font-size:13px; }
+  footer img { display:block; width:210px; max-width:60%; margin:0 auto 14px; border-radius:10px; }
+  footer a { color:#d6c08c; }
+</style>
+</head>
+<body>
+<div class="demo-bar">Propuesta B · demo hecha por Nasus · textos, fotos y piezas de ejemplo</div>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="logo-t" href="#inicio">Balderas <span>CNC</span></a>
+    <ul class="links" id="menu">
+      <li><a href="#catalogo">Catálogo 3D</a></li>
+      <li><a href="#led">Espejos y LED</a></li>
+      <li><a href="#servicios">Servicios</a></li>
+      <li><a href="#nosotros">Nosotros</a></li>
+      <li><a href="#proyectos">Proyectos</a></li>
+      <li><a class="pill osc" href="#contacto">Cotizar</a></li>
+    </ul>
+    <button class="burger" id="burger" aria-expanded="false" aria-controls="menu" aria-label="Abrir menú"><span></span><span></span><span></span></button>
+  </div>
+</header>
+
+<main>
+
+<div class="hero" id="inicio">
+  <div class="in">
+    <h1>Muebles a medida, hechos con precisión.</h1>
+    <p>Diseñamos tus ideas, fabricamos tus sueños.</p>
+    <a class="pill" href="#catalogo">Ver catálogo 3D</a>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <section id="catalogo">
+    <div class="kick">Catálogo 3D</div>
+    <h2>Mira tu mueble antes de fabricarlo</h2>
+    <p class="lead">Gira la pieza, cambia el acabado y mueve las medidas. Así decides con claridad y recibes una cotización más precisa.</p>
+    <div class="app">
+      <div class="stage" id="stage">
+        <canvas id="c" aria-label="Vista 3D del mueble. Arrastra para girar."></canvas>
+        <button class="chip autob" id="auto" aria-pressed="true">Girar solo</button>
+        <div class="size" id="size">—</div>
+        <div class="hint">Arrastra para girar · pellizca para acercar</div>
+        <div class="fallback" id="fallback">No se pudo cargar el visor 3D en este navegador.</div>
+      </div>
+      <div class="panel">
+        <div class="group"><h4>Mueble</h4><div class="row" id="tipos"></div></div>
+        <div class="group"><h4 id="titColor">Acabado</h4><div class="row" id="colores"></div><div class="swname" id="swname"></div></div>
+        <div class="group" id="grpTexto" style="display:none"><h4>Texto del letrero</h4><input id="texto" type="text" maxlength="18" value="Hola" aria-label="Texto del letrero" style="width:100%;padding:10px 12px;border:1px solid #cfc3aa;background:#fff;color:var(--tinta);font-size:16px;font-family:var(--body);border-radius:10px"></div>
+        <div class="group"><h4>Medidas</h4><div id="sliders"></div></div>
+        <a class="pill osc" href="#contacto" style="display:block;text-align:center">Cotizar esta pieza</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="piezas">
+    <div class="kick">Piezas destacadas</div>
+    <h2>Hechas en nuestro taller</h2>
+    <p class="lead">Aquí van las fotos reales de sus muebles terminados.</p>
+    <div class="piezas">
+      <div class="pieza"><div class="ph-img">[Foto]</div><h3>Recibidor</h3><p>A la medida del acceso</p></div>
+      <div class="pieza"><div class="ph-img">[Foto]</div><h3>Cocina</h3><p>Integral, acabado moderno</p></div>
+      <div class="pieza"><div class="ph-img">[Foto]</div><h3>Closet</h3><p>Aprovecha cada centímetro</p></div>
+      <div class="pieza"><div class="ph-img">[Foto]</div><h3>Mesa</h3><p>Madera con veta natural</p></div>
+    </div>
+  </section>
+
+</div>
+
+<div class="led" id="led">
+  <div class="wrap">
+    <div>
+      <div class="kick">Espejos y letreros LED</div>
+      <h2>El espejo con luz que todos quieren para sus fotos</h2>
+      <p>Diseñamos letreros y espejos con luz LED, trabajados con máquina láser de CO₂. Elige la luz, escribe tu texto y míralo en 3D.</p>
+    </div>
+    <div class="led-actions">
+      <button data-tipo="espejo"><strong>Espejo con LED</strong><span>El clásico para tomarse fotos, en el color de luz que elijas. Verlo en 3D →</span></button>
+      <button data-tipo="letrero"><strong>Letrero LED con tu texto</strong><span>Tu nombre, tu negocio o una frase, con efecto neón. Probarlo →</span></button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <section id="servicios">
+    <div class="kick">Servicios</div>
+    <h2>Lo que hacemos</h2>
+    <p class="lead">Ejemplos de categorías. En el sitio final van las que Balderas CNC realmente ofrece.</p>
+    <div class="lista">
+      <div class="fila"><div class="ph-img">[Foto]</div><h3>Muebles a medida</h3><p>Recibidores, mesas, repisas y más, diseñados para tu espacio.</p></div>
+      <div class="fila"><div class="ph-img">[Foto]</div><h3>Cocinas y closets</h3><p>Integrales, con acabados modernos y aprovechamiento del espacio.</p></div>
+      <div class="fila"><div class="ph-img">[Foto]</div><h3>Corte y grabado CNC</h3><p>Piezas, paneles y detalles con precisión de máquina.</p></div>
+      <div class="fila"><div class="ph-img">[Foto]</div><h3>Letreros y espejos LED</h3><p>Hechos con láser de CO₂, con la luz que elijas.</p></div>
+    </div>
+  </section>
+
+  <section id="nosotros">
+    <div class="dos">
+      <div class="ph-img">[Foto del taller o del equipo]</div>
+      <div>
+        <div class="kick">Nosotros</div>
+        <h2>Diseño y fabricación en un solo lugar</h2>
+        <p>Aquí va la historia de Balderas CNC en pocas líneas: quiénes son, cuánto tiempo llevan fabricando y qué los distingue.</p>
+        <p class="ph">[Texto de Balderas CNC]</p>
+        <a class="pill osc" href="#contacto">Hablemos de tu proyecto</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="proyectos">
+    <div class="kick">Proyectos</div>
+    <h2>Trabajos recientes</h2>
+    <p class="lead">Fotos reales de muebles terminados y de sus redes.</p>
+    <div class="gal">
+      <div class="ph-img">[Foto]</div><div class="ph-img">[Foto]</div><div class="ph-img">[Foto]</div>
+      <div class="ph-img">[Foto]</div><div class="ph-img">[Foto]</div><div class="ph-img">[Foto]</div>
+    </div>
+  </section>
+
+</div>
+
+<div class="final" id="contacto">
+  <h2>¿Tienes un proyecto en mente?</h2>
+  <p>Cuéntanos qué mueble quieres y te cotizamos.</p>
+  <div class="cta">
+    <a class="pill" href="#contacto">Cotizar por WhatsApp <span class="ph">[número]</span></a>
+    <a class="pill" href="#contacto" style="background:transparent;color:#f3ecdc;border:1px solid #9fb2bd">Llamar <span class="ph">[teléfono]</span></a>
+  </div>
+  <div class="redes">Síguenos: <span class="ph">[TikTok]</span> · <span class="ph">[Instagram]</span> · <span class="ph">[Facebook]</span></div>
+</div>
+
+</main>
+
+<footer>
+  <img src="/demo/balderas/logo.jpg" alt="Balderas CNC: diseñamos tus ideas, fabricamos tus sueños">
+  Demo desarrollada por <a href="https://nasus.mx">Nasus</a>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+  "use strict";
+  if (typeof THREE === "undefined") { document.getElementById("fallback").style.display = "block"; return; }
+
+  var TIPOS = {
+    recibidor: { nombre: "Recibidor", dims: { l: ["Largo", 60, 200, 120], a: ["Fondo", 20, 45, 30], h: ["Alto de montaje", 60, 110, 85] } },
+    espejo: { nombre: "Espejo LED", led: true, dims: { l: ["Ancho", 50, 120, 70], a: ["Alto", 100, 220, 170] } },
+    letrero: { nombre: "Letrero LED", led: true, texto: true, dims: { l: ["Largo", 40, 200, 100], a: ["Alto", 15, 80, 35] } },
+    mesa:   { nombre: "Mesa",   dims: { l: ["Largo", 80, 240, 160], a: ["Ancho", 50, 120, 90],  h: ["Alto", 60, 110, 75]  } },
+    repisa: { nombre: "Repisa", dims: { l: ["Largo", 40, 200, 100], a: ["Fondo", 20, 60, 30],   h: ["Alto", 60, 240, 180] } },
+    banco:  { nombre: "Banco",  dims: { l: ["Largo", 30, 60, 40],   a: ["Ancho", 30, 60, 40],  h: ["Alto", 30, 80, 45]   } }
+  };
+  var COLORES = [
+    ["Nogal", "#6b4423", "madera"], ["Roble", "#b98a4e", "madera"], ["Blanco hueso", "#ece8e1", "liso"],
+    ["Negro", "#262626", "liso"], ["Mármol claro", "#e3dfd8", "marmol"], ["Gris humo", "#8a8d91", "liso"]
+  ];
+
+  var LED_COLORES = [
+    ["Blanco cálido", "#ffd9a0"], ["Blanco frío", "#dfeaff"], ["Azul", "#4aa3ff"],
+    ["Rosa", "#ff5fa8"], ["Verde", "#4dff9a"], ["Ámbar", "#ffa733"]
+  ];
+  var state = { tipo: "espejo", color: 0, led: 0, texto: "Hola", auto: true, valores: {} };
+  Object.keys(TIPOS).forEach(function (k) {
+    state.valores[k] = {};
+    Object.keys(TIPOS[k].dims).forEach(function (d) { state.valores[k][d] = TIPOS[k].dims[d][3]; });
+  });
+
+  // ---------- Escena ----------
+  var canvas = document.getElementById("c");
+  var stage = document.getElementById("stage");
+  var renderer;
+  try { renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true }); }
+  catch (e) { document.getElementById("fallback").style.display = "block"; return; }
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+  var scene = new THREE.Scene();
+  var camera = new THREE.PerspectiveCamera(38, 1, 0.1, 50);
+
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x3a3a44, 0.85));
+  var sun = new THREE.DirectionalLight(0xffffff, 0.9);
+  sun.position.set(2.5, 4, 2.5);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(1024, 1024);
+  sun.shadow.camera.left = -3; sun.shadow.camera.right = 3; sun.shadow.camera.top = 3; sun.shadow.camera.bottom = -3;
+  sun.shadow.camera.near = 0.5; sun.shadow.camera.far = 12;
+  scene.add(sun);
+
+  var floor = new THREE.Mesh(new THREE.CircleGeometry(4, 64), new THREE.ShadowMaterial({ opacity: 0.35 }));
+  floor.rotation.x = -Math.PI / 2;
+  floor.receiveShadow = true;
+  scene.add(floor);
+  var ring = new THREE.Mesh(new THREE.RingGeometry(1.45, 1.47, 96), new THREE.MeshBasicMaterial({ color: 0x3a3a46, side: THREE.DoubleSide }));
+  ring.rotation.x = -Math.PI / 2; ring.position.y = 0.001;
+  scene.add(ring);
+
+  var holder = new THREE.Group();
+  scene.add(holder);
+
+  var material = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.6, metalness: 0.03 });
+
+  // ---------- Texturas de acabado (generadas; se sustituyen por fotos reales de sus acabados) ----------
+  function azar(seed) { return function () { seed |= 0; seed = seed + 0x6D2B79F5 | 0; var t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  function sombrear(hex, k) {
+    var n = parseInt(hex.slice(1), 16), r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+    function f(v) { return Math.max(0, Math.min(255, Math.round(k >= 0 ? v + (255 - v) * k : v * (1 + k)))); }
+    return "rgb(" + f(r) + "," + f(g) + "," + f(b) + ")";
+  }
+  function texAcabado(c, idx) {
+    var cv = document.createElement("canvas"); cv.width = 512; cv.height = 512;
+    var x = cv.getContext("2d"), rnd = azar(100 + idx * 37), base = c[1], tipo = c[2], i, j;
+    x.fillStyle = tipo === "madera" ? sombrear(base, 0.3) : base; x.fillRect(0, 0, 512, 512);
+    if (tipo === "madera") {
+      for (i = 0; i < 150; i++) {
+        var y0 = rnd() * 512, a = 6 + rnd() * 18, f = 0.01 + rnd() * 0.02, ph = rnd() * 6.28;
+        x.strokeStyle = sombrear(base, rnd() < 0.7 ? -0.32 : 0.18); x.globalAlpha = 0.07 + rnd() * 0.18; x.lineWidth = 0.6 + rnd() * 2.2;
+        x.beginPath();
+        for (j = 0; j <= 512; j += 8) { var yy = y0 + Math.sin(j * f + ph) * a * 0.25 + Math.sin(j * f * 2.3 + ph) * 1.5; if (j === 0) x.moveTo(j, yy); else x.lineTo(j, yy); }
+        x.stroke();
+      }
+      for (i = 0; i < 4; i++) { // nudos suaves
+        var cx = rnd() * 512, cy = rnd() * 512, g = x.createRadialGradient(cx, cy, 1, cx, cy, 18 + rnd() * 14);
+        g.addColorStop(0, "rgba(40,22,8,0.35)"); g.addColorStop(1, "rgba(40,22,8,0)");
+        x.globalAlpha = 1; x.fillStyle = g; x.fillRect(cx - 40, cy - 40, 80, 80);
+      }
+    } else if (tipo === "marmol") {
+      x.lineCap = "round";
+      for (i = 0; i < 9; i++) {
+        var px = rnd() * 512, py = rnd() * 512;
+        x.strokeStyle = rnd() < 0.7 ? "#9aa0a8" : "#b8985a"; x.globalAlpha = 0.25 + rnd() * 0.35; x.lineWidth = 0.8 + rnd() * 2.2;
+        x.shadowColor = x.strokeStyle; x.shadowBlur = 4;
+        x.beginPath(); x.moveTo(px, py);
+        for (j = 0; j < 9; j++) { px += (rnd() - 0.35) * 90; py += (rnd() - 0.5) * 70; x.lineTo(px, py); }
+        x.stroke();
+      }
+      x.shadowBlur = 0;
+    } else {
+      for (i = 0; i < 2500; i++) { x.fillStyle = rnd() < 0.5 ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.06)"; x.fillRect(rnd() * 512, rnd() * 512, 2, 2); }
+    }
+    x.globalAlpha = 1;
+    var t = new THREE.CanvasTexture(cv);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    if (THREE.sRGBEncoding) t.encoding = THREE.sRGBEncoding;
+    if (renderer.capabilities && renderer.capabilities.getMaxAnisotropy) t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+    return t;
+  }
+  var texCache = {};
+  function aplicarColor(i) {
+    if (!texCache[i]) texCache[i] = texAcabado(COLORES[i], i);
+    material.map = texCache[i]; material.color.set(0xffffff); material.needsUpdate = true;
+  }
+
+  // ---------- Construcción paramétrica (medidas en cm, escena en metros) ----------
+  var S = 0.01;
+  function box(parent, w, h, d, x, y, z) {
+    var geo = new THREE.BoxGeometry(w * S, h * S, d * S), uv = geo.attributes.uv, vert = h >= Math.max(w, d), T = 100;
+    // caras en orden: +x, -x, +y, -y, +z, -z; la veta corre a lo largo de la pieza (vertical en patas)
+    var dims = [[d, h], [d, h], [w, d], [w, d], [w, h], [w, h]];
+    for (var f = 0; f < 6; f++) {
+      var du = dims[f][0] / T, dv = dims[f][1] / T;
+      if (vert && f !== 2 && f !== 3) { var tmp = du; du = dv; dv = tmp; }
+      for (var q = 0; q < 4; q++) {
+        var k = f * 4 + q, ux = uv.getX(k), vy = uv.getY(k);
+        if (vert && f !== 2 && f !== 3) uv.setXY(k, vy * du, ux * dv); else uv.setXY(k, ux * du, vy * dv);
+      }
+    }
+    var m = new THREE.Mesh(geo, material);
+    m.position.set(x * S, y * S, z * S);
+    m.castShadow = true; m.receiveShadow = true;
+    parent.add(m);
+  }
+  function limpiar() {
+    holder.traverse(function (o) {
+      if (o.geometry) o.geometry.dispose();
+      if (o.material && o.material !== material) {
+        if (o.material.map) o.material.map.dispose();
+        o.material.dispose();
+      }
+    });
+    while (holder.children.length) holder.remove(holder.children[0]);
+  }
+  function arco(w, h, y0) {
+    var r = w / 2, sh = new THREE.Shape();
+    sh.moveTo(-r, y0); sh.lineTo(r, y0); sh.lineTo(r, y0 + h - r);
+    sh.absarc(0, y0 + h - r, r, 0, Math.PI, false);
+    sh.lineTo(-r, y0);
+    return sh;
+  }
+  function anillo(wo, ho, yo, wi, hi, yi) {
+    var o = arco(wo, ho, yo); o.holes.push(arco(wi, hi, yi));
+    return new THREE.ShapeGeometry(o, 24);
+  }
+  function normUV(geo) {
+    geo.computeBoundingBox();
+    var b = geo.boundingBox, uv = geo.attributes.uv, pos = geo.attributes.position;
+    for (var i = 0; i < uv.count; i++) {
+      uv.setXY(i, (pos.getX(i) - b.min.x) / (b.max.x - b.min.x), (pos.getY(i) - b.min.y) / (b.max.y - b.min.y));
+    }
+  }
+  function texEspejo() {
+    var c = document.createElement("canvas"); c.width = 256; c.height = 512;
+    var x = c.getContext("2d"), g = x.createLinearGradient(0, 0, 256, 512);
+    g.addColorStop(0, "#dbe4ee"); g.addColorStop(0.45, "#8e9bab"); g.addColorStop(1, "#566170");
+    x.fillStyle = g; x.fillRect(0, 0, 256, 512);
+    x.fillStyle = "rgba(255,255,255,0.24)";
+    x.beginPath(); x.moveTo(40, 0); x.lineTo(120, 0); x.lineTo(0, 300); x.lineTo(0, 190); x.closePath(); x.fill();
+    x.fillStyle = "rgba(255,255,255,0.12)";
+    x.beginPath(); x.moveTo(170, 0); x.lineTo(200, 0); x.lineTo(40, 420); x.lineTo(10, 420); x.closePath(); x.fill();
+    return new THREE.CanvasTexture(c);
+  }
+  function texLetrero(w, h, col, texto) {
+    var cw = 1024, ch = Math.max(128, Math.round(1024 * h / w));
+    var c = document.createElement("canvas"); c.width = cw; c.height = ch;
+    var x = c.getContext("2d"), t = (texto || " ");
+    var fs = ch * 0.62;
+    x.font = "700 " + fs + "px system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
+    while (x.measureText(t).width > cw * 0.9 && fs > 12) { fs -= 4; x.font = "700 " + fs + "px system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"; }
+    x.textAlign = "center"; x.textBaseline = "middle"; x.lineJoin = "round";
+    x.strokeStyle = col; x.shadowColor = col; x.shadowBlur = fs * 0.4; x.lineWidth = fs * 0.07;
+    x.strokeText(t, cw / 2, ch / 2); x.strokeText(t, cw / 2, ch / 2); x.strokeText(t, cw / 2, ch / 2);
+    x.shadowBlur = 0; x.lineWidth = fs * 0.025; x.strokeStyle = "#ffffff"; x.globalAlpha = 0.9;
+    x.strokeText(t, cw / 2, ch / 2);
+    return new THREE.CanvasTexture(c);
+  }
+  function construirLed(v) {
+    var col = LED_COLORES[state.led][1], gr = new THREE.Group(), W = v.l, Hh = v.a, lbl;
+    gr.scale.setScalar(S); holder.add(gr);
+    var dark = new THREE.MeshStandardMaterial({ color: 0x1b1d23, roughness: 0.7, metalness: 0.1 });
+    if (state.tipo === "espejo") {
+      var g = 2.4, y0 = 6 + 9 + g;
+      var pw = W + 2 * g + 18, ph = Hh + 2 * g + 18;
+      var panel = new THREE.Mesh(new THREE.ExtrudeGeometry(arco(pw, ph, 6), { depth: 3, bevelEnabled: false, curveSegments: 24 }), dark);
+      panel.castShadow = true; panel.receiveShadow = true; gr.add(panel);
+      var cara = new THREE.ShapeGeometry(arco(W, Hh, y0), 24); normUV(cara);
+      var espejo = new THREE.Mesh(cara, new THREE.MeshBasicMaterial({ map: texEspejo() }));
+      espejo.position.z = 3.05; gr.add(espejo);
+      var led = new THREE.Mesh(anillo(W + 2 * g, Hh + 2 * g, y0 - g, W, Hh, y0), new THREE.MeshBasicMaterial({ color: col }));
+      led.position.z = 3.1; gr.add(led);
+      [[3.5, 0.26], [7, 0.13], [10.5, 0.06]].forEach(function (e, i) {
+        var d = e[0];
+        var halo = new THREE.Mesh(
+          anillo(W + 2 * (g + d), Hh + 2 * (g + d), y0 - g - d, W + 2 * g, Hh + 2 * g, y0 - g),
+          new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: e[1], blending: THREE.AdditiveBlending, depthWrite: false }));
+        halo.position.z = 3.12 + i * 0.01; gr.add(halo);
+      });
+      [-1, 1].forEach(function (sg) {
+        var pie = new THREE.Mesh(new THREE.BoxGeometry(34, 3, 22), dark);
+        pie.position.set(sg * W * 0.28, 1.5, 9); pie.castShadow = true; gr.add(pie);
+      });
+      lbl = W + " × " + Hh + " cm  (ancho × alto)";
+      cam.rTarget = Math.max(1.6, Math.sqrt(W * W + Hh * Hh) * S * 2.1);
+      cam.yTarget = (Hh / 2 + 17) * S;
+    } else {
+      var y1 = 95;
+      var placa = new THREE.Mesh(new THREE.BoxGeometry(W, Hh, 1.2), dark);
+      placa.position.set(0, y1 + Hh / 2, 0); placa.castShadow = true; placa.receiveShadow = true; gr.add(placa);
+      var tx = new THREE.Mesh(new THREE.PlaneGeometry(W - 6, Hh - 6),
+        new THREE.MeshBasicMaterial({ map: texLetrero(W - 6, Hh - 6, col, state.texto), transparent: true, depthWrite: false }));
+      tx.position.set(0, y1 + Hh / 2, 0.7); gr.add(tx);
+      lbl = W + " × " + Hh + " cm  (largo × alto)";
+      cam.rTarget = Math.max(1.4, Math.sqrt(W * W + Hh * Hh) * S * 2.3);
+      cam.yTarget = (y1 + Hh / 2) * S;
+    }
+    document.getElementById("size").textContent = lbl;
+  }
+  function construir() {
+    limpiar();
+    var v = state.valores[state.tipo], L = v.l, A = v.a, H = v.h;
+    if (TIPOS[state.tipo].led) { construirLed(v); return; }
+    if (state.tipo === "recibidor") {
+      var gt = 4, cajon = 14;
+      box(holder, L + 12, H + 45, 2, 0, (H + 45) / 2, -(A / 2 + 1));
+      box(holder, L, gt, A, 0, H - gt / 2, 0);
+      box(holder, L - 2, cajon, A - 2, 0, H - gt - cajon / 2, 0);
+      box(holder, 18, 1.5, 1.5, 0, H - gt - cajon / 2, A / 2 - 0.2);
+    } else if (state.tipo === "mesa") {
+      var t = 4, pata = 6, ins = 5;
+      box(holder, L, t, A, 0, H - t / 2, 0);
+      var px = L / 2 - ins - pata / 2, pz = A / 2 - ins - pata / 2, ph = H - t;
+      [[1, 1], [1, -1], [-1, 1], [-1, -1]].forEach(function (s) { box(holder, pata, ph, pata, s[0] * px, ph / 2, s[1] * pz); });
+      box(holder, L - 2 * (ins + pata), 6, 2, 0, H - t - 3, pz);
+      box(holder, L - 2 * (ins + pata), 6, 2, 0, H - t - 3, -pz);
+    } else if (state.tipo === "repisa") {
+      var e = 2.5, n = Math.max(2, Math.min(6, Math.round(H / 45)));
+      box(holder, e, H, A, -(L / 2 - e / 2), H / 2, 0);
+      box(holder, e, H, A, (L / 2 - e / 2), H / 2, 0);
+      box(holder, L - 2 * e, H, 0.8, 0, H / 2, -(A / 2 - 0.4));
+      for (var i = 0; i < n; i++) {
+        var y = (i === n - 1) ? H - e / 2 : 6 + i * ((H - e - 6) / (n - 1));
+        box(holder, L - 2 * e, e, A - 0.8, 0, y, 0.4);
+      }
+    } else {
+      var ts = 3, pt = 4, ii = 3;
+      box(holder, L, ts, A, 0, H - ts / 2, 0);
+      var bx = L / 2 - ii - pt / 2, bz = A / 2 - ii - pt / 2, bh = H - ts;
+      [[1, 1], [1, -1], [-1, 1], [-1, -1]].forEach(function (s) { box(holder, pt, bh, pt, s[0] * bx, bh / 2, s[1] * bz); });
+      box(holder, L - 2 * (ii + pt), 2, 2, 0, bh * 0.35, bz);
+      box(holder, L - 2 * (ii + pt), 2, 2, 0, bh * 0.35, -bz);
+    }
+    document.getElementById("size").textContent = L + " × " + A + " × " + H + " cm  (largo × " + TIPOS[state.tipo].dims.a[0].toLowerCase() + " × alto)";
+    // encuadre: la distancia depende del tamaño de la pieza
+    var diag = Math.sqrt(L * L + A * A + H * H) * S;
+    cam.rTarget = Math.max(1.6, diag * 2.1);
+    cam.yTarget = H * S * 0.5;
+  }
+
+  // ---------- Cámara orbital ----------
+  var cam = { theta: 0.7, phi: 1.05, r: 3.4, rTarget: 3.4, yTarget: 0.4, y: 0.4 };
+  function ponerCamara() {
+    cam.r += (cam.rTarget - cam.r) * 0.12;
+    cam.y += (cam.yTarget - cam.y) * 0.12;
+    camera.position.set(
+      cam.r * Math.sin(cam.phi) * Math.sin(cam.theta),
+      cam.y + cam.r * Math.cos(cam.phi),
+      cam.r * Math.sin(cam.phi) * Math.cos(cam.theta)
+    );
+    camera.lookAt(0, cam.y, 0);
+  }
+
+  var punteros = {}, distPrev = 0, arrastrando = false;
+  canvas.addEventListener("pointerdown", function (e) {
+    canvas.setPointerCapture(e.pointerId);
+    punteros[e.pointerId] = { x: e.clientX, y: e.clientY };
+    arrastrando = true;
+  });
+  canvas.addEventListener("pointermove", function (e) {
+    var p = punteros[e.pointerId]; if (!p) return;
+    var ids = Object.keys(punteros);
+    if (ids.length === 2) {
+      punteros[e.pointerId] = { x: e.clientX, y: e.clientY };
+      var a = punteros[ids[0]], b = punteros[ids[1]];
+      var d = Math.hypot(a.x - b.x, a.y - b.y);
+      if (distPrev) cam.rTarget = Math.min(9, Math.max(0.8, cam.rTarget * (distPrev / d)));
+      distPrev = d;
+      return;
+    }
+    cam.theta -= (e.clientX - p.x) * 0.008;
+    cam.phi = Math.min(1.5, Math.max(0.2, cam.phi - (e.clientY - p.y) * 0.006));
+    punteros[e.pointerId] = { x: e.clientX, y: e.clientY };
+  });
+  function soltar(e) { delete punteros[e.pointerId]; distPrev = 0; if (!Object.keys(punteros).length) arrastrando = false; }
+  canvas.addEventListener("pointerup", soltar);
+  canvas.addEventListener("pointercancel", soltar);
+  canvas.addEventListener("wheel", function (e) {
+    e.preventDefault();
+    cam.rTarget = Math.min(9, Math.max(0.8, cam.rTarget * (1 + e.deltaY * 0.001)));
+  }, { passive: false });
+
+  // ---------- Controles ----------
+  function pintarTipos() {
+    var cont = document.getElementById("tipos"); cont.innerHTML = "";
+    Object.keys(TIPOS).forEach(function (k) {
+      var b = document.createElement("button");
+      b.className = "chip"; b.textContent = TIPOS[k].nombre; b.setAttribute("aria-pressed", String(k === state.tipo));
+      b.addEventListener("click", function () { elegirTipo(k); });
+      cont.appendChild(b);
+    });
+  }
+  function elegirTipo(k) { state.tipo = k; pintarTipos(); pintarColores(); pintarSliders(); construir(); ajustarPanel(); }
+  function ajustarPanel() {
+    var t = TIPOS[state.tipo];
+    document.getElementById("titColor").textContent = t.led ? "Luz LED" : "Acabado";
+    document.getElementById("grpTexto").style.display = t.texto ? "block" : "none";
+    stage.classList.toggle("oscuro", !!t.led);
+    ring.material.color.set(t.led ? 0x3a3a46 : 0xaeb5c1);
+    floor.material.opacity = t.led ? 0.35 : 0.22;
+  }
+  function pintarColores() {
+    var cont = document.getElementById("colores"); cont.innerHTML = "";
+    var led = !!TIPOS[state.tipo].led, lista = led ? LED_COLORES : COLORES, sel = led ? state.led : state.color;
+    lista.forEach(function (c, i) {
+      var b = document.createElement("button");
+      b.className = "swatch"; b.style.background = c[1]; b.title = c[0]; b.setAttribute("aria-label", c[0]);
+      b.setAttribute("aria-pressed", String(i === sel));
+      b.addEventListener("click", function () {
+        if (led) { state.led = i; construir(); } else { state.color = i; aplicarColor(i); }
+        pintarColores();
+      });
+      cont.appendChild(b);
+    });
+    document.getElementById("swname").textContent = lista[sel][0];
+  }
+  function pintarSliders() {
+    var cont = document.getElementById("sliders"); cont.innerHTML = "";
+    var dims = TIPOS[state.tipo].dims;
+    Object.keys(dims).forEach(function (k) {
+      var d = dims[k], wrap = document.createElement("div");
+      wrap.className = "slider";
+      var id = "s-" + k;
+      wrap.innerHTML = '<label for="' + id + '"><span>' + d[0] + '</span><output id="o-' + k + '">' + state.valores[state.tipo][k] + ' cm</output></label>' +
+        '<input id="' + id + '" type="range" min="' + d[1] + '" max="' + d[2] + '" step="1" value="' + state.valores[state.tipo][k] + '">';
+      cont.appendChild(wrap);
+      wrap.querySelector("input").addEventListener("input", function (e) {
+        state.valores[state.tipo][k] = Number(e.target.value);
+        document.getElementById("o-" + k).textContent = e.target.value + " cm";
+        construir();
+      });
+    });
+  }
+  document.getElementById("texto").addEventListener("input", function (e) {
+    state.texto = e.target.value || " ";
+    if (state.tipo === "letrero") construir();
+  });
+  Array.prototype.forEach.call(document.querySelectorAll("[data-tipo]"), function (el) {
+    el.addEventListener("click", function () { elegirTipo(el.getAttribute("data-tipo")); document.getElementById("catalogo").scrollIntoView({ behavior: "smooth" }); });
+  });
+  var autoBtn = document.getElementById("auto");
+  autoBtn.addEventListener("click", function () { state.auto = !state.auto; autoBtn.setAttribute("aria-pressed", String(state.auto)); });
+
+  // ---------- Tamaño y bucle ----------
+  function ajustar() {
+    var w = stage.clientWidth, h = stage.clientHeight;
+    if (!w || !h) return;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h; camera.updateProjectionMatrix();
+  }
+  if (window.ResizeObserver) new ResizeObserver(ajustar).observe(stage); else window.addEventListener("resize", ajustar);
+
+  function loop() {
+    if (state.auto && !arrastrando) cam.theta += 0.003;
+    ponerCamara();
+    renderer.render(scene, camera);
+    requestAnimationFrame(loop);
+  }
+
+  aplicarColor(0);
+  pintarTipos(); pintarColores(); pintarSliders(); construir(); ajustarPanel(); ajustar(); loop();
+})();
+</script>
+<script>
+(function () {
+  var nav = document.querySelector(".nav"), b = document.getElementById("burger");
+  if (!nav || !b) return;
+  function cerrar() { nav.classList.remove("abierto"); b.setAttribute("aria-expanded", "false"); b.setAttribute("aria-label", "Abrir menú"); }
+  b.addEventListener("click", function () {
+    var abierto = nav.classList.toggle("abierto");
+    b.setAttribute("aria-expanded", String(abierto)); b.setAttribute("aria-label", abierto ? "Cerrar menú" : "Abrir menú");
+  });
+  Array.prototype.forEach.call(document.querySelectorAll(".links a"), function (a) { a.addEventListener("click", cerrar); });
+})();
+</script>
+</body>
+</html>
