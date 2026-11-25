@@ -1,6 +1,6 @@
 [
   { "palabra_clave": "agente de WhatsApp con IA para empresas", "enfoque": "Qué es, qué hace distinto a un chatbot de menú y cuándo conviene a una empresa mediana.", "enlazar": ["/atencion-y-ventas/whatsapp-prospectos", "/casos/whatsapp-assistant"], "hecho": true },
-  { "palabra_clave": "cómo automatizar la atención al cliente por WhatsApp", "enfoque": "Pasos prácticos: qué automatizar primero, cuándo pasar a una persona.", "enlazar": ["/atencion-y-ventas/paso-a-humano", "/automatizacion/flujos-de-trabajo"], "hecho": false },
+  { "palabra_clave": "cómo automatizar la atención al cliente por WhatsApp", "enfoque": "Pasos prácticos: qué automatizar primero, cuándo pasar a una persona.", "enlazar": ["/atencion-y-ventas/paso-a-humano", "/automatizacion/flujos-de-trabajo"], "hecho": true },
   { "palabra_clave": "CRM con inteligencia artificial para pymes", "enfoque": "Qué cambia cuando el CRM se actualiza solo con cada conversación.", "enlazar": ["/atencion-y-ventas/crm-agentic"], "hecho": false },
   { "palabra_clave": "cómo saber qué campaña trajo a cada cliente", "enfoque": "Atribución de campañas de Google Ads y Meta hasta el prospecto en WhatsApp.", "enlazar": ["/automatizacion/captacion-y-atribucion"], "hecho": false },
   { "palabra_clave": "extraer facturas de Google Ads y Meta Ads a Excel", "enfoque": "El problema de conciliar facturas de publicidad y cómo se automatiza.", "enlazar": ["/documentos/facturas-ads"], "hecho": false },
