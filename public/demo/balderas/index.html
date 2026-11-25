@@ -9,11 +9,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Oxanium:wght@500;600;700;800&family=Barlow:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap" rel="stylesheet">
 <style>
-  :root { --bg:#0a0c0f; --panel:#11151a; --line:#232a33; --text:#e8ecf1; --steel:#c9d1da; --muted:#98a2b0; --blue:#2f8cff; --blue2:#6db0ff; --display:'Oxanium','Arial Narrow',system-ui,sans-serif; --body:'Barlow',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif; --cut:12px; }
+  :root { --bg:#f4f5f7; --panel:#ffffff; --line:#dde1e7; --text:#141a22; --steel:#141a22; --muted:#566170; --blue:#1f6fd6; --blue2:#1a5fb8; --ph:#9a6400; --display:'Oxanium','Arial Narrow',system-ui,sans-serif; --body:'Barlow',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif; --cut:12px; }
   * { box-sizing:border-box; }
   html { scroll-behavior:smooth; }
   html, body { margin:0; background:var(--bg); color:var(--text); font-family:var(--body); font-size:16px; line-height:1.55; }
-  body { background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px); background-size:48px 48px; }
+  body { background-image:linear-gradient(rgba(20,40,70,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(20,40,70,.05) 1px,transparent 1px); background-size:48px 48px; }
   a { color:var(--blue2); }
   h1,h2,h3,h4 { font-family:var(--display); letter-spacing:.01em; }
   .demo-bar { background:#10233d; color:#cfe2ff; font-size:12.5px; text-align:center; padding:7px 12px; border-bottom:1px solid #1d3558; }
@@ -22,31 +22,40 @@
   @media (min-width: 900px) { .shell { grid-template-columns:270px minmax(0,1fr); } }
 
   /* menú lateral */
-  .side { background:rgba(10,12,15,.96); border-bottom:1px solid var(--line); position:sticky; top:0; z-index:20; padding:10px 14px 0; }
+  .side { background:#fff; border-bottom:1px solid var(--line); position:sticky; top:0; z-index:20; padding:10px 14px 0; }
   @media (min-width: 900px) { .side { height:calc(100vh - 33px); top:33px; border-bottom:0; border-right:1px solid var(--line); padding:26px 22px; display:flex; flex-direction:column; } }
   .brand { display:block; text-decoration:none; color:var(--text); }
   .brand b { display:block; font-family:var(--display); font-weight:800; font-style:italic; font-size:24px; letter-spacing:.04em; line-height:1; color:var(--steel); }
   .brand b i { color:var(--blue); font-style:inherit; }
   .brand small { display:block; margin-top:6px; font-style:italic; font-size:12.5px; color:var(--muted); }
-  .menu { list-style:none; margin:10px -14px 0; padding:0 14px 8px; display:flex; gap:4px 18px; overflow-x:auto; white-space:nowrap; }
-  .menu a { display:flex; gap:8px; align-items:baseline; color:var(--muted); text-decoration:none; font-family:var(--display); font-weight:600; font-size:13.5px; padding:8px 0; letter-spacing:.04em; text-transform:uppercase; }
+  .bar { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .burger { width:44px; height:44px; border:1px solid var(--line); background:#fff; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:5px; cursor:pointer; padding:0; }
+  .burger span { width:20px; height:2px; background:var(--text); transition:transform .2s, opacity .2s; }
+  .side.abierto .burger span:nth-child(1) { transform:translateY(7px) rotate(45deg); }
+  .side.abierto .burger span:nth-child(2) { opacity:0; }
+  .side.abierto .burger span:nth-child(3) { transform:translateY(-7px) rotate(-45deg); }
+  .menu { list-style:none; margin:8px 0 0; padding:0 0 8px; display:none; flex-direction:column; }
+  .side.abierto .menu { display:flex; }
+  .menu li a { border-bottom:1px solid var(--line); }
+  .brand small { display:none; }
+  .menu a { display:flex; gap:8px; align-items:baseline; color:var(--muted); text-decoration:none; font-family:var(--display); font-weight:600; font-size:14px; padding:12px 0; letter-spacing:.04em; text-transform:uppercase; }
   .menu a span { font-size:11px; color:var(--blue); }
   .menu a:hover { color:var(--text); }
   @media (min-width: 900px) {
-    .menu { flex-direction:column; margin:34px 0 0; padding:0; gap:2px; overflow:visible; border-top:1px solid var(--line); }
+    .burger { display:none; }
+    .brand small { display:block; }
+    .menu { display:flex; margin:34px 0 0; padding:0; gap:2px; border-top:1px solid var(--line); }
     .menu a { padding:11px 0; border-bottom:1px solid var(--line); font-size:14px; }
   }
-  .menu { scrollbar-width:none; }
-  .menu::-webkit-scrollbar { display:none; }
   @media (max-width: 600px) { .hint { display:none; } }
   .side .btn { display:none; }
   @media (min-width: 900px) { .side .btn { display:block; margin-top:auto; text-align:center; } .side .redes { display:block; } }
   .side .redes { display:none; margin-top:14px; font-size:12px; color:var(--muted); text-align:center; }
 
   .btn { display:inline-block; background:var(--blue); color:#fff; text-decoration:none; font-family:var(--display); font-weight:700; font-size:14px; letter-spacing:.06em; text-transform:uppercase; padding:13px 22px; border:0; cursor:pointer; clip-path:polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, var(--cut) 100%, 0 calc(100% - var(--cut))); }
-  .btn:hover { background:#4a9dff; }
-  .btn.ghost { background:#2a323d; color:var(--text); }
-  .btn.ghost:hover { background:#36404d; }
+  .btn:hover { background:#2f82e8; }
+  .btn.ghost { background:#e3e7ed; color:var(--text); }
+  .btn.ghost:hover { background:#d5dae2; }
 
   main { min-width:0; }
   .wrap { max-width:980px; margin:0 auto; padding:0 18px; }
@@ -56,15 +65,15 @@
   .kick::after { content:""; flex:0 0 56px; height:1px; background:var(--blue); }
   h2 { font-size:clamp(26px,4.2vw,38px); line-height:1.1; margin:10px 0 10px; font-weight:700; color:var(--steel); }
   .lead { color:var(--muted); margin:0 0 24px; max-width:58ch; }
-  .ph { color:#ffd479; }
+  .ph { color:var(--ph); }
 
   /* portada */
-  .hero { padding-top:34px; display:grid; gap:26px; grid-template-columns:1fr; align-items:center; }
+  .hero { padding-top:28px; display:grid; gap:26px; grid-template-columns:1fr; align-items:center; }
   @media (min-width: 1100px) { .hero { grid-template-columns: 1.05fr 1fr; } }
   .hero .eyebrow { font-family:var(--display); font-weight:600; font-size:12.5px; letter-spacing:.22em; color:var(--blue2); }
-  .hero h1 { font-size:clamp(34px,6vw,60px); line-height:1.02; margin:12px 0 16px; font-weight:800; color:var(--steel); }
+  .hero h1 { font-size:clamp(30px,5.2vw,54px); line-height:1.02; margin:12px 0 16px; font-weight:800; color:var(--steel); }
   .hero h1 em { color:var(--blue); font-style:inherit; }
-  .hero p { color:var(--muted); max-width:44ch; margin:0 0 22px; font-size:17px; }
+  .hero p { color:var(--muted); max-width:40ch; margin:0 0 22px; font-size:17px; }
   .cta { display:flex; flex-wrap:wrap; gap:10px; }
   .frame { position:relative; padding:10px; }
   .frame::before, .frame::after { content:""; position:absolute; width:22px; height:22px; border:2px solid var(--blue); }
@@ -82,20 +91,21 @@
   .stage { position:relative; border:1px solid var(--line); overflow:hidden; background:radial-gradient(ellipse at 50% 35%, #ffffff 0%, #d5dae2 78%); height:min(62vh, 520px); min-height:300px; }
   .stage.oscuro { background:radial-gradient(ellipse at 50% 35%, #1f2733 0%, #0b0e13 72%); }
   .stage::before { content:"VISTA 3D · ESCALA 1:1 CM"; position:absolute; left:12px; top:10px; font-family:var(--display); font-size:11px; letter-spacing:.2em; color:#2c5d96; z-index:1; }
-  .stage.oscuro::before { color:var(--blue2); }
+  .stage.oscuro::before { color:#6db0ff; }
   canvas { display:block; width:100%; height:100%; touch-action:none; cursor:grab; }
   canvas:active { cursor:grabbing; }
+  .autob { position:absolute; right:10px; top:8px; z-index:2; }
   .hint { position:absolute; left:12px; bottom:10px; font-size:11.5px; color:#566173; pointer-events:none; }
-  .stage.oscuro .hint { color:var(--muted); }
+  .stage.oscuro .hint { color:#98a2b0; }
   .size { position:absolute; right:12px; bottom:10px; font-family:var(--display); font-size:12.5px; letter-spacing:.06em; color:#14202f; background:rgba(255,255,255,.85); border:1px solid #c2c9d4; padding:5px 10px; font-variant-numeric:tabular-nums; }
-  .stage.oscuro .size { color:var(--text); background:rgba(0,0,0,.5); border-color:var(--line); }
+  .stage.oscuro .size { color:#e8ecf1; background:rgba(0,0,0,.55); border-color:#2a323d; }
   .panel { background:var(--panel); border:1px solid var(--line); padding:16px; }
   .panel h4 { font-size:11.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--blue2); margin:0 0 10px; font-weight:600; }
   .group { margin-bottom:18px; }
   .group:last-child { margin-bottom:0; }
   .row { display:flex; flex-wrap:wrap; gap:8px; }
-  .chip { border:1px solid var(--line); background:#161b22; color:var(--text); padding:8px 14px; font-family:var(--body); font-size:14px; font-weight:500; cursor:pointer; clip-path:polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px)); }
-  .chip[aria-pressed="true"] { border-color:var(--blue); color:#fff; background:#12294a; }
+  .chip { border:1px solid #c9cfd8; background:#fff; color:var(--text); padding:8px 14px; font-family:var(--body); font-size:14px; font-weight:500; cursor:pointer; clip-path:polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px)); }
+  .chip[aria-pressed="true"] { border-color:var(--blue); color:#0f4c9c; background:#e4eefc; }
   .swatch { width:38px; height:38px; border-radius:50%; border:2px solid var(--line); cursor:pointer; padding:0; }
   .swatch[aria-pressed="true"] { border-color:var(--text); box-shadow:0 0 0 3px #ffffff22; }
   .swname { font-size:12.5px; color:var(--muted); margin-top:8px; min-height:16px; }
@@ -106,6 +116,9 @@
   .fallback { display:none; padding:24px; font-size:14px; color:var(--muted); }
 
   /* LED */
+  .led, .final { --text:#e8ecf1; --steel:#c9d1da; --muted:#98a2b0; --line:#232a33; --blue:#2f8cff; --blue2:#6db0ff; --ph:#ffd479; }
+  .final .btn.ghost { background:#2a323d; }
+  .final .btn.ghost:hover { background:#36404d; }
   .led { margin-top:52px; padding:34px 22px; border:1px solid #1d3558; background:radial-gradient(ellipse at 85% 20%, rgba(47,140,255,.22), transparent 55%), #0d1218; display:grid; gap:24px; grid-template-columns:1fr; scroll-margin-top:96px; }
   @media (min-width: 900px) { .led { grid-template-columns:1.1fr 1fr; padding:42px 36px; scroll-margin-top:50px; } }
   .led h2 { margin-top:8px; }
@@ -128,7 +141,7 @@
   /* proyectos */
   .gal { display:grid; gap:12px; grid-template-columns:repeat(2,1fr); }
   @media (min-width: 700px) { .gal { grid-template-columns:2fr 1fr 1fr; grid-auto-rows:150px; } .gal .big { grid-row:span 2; } }
-  .ph-img { border:1px dashed #3a4558; background:#0e1319; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#ffd479; font-size:13px; text-align:center; padding:8px; min-height:130px; }
+  .ph-img { border:1px dashed #aab3c0; background:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; color:var(--ph); font-size:13px; text-align:center; padding:8px; min-height:130px; }
   .ph-img b { font-family:var(--display); color:var(--steel); font-size:15px; margin-bottom:2px; }
   .tiles { display:grid; gap:8px; grid-template-columns:repeat(3,1fr); margin-top:12px; }
   @media (min-width: 700px) { .tiles { grid-template-columns:repeat(6,1fr); } }
@@ -160,12 +173,15 @@
 </style>
 </head>
 <body>
-<div class="demo-bar">Sitio de demostración hecho por Nasus para Balderas CNC. Los textos y las piezas son de ejemplo.</div>
+<div class="demo-bar">Demo hecha por Nasus · textos y piezas de ejemplo</div>
 
 <div class="shell">
 <aside class="side">
-  <a class="brand" href="#inicio"><b>BALDERAS <i>CNC</i></b><small>Diseñamos tus ideas, fabricamos tus sueños.</small></a>
-  <ul class="menu">
+  <div class="bar">
+    <a class="brand" href="#inicio"><b>BALDERAS <i>CNC</i></b><small>Diseñamos tus ideas, fabricamos tus sueños.</small></a>
+    <button class="burger" id="burger" aria-expanded="false" aria-controls="menu" aria-label="Abrir menú"><span></span><span></span><span></span></button>
+  </div>
+  <ul class="menu" id="menu">
     <li><a href="#inicio"><span>01</span>Inicio</a></li>
     <li><a href="#catalogo"><span>02</span>Catálogo 3D</a></li>
     <li><a href="#led"><span>03</span>Espejos y LED</a></li>
@@ -184,20 +200,13 @@
 
   <div class="hero" id="inicio">
     <div>
-      <div class="eyebrow">MUEBLES A MEDIDA · CNC · LÁSER CO₂</div>
       <h1>Diseñamos tus ideas, <em>fabricamos</em> tus sueños.</h1>
-      <p>Muebles minimalistas, espejos y letreros con luz hechos a la medida de tu espacio. Míralos en 3D antes de fabricarlos.</p>
+      <p>Muebles, espejos y letreros con luz, a la medida. Míralos en 3D antes de fabricarlos.</p>
       <div class="cta">
         <a class="btn" href="#catalogo">Ver catálogo 3D</a>
-        <a class="btn ghost" href="#contacto">Cotizar</a>
       </div>
     </div>
     <div class="frame"><img src="/demo/balderas/logo.jpg" alt="Balderas CNC: diseñamos tus ideas, fabricamos tus sueños"></div>
-  </div>
-  <div class="specs">
-    <div><i>01</i>A tu medida</div>
-    <div><i>02</i>Visor 3D</div>
-    <div><i>03</i>Precisión CNC</div>
   </div>
 
   <section id="catalogo">
@@ -207,6 +216,7 @@
     <div class="app">
       <div class="stage" id="stage">
         <canvas id="c" aria-label="Vista 3D del mueble. Arrastra para girar."></canvas>
+        <button class="chip autob" id="auto" aria-pressed="true">Girar solo</button>
         <div class="size" id="size">—</div>
         <div class="hint">Arrastra para girar · pellizca para acercar</div>
         <div class="fallback" id="fallback">No se pudo cargar el visor 3D en este navegador.</div>
@@ -214,9 +224,8 @@
       <div class="panel">
         <div class="group"><h4>Mueble</h4><div class="row" id="tipos"></div></div>
         <div class="group"><h4 id="titColor">Color</h4><div class="row" id="colores"></div><div class="swname" id="swname"></div></div>
-        <div class="group" id="grpTexto" style="display:none"><h4>Texto del letrero</h4><input id="texto" type="text" maxlength="18" value="Hola" aria-label="Texto del letrero" style="width:100%;padding:10px 12px;border:1px solid var(--line);background:#161b22;color:var(--text);font-size:16px;font-family:var(--body)"></div>
+        <div class="group" id="grpTexto" style="display:none"><h4>Texto del letrero</h4><input id="texto" type="text" maxlength="18" value="Hola" aria-label="Texto del letrero" style="width:100%;padding:10px 12px;border:1px solid #c9cfd8;background:#fff;color:var(--text);font-size:16px;font-family:var(--body)"></div>
         <div class="group"><h4>Medidas</h4><div id="sliders"></div></div>
-        <div class="group"><h4>Vista</h4><div class="row"><button class="chip" id="auto" aria-pressed="true">Girar solo</button></div></div>
         <a class="btn" href="#contacto" style="display:block;text-align:center">Cotizar esta pieza</a>
       </div>
     </div>
@@ -688,7 +697,7 @@
   if (window.ResizeObserver) new ResizeObserver(ajustar).observe(stage); else window.addEventListener("resize", ajustar);
 
   function loop() {
-    if (state.auto && !arrastrando) cam.theta += 0.005;
+    if (state.auto && !arrastrando) cam.theta += 0.003;
     ponerCamara();
     renderer.render(scene, camera);
     requestAnimationFrame(loop);
@@ -696,6 +705,18 @@
 
   aplicarColor(0);
   pintarTipos(); pintarColores(); pintarSliders(); construir(); ajustarPanel(); ajustar(); loop();
+})();
+</script>
+<script>
+(function () {
+  var side = document.querySelector(".side"), b = document.getElementById("burger");
+  if (!side || !b) return;
+  function cerrar() { side.classList.remove("abierto"); b.setAttribute("aria-expanded", "false"); b.setAttribute("aria-label", "Abrir menú"); }
+  b.addEventListener("click", function () {
+    var abierto = side.classList.toggle("abierto");
+    b.setAttribute("aria-expanded", String(abierto)); b.setAttribute("aria-label", abierto ? "Cerrar menú" : "Abrir menú");
+  });
+  Array.prototype.forEach.call(document.querySelectorAll(".menu a"), function (a) { a.addEventListener("click", cerrar); });
 })();
 </script>
 </body>
