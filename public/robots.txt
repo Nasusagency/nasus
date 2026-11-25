@@ -11,6 +11,7 @@ Disallow: /internal/
 Disallow: /cliente/
 Disallow: /propuesta/
 Disallow: /pagar/
+Disallow: /demo/
 
 # Asistentes y buscadores de IA: acceso explícito a lo público.
 User-agent: OAI-SearchBot

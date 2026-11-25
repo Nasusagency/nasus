@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Balderas CNC — Sitio de demostración</title>
+<style>
+  :root { --bg:#0b0d12; --panel:#13161d; --line:#262b36; --text:#eef1f6; --muted:#a3acbb; --blue:#5aa2ff; --blue-d:#1f6fd6; }
+  * { box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  html, body { margin:0; background:var(--bg); color:var(--text); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; line-height:1.55; }
+  a { color:var(--blue); }
+  .wrap { max-width:1100px; margin:0 auto; padding:0 16px; }
+  .demo-bar { background:#142238; color:#cfe2ff; font-size:12px; text-align:center; padding:8px 12px; border-bottom:1px solid var(--line); }
+  nav { position:sticky; top:0; z-index:10; background:rgba(11,13,18,.92); backdrop-filter:blur(8px); border-bottom:1px solid var(--line); }
+  nav .wrap { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; padding-top:10px; padding-bottom:10px; }
+  .brand { font-weight:800; letter-spacing:.06em; font-size:17px; color:var(--text); text-decoration:none; }
+  .brand span { color:var(--blue); }
+  nav ul { list-style:none; display:flex; flex-wrap:wrap; gap:4px 16px; margin:0; padding:0; font-size:13px; }
+  nav ul a { color:var(--muted); text-decoration:none; padding:6px 2px; display:inline-block; }
+  nav ul a:hover { color:var(--text); }
+  .btn { display:inline-block; background:var(--blue-d); color:#fff; text-decoration:none; font-weight:650; font-size:14px; padding:12px 20px; border-radius:10px; border:1px solid #3b86ee; }
+  .btn:hover { background:#2a7be8; }
+  .btn.ghost { background:transparent; color:var(--text); border-color:var(--line); }
+  .hero { padding:44px 0 36px; display:grid; gap:28px; grid-template-columns:1fr; align-items:center; }
+  @media (min-width: 860px) { .hero { grid-template-columns: 1fr 1fr; } }
+  .hero h1 { font-size:clamp(28px,5vw,44px); line-height:1.12; margin:0 0 12px; }
+  .hero p { color:var(--muted); font-size:16px; margin:0 0 20px; max-width:46ch; }
+  .hero .cta { display:flex; flex-wrap:wrap; gap:10px; }
+  .logo { display:block; width:100%; border-radius:14px; border:1px solid var(--line); }
+  section { padding:40px 0; border-top:1px solid var(--line); }
+  .tag { font-size:11px; letter-spacing:.18em; color:var(--blue); text-transform:uppercase; }
+  h2 { font-size:clamp(22px,3.5vw,30px); margin:6px 0 8px; line-height:1.2; }
+  .lead { color:var(--muted); margin:0 0 22px; max-width:60ch; font-size:15px; }
+  .cards { display:grid; gap:14px; grid-template-columns:1fr; }
+  @media (min-width: 700px) { .cards { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 960px) { .cards.c4 { grid-template-columns: repeat(4, 1fr); } .cards.c3 { grid-template-columns: repeat(3, 1fr); } }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px; }
+  .card h3 { margin:0 0 6px; font-size:16px; }
+  .card p { margin:0; font-size:14px; color:var(--muted); }
+  .num { font-size:12px; color:var(--blue); letter-spacing:.14em; margin-bottom:6px; }
+  .app { display:grid; gap:14px; grid-template-columns:1fr; }
+  @media (min-width: 860px) { .app { grid-template-columns: 1.5fr 1fr; align-items:start; } }
+  .stage { position:relative; border:1px solid var(--line); border-radius:16px; overflow:hidden; background:radial-gradient(ellipse at 50% 35%, #232a38 0%, #0e1118 70%); height:min(62vh, 520px); min-height:300px; }
+  canvas { display:block; width:100%; height:100%; touch-action:none; cursor:grab; }
+  canvas:active { cursor:grabbing; }
+  .hint { position:absolute; left:12px; bottom:10px; font-size:11px; color:var(--muted); pointer-events:none; }
+  .size { position:absolute; right:12px; top:10px; font-size:12px; color:var(--text); background:rgba(0,0,0,.45); border:1px solid var(--line); padding:6px 10px; border-radius:999px; font-variant-numeric: tabular-nums; }
+  .panel { background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:16px; }
+  .panel h4 { font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin:0 0 10px; font-weight:600; }
+  .group { margin-bottom:18px; }
+  .group:last-child { margin-bottom:0; }
+  .row { display:flex; flex-wrap:wrap; gap:8px; }
+  .chip { border:1px solid var(--line); background:#1a1f2a; color:var(--text); border-radius:999px; padding:8px 14px; font-size:13px; cursor:pointer; }
+  .chip[aria-pressed="true"] { border-color:var(--blue); color:var(--blue); background:#142238; }
+  .swatch { width:38px; height:38px; border-radius:50%; border:2px solid var(--line); cursor:pointer; padding:0; }
+  .swatch[aria-pressed="true"] { border-color:var(--text); box-shadow:0 0 0 3px #ffffff22; }
+  .swname { font-size:12px; color:var(--muted); margin-top:8px; min-height:16px; }
+  .slider { margin-bottom:12px; }
+  .slider label { display:flex; justify-content:space-between; font-size:13px; margin-bottom:4px; }
+  .slider output { color:var(--blue); font-variant-numeric: tabular-nums; }
+  input[type=range] { width:100%; accent-color:#5aa2ff; height:28px; }
+  .fallback { display:none; padding:24px; font-size:14px; color:var(--muted); }
+  .contact { display:grid; gap:14px; grid-template-columns:1fr; }
+  @media (min-width: 760px) { .contact { grid-template-columns: 1.2fr 1fr; } }
+  .ph { color:#ffd479; }
+  footer { border-top:1px solid var(--line); padding:22px 0 34px; font-size:12px; color:var(--muted); }
+</style>
+</head>
+<body>
+<div class="demo-bar">Sitio de demostración hecho por Nasus para Balderas CNC. Los textos y las piezas son de ejemplo.</div>
+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="#inicio">BALDERAS <span>CNC</span></a>
+    <ul>
+      <li><a href="#catalogo">Catálogo 3D</a></li>
+      <li><a href="#servicios">Servicios</a></li>
+      <li><a href="#proceso">Proceso</a></li>
+      <li><a href="#contacto">Contacto</a></li>
+    </ul>
+  </div>
+</nav>
+
+<main>
+<div class="wrap">
+
+  <div class="hero" id="inicio">
+    <div>
+      <div class="tag">Muebles a medida con CNC</div>
+      <h1>Diseñamos tus ideas, fabricamos tus sueños.</h1>
+      <p>Muebles minimalistas hechos a la medida de tu espacio. Elige tipo, color y medidas, míralo girar en 3D y pide tu cotización.</p>
+      <div class="cta">
+        <a class="btn" href="#catalogo">Ver el catálogo 3D</a>
+        <a class="btn ghost" href="#contacto">Cotizar</a>
+      </div>
+    </div>
+    <img class="logo" src="logo.jpg" alt="Balderas CNC: diseñamos tus ideas, fabricamos tus sueños">
+  </div>
+
+  <section id="catalogo">
+    <div class="tag">Catálogo 3D</div>
+    <h2>Mira tu mueble antes de fabricarlo</h2>
+    <p class="lead">Gira la pieza, cambia el color y mueve las medidas. Así el cliente decide con claridad y tú recibes cotizaciones más precisas.</p>
+    <div class="app">
+      <div class="stage" id="stage">
+        <canvas id="c" aria-label="Vista 3D del mueble. Arrastra para girar."></canvas>
+        <div class="size" id="size">—</div>
+        <div class="hint">Arrastra para girar · pellizca o usa la rueda para acercar</div>
+        <div class="fallback" id="fallback">No se pudo cargar el visor 3D en este navegador.</div>
+      </div>
+      <div class="panel">
+        <div class="group"><h4>Mueble</h4><div class="row" id="tipos"></div></div>
+        <div class="group"><h4>Color</h4><div class="row" id="colores"></div><div class="swname" id="swname"></div></div>
+        <div class="group"><h4>Medidas</h4><div id="sliders"></div></div>
+        <div class="group"><h4>Vista</h4><div class="row"><button class="chip" id="auto" aria-pressed="true">Girar solo</button></div></div>
+        <a class="btn" href="#contacto" style="display:block;text-align:center">Cotizar esta pieza</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="servicios">
+    <div class="tag">Servicios</div>
+    <h2>Lo que fabricamos</h2>
+    <p class="lead">Ejemplos de categorías. En el sitio final van las que Balderas CNC realmente ofrece.</p>
+    <div class="cards c4">
+      <div class="card"><h3>Recibidores</h3><p>Muebles flotantes y consolas a la medida del acceso.</p></div>
+      <div class="card"><h3>Cocinas</h3><p>Cocinas integrales con acabados modernos.</p></div>
+      <div class="card"><h3>Closets y vestidores</h3><p>Aprovechan cada centímetro del espacio.</p></div>
+      <div class="card"><h3>Corte y grabado CNC</h3><p>Piezas, paneles y detalles de precisión.</p></div>
+    </div>
+  </section>
+
+  <section id="proceso">
+    <div class="tag">Proceso</div>
+    <h2>Cómo trabajamos</h2>
+    <div class="cards c4">
+      <div class="card"><div class="num">01</div><h3>Platicamos</h3><p>Nos cuentas qué necesitas y para qué espacio.</p></div>
+      <div class="card"><div class="num">02</div><h3>Medimos y diseñamos</h3><p>Defines tipo, color y medidas con el visor 3D.</p></div>
+      <div class="card"><div class="num">03</div><h3>Fabricamos</h3><p>Corte y armado con precisión CNC.</p></div>
+      <div class="card"><div class="num">04</div><h3>Instalamos</h3><p>Entrega e instalación en tu espacio.</p></div>
+    </div>
+  </section>
+
+  <section id="contacto">
+    <div class="tag">Contacto</div>
+    <h2>Cuéntanos qué mueble quieres</h2>
+    <div class="contact">
+      <div class="card">
+        <h3>Cotiza por WhatsApp</h3>
+        <p style="margin-bottom:14px">Mándanos el tipo de mueble, las medidas y el color que elegiste en el catálogo.</p>
+        <a class="btn" href="#contacto" aria-disabled="true">Escribir por WhatsApp <span class="ph">[número de Balderas CNC]</span></a>
+      </div>
+      <div class="card">
+        <h3>Síguenos</h3>
+        <p><span class="ph">[TikTok]</span> · <span class="ph">[Instagram]</span> · <span class="ph">[Facebook]</span><br>En el sitio final, aquí van sus redes y sus trabajos reales.</p>
+      </div>
+    </div>
+  </section>
+
+</div>
+</main>
+
+<footer>
+  <div class="wrap">Balderas CNC · Sitio de demostración. Desarrollado por <a href="https://nasus.mx">Nasus</a>.</div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+  "use strict";
+  if (typeof THREE === "undefined") { document.getElementById("fallback").style.display = "block"; return; }
+
+  var TIPOS = {
+    recibidor: { nombre: "Recibidor", dims: { l: ["Largo", 60, 200, 120], a: ["Fondo", 20, 45, 30], h: ["Alto de montaje", 60, 110, 85] } },
+    mesa:   { nombre: "Mesa",   dims: { l: ["Largo", 80, 240, 160], a: ["Ancho", 50, 120, 90],  h: ["Alto", 60, 110, 75]  } },
+    repisa: { nombre: "Repisa", dims: { l: ["Largo", 40, 200, 100], a: ["Fondo", 20, 60, 30],   h: ["Alto", 60, 240, 180] } },
+    banco:  { nombre: "Banco",  dims: { l: ["Largo", 30, 60, 40],   a: ["Ancho", 30, 60, 40],  h: ["Alto", 30, 80, 45]   } }
+  };
+  var COLORES = [
+    ["Nogal", "#6b4423"], ["Roble", "#b98a4e"], ["Blanco hueso", "#ece8e1"],
+    ["Negro", "#262626"], ["Mármol claro", "#e3dfd8"], ["Gris humo", "#8a8d91"]
+  ];
+
+  var state = { tipo: "recibidor", color: 0, auto: true, valores: {} };
+  Object.keys(TIPOS).forEach(function (k) {
+    state.valores[k] = {};
+    Object.keys(TIPOS[k].dims).forEach(function (d) { state.valores[k][d] = TIPOS[k].dims[d][3]; });
+  });
+
+  // ---------- Escena ----------
+  var canvas = document.getElementById("c");
+  var stage = document.getElementById("stage");
+  var renderer;
+  try { renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true }); }
+  catch (e) { document.getElementById("fallback").style.display = "block"; return; }
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+  var scene = new THREE.Scene();
+  var camera = new THREE.PerspectiveCamera(38, 1, 0.1, 50);
+
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x3a3a44, 0.85));
+  var sun = new THREE.DirectionalLight(0xffffff, 0.9);
+  sun.position.set(2.5, 4, 2.5);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(1024, 1024);
+  sun.shadow.camera.left = -3; sun.shadow.camera.right = 3; sun.shadow.camera.top = 3; sun.shadow.camera.bottom = -3;
+  sun.shadow.camera.near = 0.5; sun.shadow.camera.far = 12;
+  scene.add(sun);
+
+  var floor = new THREE.Mesh(new THREE.CircleGeometry(4, 64), new THREE.ShadowMaterial({ opacity: 0.35 }));
+  floor.rotation.x = -Math.PI / 2;
+  floor.receiveShadow = true;
+  scene.add(floor);
+  var ring = new THREE.Mesh(new THREE.RingGeometry(1.45, 1.47, 96), new THREE.MeshBasicMaterial({ color: 0x3a3a46, side: THREE.DoubleSide }));
+  ring.rotation.x = -Math.PI / 2; ring.position.y = 0.001;
+  scene.add(ring);
+
+  var holder = new THREE.Group();
+  scene.add(holder);
+
+  var material = new THREE.MeshStandardMaterial({ color: COLORES[0][1], roughness: 0.62, metalness: 0.04 });
+
+  // ---------- Construcción paramétrica (medidas en cm, escena en metros) ----------
+  var S = 0.01;
+  function box(parent, w, h, d, x, y, z) {
+    var m = new THREE.Mesh(new THREE.BoxGeometry(w * S, h * S, d * S), material);
+    m.position.set(x * S, y * S, z * S);
+    m.castShadow = true; m.receiveShadow = true;
+    parent.add(m);
+  }
+  function limpiar() {
+    while (holder.children.length) {
+      var c = holder.children.pop();
+      if (c.geometry) c.geometry.dispose();
+    }
+  }
+  function construir() {
+    limpiar();
+    var v = state.valores[state.tipo], L = v.l, A = v.a, H = v.h;
+    if (state.tipo === "recibidor") {
+      var gt = 4, cajon = 14;
+      box(holder, L + 12, H + 45, 2, 0, (H + 45) / 2, -(A / 2 + 1));
+      box(holder, L, gt, A, 0, H - gt / 2, 0);
+      box(holder, L - 2, cajon, A - 2, 0, H - gt - cajon / 2, 0);
+      box(holder, 18, 1.5, 1.5, 0, H - gt - cajon / 2, A / 2 - 0.2);
+    } else if (state.tipo === "mesa") {
+      var t = 4, pata = 6, ins = 5;
+      box(holder, L, t, A, 0, H - t / 2, 0);
+      var px = L / 2 - ins - pata / 2, pz = A / 2 - ins - pata / 2, ph = H - t;
+      [[1, 1], [1, -1], [-1, 1], [-1, -1]].forEach(function (s) { box(holder, pata, ph, pata, s[0] * px, ph / 2, s[1] * pz); });
+      box(holder, L - 2 * (ins + pata), 6, 2, 0, H - t - 3, pz);
+      box(holder, L - 2 * (ins + pata), 6, 2, 0, H - t - 3, -pz);
+    } else if (state.tipo === "repisa") {
+      var e = 2.5, n = Math.max(2, Math.min(6, Math.round(H / 45)));
+      box(holder, e, H, A, -(L / 2 - e / 2), H / 2, 0);
+      box(holder, e, H, A, (L / 2 - e / 2), H / 2, 0);
+      box(holder, L - 2 * e, H, 0.8, 0, H / 2, -(A / 2 - 0.4));
+      for (var i = 0; i < n; i++) {
+        var y = (i === n - 1) ? H - e / 2 : 6 + i * ((H - e - 6) / (n - 1));
+        box(holder, L - 2 * e, e, A - 0.8, 0, y, 0.4);
+      }
+    } else {
+      var ts = 3, pt = 4, ii = 3;
+      box(holder, L, ts, A, 0, H - ts / 2, 0);
+      var bx = L / 2 - ii - pt / 2, bz = A / 2 - ii - pt / 2, bh = H - ts;
+      [[1, 1], [1, -1], [-1, 1], [-1, -1]].forEach(function (s) { box(holder, pt, bh, pt, s[0] * bx, bh / 2, s[1] * bz); });
+      box(holder, L - 2 * (ii + pt), 2, 2, 0, bh * 0.35, bz);
+      box(holder, L - 2 * (ii + pt), 2, 2, 0, bh * 0.35, -bz);
+    }
+    document.getElementById("size").textContent = L + " × " + A + " × " + H + " cm  (largo × " + TIPOS[state.tipo].dims.a[0].toLowerCase() + " × alto)";
+    // encuadre: la distancia depende del tamaño de la pieza
+    var diag = Math.sqrt(L * L + A * A + H * H) * S;
+    cam.rTarget = Math.max(1.6, diag * 2.1);
+    cam.yTarget = H * S * 0.5;
+  }
+
+  // ---------- Cámara orbital ----------
+  var cam = { theta: 0.7, phi: 1.05, r: 3.4, rTarget: 3.4, yTarget: 0.4, y: 0.4 };
+  function ponerCamara() {
+    cam.r += (cam.rTarget - cam.r) * 0.12;
+    cam.y += (cam.yTarget - cam.y) * 0.12;
+    camera.position.set(
+      cam.r * Math.sin(cam.phi) * Math.sin(cam.theta),
+      cam.y + cam.r * Math.cos(cam.phi),
+      cam.r * Math.sin(cam.phi) * Math.cos(cam.theta)
+    );
+    camera.lookAt(0, cam.y, 0);
+  }
+
+  var punteros = {}, distPrev = 0, arrastrando = false;
+  canvas.addEventListener("pointerdown", function (e) {
+    canvas.setPointerCapture(e.pointerId);
+    punteros[e.pointerId] = { x: e.clientX, y: e.clientY };
+    arrastrando = true;
+  });
+  canvas.addEventListener("pointermove", function (e) {
+    var p = punteros[e.pointerId]; if (!p) return;
+    var ids = Object.keys(punteros);
+    if (ids.length === 2) {
+      punteros[e.pointerId] = { x: e.clientX, y: e.clientY };
+      var a = punteros[ids[0]], b = punteros[ids[1]];
+      var d = Math.hypot(a.x - b.x, a.y - b.y);
+      if (distPrev) cam.rTarget = Math.min(9, Math.max(0.8, cam.rTarget * (distPrev / d)));
+      distPrev = d;
+      return;
+    }
+    cam.theta -= (e.clientX - p.x) * 0.008;
+    cam.phi = Math.min(1.5, Math.max(0.2, cam.phi - (e.clientY - p.y) * 0.006));
+    punteros[e.pointerId] = { x: e.clientX, y: e.clientY };
+  });
+  function soltar(e) { delete punteros[e.pointerId]; distPrev = 0; if (!Object.keys(punteros).length) arrastrando = false; }
+  canvas.addEventListener("pointerup", soltar);
+  canvas.addEventListener("pointercancel", soltar);
+  canvas.addEventListener("wheel", function (e) {
+    e.preventDefault();
+    cam.rTarget = Math.min(9, Math.max(0.8, cam.rTarget * (1 + e.deltaY * 0.001)));
+  }, { passive: false });
+
+  // ---------- Controles ----------
+  function pintarTipos() {
+    var cont = document.getElementById("tipos"); cont.innerHTML = "";
+    Object.keys(TIPOS).forEach(function (k) {
+      var b = document.createElement("button");
+      b.className = "chip"; b.textContent = TIPOS[k].nombre; b.setAttribute("aria-pressed", String(k === state.tipo));
+      b.addEventListener("click", function () { state.tipo = k; pintarTipos(); pintarSliders(); construir(); });
+      cont.appendChild(b);
+    });
+  }
+  function pintarColores() {
+    var cont = document.getElementById("colores"); cont.innerHTML = "";
+    COLORES.forEach(function (c, i) {
+      var b = document.createElement("button");
+      b.className = "swatch"; b.style.background = c[1]; b.title = c[0]; b.setAttribute("aria-label", c[0]);
+      b.setAttribute("aria-pressed", String(i === state.color));
+      b.addEventListener("click", function () { state.color = i; material.color.set(c[1]); pintarColores(); });
+      cont.appendChild(b);
+    });
+    document.getElementById("swname").textContent = COLORES[state.color][0];
+  }
+  function pintarSliders() {
+    var cont = document.getElementById("sliders"); cont.innerHTML = "";
+    var dims = TIPOS[state.tipo].dims;
+    Object.keys(dims).forEach(function (k) {
+      var d = dims[k], wrap = document.createElement("div");
+      wrap.className = "slider";
+      var id = "s-" + k;
+      wrap.innerHTML = '<label for="' + id + '"><span>' + d[0] + '</span><output id="o-' + k + '">' + state.valores[state.tipo][k] + ' cm</output></label>' +
+        '<input id="' + id + '" type="range" min="' + d[1] + '" max="' + d[2] + '" step="1" value="' + state.valores[state.tipo][k] + '">';
+      cont.appendChild(wrap);
+      wrap.querySelector("input").addEventListener("input", function (e) {
+        state.valores[state.tipo][k] = Number(e.target.value);
+        document.getElementById("o-" + k).textContent = e.target.value + " cm";
+        construir();
+      });
+    });
+  }
+  var autoBtn = document.getElementById("auto");
+  autoBtn.addEventListener("click", function () { state.auto = !state.auto; autoBtn.setAttribute("aria-pressed", String(state.auto)); });
+
+  // ---------- Tamaño y bucle ----------
+  function ajustar() {
+    var w = stage.clientWidth, h = stage.clientHeight;
+    if (!w || !h) return;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h; camera.updateProjectionMatrix();
+  }
+  if (window.ResizeObserver) new ResizeObserver(ajustar).observe(stage); else window.addEventListener("resize", ajustar);
+
+  function loop() {
+    if (state.auto && !arrastrando) cam.theta += 0.005;
+    ponerCamara();
+    renderer.render(scene, camera);
+    requestAnimationFrame(loop);
+  }
+
+  material.color.set(COLORES[0][1]);
+  pintarTipos(); pintarColores(); pintarSliders(); construir(); ajustar(); loop();
+})();
+</script>
+</body>
+</html>
