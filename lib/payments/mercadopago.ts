@@ -3,6 +3,10 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import type { PaymentProvider, PaymentStatus } from "./provider";
 
 type Fetcher = typeof fetch;
+// Integrator ID del Partners Program de Mercado Pago (certificación Checkout Pro, nov-2026).
+// No es un secreto: identifica a Nasus como integrador. Se puede sobrescribir con MERCADOPAGO_INTEGRATOR_ID.
+const DEFAULT_INTEGRATOR_ID = "dev_3f9afaf7e9d011f1b80f56d281701d23";
+const integratorId = () => process.env.MERCADOPAGO_INTEGRATOR_ID?.trim() || DEFAULT_INTEGRATOR_ID;
 const required = (name: string) => { const value = process.env[name]; if (!value) throw new Error(`mercadopago_config_missing:${name}`); return value; };
 
 // https://www.mercadopago.com.mx/developers/es/docs/checkout-pro/additional-content/notifications/webhooks
@@ -42,7 +46,7 @@ export function createMercadoPagoProvider(fetcher: Fetcher = fetch): PaymentProv
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://nasus.mx";
       const res = await fetcher("https://api.mercadopago.com/checkout/preferences", {
         method: "POST",
-        headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+        headers: { authorization: `Bearer ${token}`, "content-type": "application/json", "x-integrator-id": integratorId() },
         body: JSON.stringify({
           items: [{ title: input.description, quantity: 1, unit_price: input.amount, currency_id: input.currency }],
           external_reference: input.externalReference,

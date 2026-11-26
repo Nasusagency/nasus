@@ -304,6 +304,7 @@ NEXT_PUBLIC_META_PIXEL_ID  — Opcional: ID del Pixel de Meta (solo dígitos). S
 NEXT_PUBLIC_META_DOMAIN_VERIFICATION — Opcional: código de verificación de nasus.lat en el Business Manager (meta tag facebook-domain-verification)
 META_ADS_ACCESS_TOKEN      — Token de un usuario del sistema con permiso ads_read (SENSIBLE: solo en Vercel). Con META_ADS_ACCOUNT_ID activa la sincronización diaria de gasto, impresiones y clics por campaña (cron 9:30 UTC → /api/internal/meta-ads/sync) a acquisition_campaign_metrics con platform='meta'. También resuelve el nombre de campaña de los anuncios clic-a-WhatsApp. Ver lib/meta-ads/
 META_ADS_ACCOUNT_ID        — ID de la cuenta publicitaria (con o sin prefijo act_)
+MERCADOPAGO_INTEGRATOR_ID — Opcional: Integrator ID del Partners Program de Mercado Pago (default: el de Nasus, certificado en Checkout Pro, nov-2026). Se envía como `x-integrator-id` al crear preferencias (lib/payments/mercadopago.ts)
 META_ADS_CAMPAIGN_MAP / META_GRAPH_VERSION — Opcionales: JSON id→nombre canónico de campaña; versión de la Graph API (default v23.0)
 ```
 

@@ -186,6 +186,20 @@ describe("Fase 9: Mercado Pago", () => {
     assert.equal(provider.verifyWebhookSignature({ headers, dataId: "1" }), false);
     process.env.MERCADOPAGO_WEBHOOK_SECRET = old;
   });
+  test("la preferencia de Mercado Pago viaja con el Integrator ID del Partners Program", async () => {
+    const oldToken = process.env.MERCADOPAGO_ACCESS_TOKEN, oldId = process.env.MERCADOPAGO_INTEGRATOR_ID;
+    process.env.MERCADOPAGO_ACCESS_TOKEN = "TEST-token"; delete process.env.MERCADOPAGO_INTEGRATOR_ID;
+    const seen: Array<Record<string, string>> = [];
+    const fetcher = (async (_url: unknown, init?: RequestInit) => { seen.push(init?.headers as Record<string, string>); return new Response(JSON.stringify({ id: "pref-1", init_point: "https://mp/x" }), { status: 200 }); }) as typeof fetch;
+    const input = { description: "Anticipo", amount: 100, currency: "MXN", externalReference: "payment:c1:x" } as Parameters<ReturnType<typeof createMercadoPagoProvider>["createCheckout"]>[0];
+    await createMercadoPagoProvider(fetcher).createCheckout(input);
+    assert.equal(seen[0]["x-integrator-id"], "dev_3f9afaf7e9d011f1b80f56d281701d23");
+    process.env.MERCADOPAGO_INTEGRATOR_ID = "dev_otro";
+    await createMercadoPagoProvider(fetcher).createCheckout(input);
+    assert.equal(seen[1]["x-integrator-id"], "dev_otro");
+    if (oldToken === undefined) delete process.env.MERCADOPAGO_ACCESS_TOKEN; else process.env.MERCADOPAGO_ACCESS_TOKEN = oldToken;
+    if (oldId === undefined) delete process.env.MERCADOPAGO_INTEGRATOR_ID; else process.env.MERCADOPAGO_INTEGRATOR_ID = oldId;
+  });
   test("el webhook nunca confía en el body del navegador para marcar paid", () => {
     const s = readFileSync("app/api/payments/mercadopago/webhook/route.ts", "utf8");
     assert.match(s, /verifyWebhookSignature/);
