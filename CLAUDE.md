@@ -229,6 +229,8 @@ Antes (v1.0, ago-2026) los CTA comerciales iban al 2391 porque en el 1602 no pod
 
 ---
 
+**Excepción documentada — Registro de accesos del admin (`admin_login_log`, migración 0025, `lib/admin/login-security.ts`):** cada intento de inicio de sesión guarda fecha, resultado, un HMAC estable de la IP (`ADMIN_JWT_SECRET`), país/ciudad (headers de Vercel) y user agent. **No** se guarda la IP, ni el correo ni la contraseña escritos. RLS activo sin políticas (solo service role), nunca en consola. Sirve para (a) el límite de intentos persistente (8 fallos por red en 15 min → 429; respaldo en memoria si la base falla), (b) avisar por correo de un acceso desde un dispositivo nuevo (60 días) y de rachas de 5 fallos. La comparación de correo y contraseña es en tiempo constante.
+
 ### 7. Estructura de Módulos Clave
 
 ```

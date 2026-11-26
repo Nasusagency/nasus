@@ -1,26 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
+import { after } from "next/server";
 import { signAdminToken, ADMIN_COOKIE } from "@/lib/admin/auth";
-
-const attempts = new Map<string, { count: number; resetAt: number }>();
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const entry = attempts.get(ip);
-  if (!entry || now >= entry.resetAt) {
-    attempts.set(ip, { count: 1, resetAt: now + 60_000 });
-    return true;
-  }
-  if (entry.count >= 5) return false;
-  entry.count++;
-  return true;
-}
+import { contexto, estaBloqueado, registrarIntento, safeEqual, VENTANA_MIN } from "@/lib/admin/login-security";
 
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  const ctx = contexto(req.headers);
 
-  if (!checkRateLimit(ip)) {
+  // Límite persistente por IP (ver lib/admin/login-security.ts): se revisa antes de mirar la contraseña.
+  if (await estaBloqueado(ctx.ipHash)) {
     return NextResponse.json(
-      { error: "Demasiados intentos. Espera 1 minuto." },
+      { error: `Demasiados intentos. Espera ${VENTANA_MIN} minutos.` },
       { status: 429 }
     );
   }
@@ -38,12 +27,14 @@ export async function POST(req: NextRequest) {
   const adminEmail = process.env.ADMIN_EMAIL ?? "";
   const adminPassword = process.env.ADMIN_PASSWORD ?? "";
 
-  if (
-    !email ||
-    !password ||
-    email.toLowerCase() !== adminEmail.toLowerCase() ||
-    password !== adminPassword
-  ) {
+  // Ambas comparaciones se hacen siempre (tiempo constante), sin cortocircuito.
+  const emailOk = typeof email === "string" && safeEqual(email.toLowerCase(), adminEmail.toLowerCase());
+  const passwordOk = typeof password === "string" && safeEqual(password, adminPassword);
+  const ok = !!adminEmail && !!adminPassword && emailOk && passwordOk;
+
+  after(() => registrarIntento(ctx, ok));
+
+  if (!ok) {
     return NextResponse.json({ error: "Credenciales incorrectas." }, { status: 401 });
   }
 

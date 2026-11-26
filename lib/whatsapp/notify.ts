@@ -18,7 +18,7 @@ function remitente(): string {
   return process.env.NOTIFY_FROM || DEFAULT_FROM;
 }
 
-async function enviarCorreo(params: {
+export async function enviarCorreo(params: {
   subject: string;
   text: string;
   html?: string;
