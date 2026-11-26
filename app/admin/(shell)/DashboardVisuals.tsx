@@ -1,12 +1,38 @@
-import { safeRate } from "@/lib/acquisition/attribution";
 
 export function KpiCard({ label, value, hint, featured = false }: { label: string; value: string; hint?: string; featured?: boolean }) {
   return <article className={`rounded-2xl border bg-white p-4 sm:p-5 shadow-[0_8px_30px_rgba(39,35,28,0.04)] ${featured ? "border-[#b89a72]/60" : "border-zinc-200"}`}><p className="text-[10px] uppercase tracking-[.16em] text-zinc-500">{label}</p><strong className="mt-3 block text-2xl sm:text-3xl leading-none tracking-tight text-zinc-900">{value}</strong>{hint && <p className="mt-3 text-[10px] leading-relaxed text-zinc-500">{hint}</p>}</article>;
 }
 
-export function FunnelVisual({ steps }: { steps: ReadonlyArray<readonly [string, number]> }) {
-  const max = Math.max(1, ...steps.map(([, value]) => value));
-  return <section className="rounded-2xl border border-zinc-200 bg-white p-4 sm:p-6 shadow-[0_12px_35px_rgba(39,35,28,0.05)]"><div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 mb-6"><div><p className="text-[10px] uppercase tracking-[.2em] text-[#76582f]">Recorrido comercial</p><h2 className="mt-1 text-lg font-bold text-zinc-900">Funnel owned</h2></div><p className="max-w-lg text-[10px] leading-relaxed text-zinc-500">El ancho representa el volumen relativo dentro del periodo seleccionado.</p></div><div className="space-y-2">{steps.map(([label, value], index) => { const width = Math.max(18, Math.round((value / max) * 100)); const conversion = index === 0 ? null : safeRate(value, steps[index - 1][1]); return <div key={label} className="grid grid-cols-[6.5rem_minmax(0,1fr)_3.5rem] sm:grid-cols-[8rem_minmax(0,1fr)_5rem] items-center gap-3"><div><span className="block text-xs font-medium text-zinc-700">{label}</span>{conversion !== null && <span className="text-[9px] text-zinc-500">{conversion}% del paso anterior</span>}</div><div className="h-10 rounded-xl bg-zinc-100 overflow-hidden"><div className="h-full rounded-xl bg-gradient-to-r from-[#76582f] to-[#c4a882] transition-[width]" style={{ width: `${width}%` }}/></div><strong className="text-right text-lg text-zinc-900">{value.toLocaleString("es-MX")}</strong></div>; })}</div><div className="mt-5 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-[10px] leading-relaxed text-blue-900"><strong>Clic WhatsApp y Conversación son señales distintas.</strong> Ambos van al WhatsApp terminado en 1602: el clic cuenta cuando alguien abre WhatsApp desde el sitio y la conversación cuando de verdad escribe. La diferencia son personas que abrieron WhatsApp y no enviaron mensaje.</div></section>;
+/** 0,02% / 4,1% / 62%: más decimales cuando el número es pequeño, para que no se lea "0%". */
+function pct(numerator: number, denominator: number): string | null {
+  if (denominator <= 0) return null;
+  const value = (numerator / denominator) * 100;
+  if (value > 100) return null; // un paso mayor que el anterior = mezcla de tráfico con y sin anuncio
+  const digits = value < 1 ? 2 : value < 10 ? 1 : 0;
+  return `${value.toLocaleString("es-MX", { minimumFractionDigits: 0, maximumFractionDigits: digits })}%`;
+}
+
+export function FunnelVisual({ steps }: { steps: ReadonlyArray<readonly [string, number | null]> }) {
+  const known = steps.filter((step): step is readonly [string, number] => step[1] !== null);
+  const max = Math.max(1, ...known.map(([, value]) => value));
+  const first = known[0]?.[1] ?? 0;
+  const mixed = known.some(([, value], index) => index > 0 && known[index - 1][1] > 0 && value > known[index - 1][1]);
+  const rows = known.map(([label, value], index) => {
+    // Escala logarítmica: con impresiones (miles) arriba y leads (unidades) abajo, la lineal deja todo en el mínimo.
+    const width = value <= 0 ? 4 : Math.max(8, Math.round(((Math.log10(value + 1)) / Math.log10(max + 1)) * 100));
+    const step = index === 0 ? null : pct(value, known[index - 1][1]);
+    const total = index === 0 ? null : pct(value, first);
+    return { label, value, width, step, total, first: index === 0 };
+  });
+  return <section className="rounded-2xl border border-zinc-200 bg-white p-4 sm:p-6 shadow-[0_12px_35px_rgba(39,35,28,0.05)]"><div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 mb-5"><div><p className="text-[10px] uppercase tracking-[.2em] text-[#76582f]">Recorrido comercial</p><h2 className="mt-1 text-lg font-bold text-zinc-900">Funnel completo</h2></div><p className="max-w-lg text-[10px] leading-relaxed text-zinc-500">De la impresión del anuncio hasta el lead. El ancho usa escala logarítmica para que se vean los pasos chicos; los números reales están a la derecha.</p></div>
+    <div className="grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[8rem_minmax(0,1fr)_11rem] gap-x-3 px-1 pb-2 text-[9px] uppercase tracking-wider text-zinc-400"><span className="hidden sm:block">Paso</span><span className="hidden sm:block" /><span className="text-right"><span className="inline-block w-14">Paso ant.</span><span className="inline-block w-14">Total</span></span></div>
+    <div className="space-y-2">{rows.map(row => <div key={row.label} className="grid grid-cols-1 sm:grid-cols-[8rem_minmax(0,1fr)_11rem] items-center gap-x-3 gap-y-1">
+      <span className="text-xs font-medium text-zinc-700">{row.label}</span>
+      <div className="h-9 rounded-xl bg-zinc-100 overflow-hidden"><div className="h-full rounded-xl bg-gradient-to-r from-[#76582f] to-[#c4a882] transition-[width]" style={{ width: `${row.width}%` }}/></div>
+      <div className="flex items-baseline justify-between sm:justify-end gap-3 text-right"><strong className="text-lg text-zinc-900 sm:mr-auto sm:text-base">{row.value.toLocaleString("es-MX")}</strong><span className="inline-block w-14 text-xs text-zinc-700" title="Porcentaje del paso inmediato anterior">{row.first ? "" : (row.step ?? "—")}</span><span className="inline-block w-14 text-xs font-bold text-[#76582f]" title="Porcentaje respecto al primer paso (punta a punta)">{row.first ? "100%" : (row.total ?? "—")}</span></div>
+    </div>)}</div>
+    {mixed && <p className="mt-3 text-[10px] leading-relaxed text-amber-800">&ldquo;—&rdquo; = ese paso es mayor que el anterior: impresiones y clics cuentan solo anuncios, pero visitas, WhatsApp y leads incluyen también tráfico sin anuncio. Filtra por plataforma para una lectura más limpia.</p>}
+    <div className="mt-5 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-[10px] leading-relaxed text-blue-900"><strong>Clic WhatsApp y Conversación son señales distintas.</strong> Ambos van al WhatsApp terminado en 1602: el clic cuenta cuando alguien abre WhatsApp desde el sitio y la conversación cuando de verdad escribe. La diferencia son personas que abrieron WhatsApp y no enviaron mensaje.</div></section>;
 }
 
 export type CampaignView = { key: string; title: string; sourceType: string; currency: string; spend: string; impressions: string; clicks: string; cpc: string; visits: string; leads: string; costPerLead: string; primary: Array<[string, string]>; costs: Array<[string, string]> };

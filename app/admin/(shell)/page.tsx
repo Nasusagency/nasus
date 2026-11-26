@@ -19,7 +19,7 @@ export default async function AdminDashboard({ searchParams }: { searchParams: P
   const source = typeof query.source === "string" ? query.source : undefined;
   const campaign = typeof query.campaign === "string" ? query.campaign : undefined;
   const data = await getAcquisitionDashboard({ days, source, campaign });
-  const funnel = [["Visitas", data.visits], ["Clic WhatsApp", data.whatsappClicks], ["Conversaciones", data.conversations], ["Leads", data.leads], ["Qualified", data.qualified], ["High intent", data.highIntent]] as const;
+  const funnel = [["Impresiones", data.impressions], ["Clics en anuncio", data.adClicks], ["Visitas", data.visits], ["Clic WhatsApp", data.whatsappClicks], ["Conversaciones", data.conversations], ["Leads", data.leads], ["Qualified", data.qualified], ["High intent", data.highIntent]] as const satisfies ReadonlyArray<readonly [string, number | null]>;
   const totals = calculateCampaignEfficiency({ spend: data.spend, impressions: data.impressions, adClicks: data.adClicks, visits: data.visits, whatsappClicks: data.whatsappClicks, conversations: data.conversations, leads: data.leads, qualified: data.qualified, highIntent: data.highIntent });
   const currency = data.currency ?? "MXN";
   const priorityKpis = [
