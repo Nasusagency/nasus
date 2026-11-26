@@ -237,6 +237,8 @@ Formato: `AAAA-MM-DD · decisión o acción · quién · evidencia/enlace`.
 - 2026-11-23 · El inicio `nasus.mx/` se registra solo cuando lo visita un bot o agente (tipos agente_ia, buscador, otro_bot, herramienta, navegador_automatizado); navegadores y desconocidos no. Era un hueco: la puerta de entrada no quedaba en el registro · Claude Code.
 - 2026-11-23 · Autor con nombre: Luis Oscar Alpizar, perfil LinkedIn https://www.linkedin.com/in/alpizaroscar (en `lib/guia/investigacion.ts`). Prueba 3 (DeepSeek) descartada por el dueño · dueño.
 - 2026-11-23 · `/admin/laberinto` tiene dos pestañas: Visitas y Bitácora diaria (lee `laberinto_bitacora`, texto plano) · Claude Code.
+- 2026-11-26 · Hallazgo con 3 días de datos (2,205 peticiones): los rastreadores de IA recorren la guía por sus enlaces (GPTBot: 49 rutas distintas, 45 páginas de la guía), pero **ningún agente ni rastreador de IA pidió una ruta inexistente** y **no ha entrado ningún agente de usuario real** (los 2 ChatGPT-User son pruebas propias). Los 404 son escáneres y un navegador. Ver sección 15 · bitácora id 5.
+- 2026-11-26 · Decisión (dueño): **la pregunta del estudio no se reformula.** Se separa la medición: "agentes de usuario" (únicos que pueden revelar intención) vs "rastreadores de IA" (indexan, sin intención), en el panel `/admin/laberinto` y en la bitácora diaria. GoogleOther deja de contarse como IA (≈114 filas reclasificadas a `buscador`). El estudio sigue corriendo 4 a 8 semanas · bitácora id 6.
 *(Agregar entradas nuevas debajo, sin borrar las anteriores. Cada hito publicado: fecha, enlace, copia en Wayback, DOI de Zenodo, hash.)*
 
 ## 14. Registro de pruebas
@@ -254,3 +256,13 @@ Observación fija: la IA solo visita el sitio si tiene la búsqueda web activada
 Ruido a descontar: en la prueba 1 apareció también un `Googlebot` leyendo `/robots.txt` y una visita de "navegador" (el dueño); no son de la IA. Las 6 primeras filas de la tabla (ids 1–6) son pruebas de Claude Code y errores del primer despliegue (`/` anotada como 404); se dejaron sin borrar.
 
 **Pruebas por hacer:** "IA virgen" con la misma pregunta en varias IA (Claude, Gemini, Perplexity, Copilot) para comparar; pregunta de precios sin dar la dirección de la guía, para ver qué rutas inventa.
+
+## 15. Hallazgos
+
+Registro fechado de lo que muestran los datos. **La pregunta del estudio no cambia** (sección 1); aquí solo se anota qué evidencia hay a favor, en contra o ninguna. Cifras de la base `laberinto_visitas` al corte indicado.
+
+**Corte 2026-11-26 (3 días, 2,205 peticiones, 599 visitantes-día)**
+- **A favor de que los agentes siguen una estructura con enlaces descriptivos:** GPTBot pidió 49 rutas distintas (45 páginas de la guía); otros rastreadores con `?ref` recorrieron ~50 rutas. Los rastreadores de IA tardaron menos de un día en encontrar `llms.txt`, `robots.txt` y el sitemap.
+- **Sin evidencia todavía sobre la intención:** 0 agentes de usuario reales; 0 peticiones de IA a rutas inexistentes; ningún sensor (`/pricing`, `/servicios`, `/about`, `/docs`, `/blog`) pedido por IA. Los 404 son escáneres de rutina (`ads.txt`, `security.txt`, `sellers.json`, `meta.json`) y un navegador probando `/about` y `/contact`.
+- **Por qué:** el tráfico de IA hasta ahora es de rastreadores (indexan o entrenan); la intención solo se puede inferir del tráfico de agentes de usuario (ChatGPT-User, Claude-User, Perplexity-User…), que entra cuando una persona le pide algo a una IA.
+- **Limitaciones:** 3 días de datos (el diseño pide 4 a 8 semanas); el clasificador es por user agent (declarado); corrección aplicada: GoogleOther ya no se cuenta como IA.

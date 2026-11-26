@@ -1,5 +1,6 @@
 import "server-only";
 import { createServiceClient } from "@/lib/supabase/service";
+import { rolIA } from "./classify";
 
 /**
  * Entrada diaria de la bitácora del Laberinto de Agentes (laberinto_bitacora),
@@ -40,10 +41,16 @@ export async function escribirBitacoraDiaria(): Promise<{ ok: boolean; skipped?:
   const caminos = top(rows.filter((r) => r.referencia).map((r) => `${r.referencia} → ${r.ruta}`), 5);
   const visitantes = new Set(rows.map((r) => r.ip_hash).filter(Boolean)).size;
   const ia = rows.filter((r) => r.tipo_visitante === "agente_ia").length;
+  // Lo que importa para el estudio: ¿entró alguien por encargo de una persona, o solo rastreadores?
+  const agentesUsuario = rows.filter((r) => rolIA(r.tipo_visitante, r.agente) === "agente_usuario");
+  const rastreadoresIa = rows.filter((r) => rolIA(r.tipo_visitante, r.agente) === "rastreador_ia");
+  const noExistenIa = top(rows.filter((r) => r.estado === 404 && rolIA(r.tipo_visitante, r.agente) !== null).map((r) => r.ruta), 8);
 
   const resumen = rows.length
     ? [
-        `Últimas 24 h: ${rows.length} solicitudes de ${visitantes} visitantes distintos; ${ia} de agentes de IA.`,
+        `Últimas 24 h: ${rows.length} solicitudes de ${visitantes} visitantes distintos; ${ia} de IA.`,
+        `Agentes de usuario (entran por encargo de una persona): ${agentesUsuario.length}${agentesUsuario.length ? ` (${fmt(top(agentesUsuario.map((r) => r.agente), 5))})` : ""}. Rastreadores de IA (indexan, sin intención): ${rastreadoresIa.length}${rastreadoresIa.length ? ` (${fmt(top(rastreadoresIa.map((r) => r.agente), 5))})` : ""}.`,
+        noExistenIa.length ? `404 pedidos por IA: ${fmt(noExistenIa)}.` : "404 pedidos por IA: ninguno.",
         `Por tipo: ${fmt(porTipo)}.`,
         agentes.length ? `Agentes: ${fmt(agentes)}.` : "",
         ramas.length ? `Ramas más pedidas: ${fmt(ramas)}.` : "Sin visitas a páginas de la guía.",
@@ -58,6 +65,7 @@ export async function escribirBitacoraDiaria(): Promise<{ ok: boolean; skipped?:
     resumen,
     detalle: {
       fuente: "cron", desde, total: rows.length, visitantes, agentes_ia: ia,
+      agentes_usuario: agentesUsuario.length, rastreadores_ia: rastreadoresIa.length, no_existen_ia: Object.fromEntries(noExistenIa),
       por_tipo: Object.fromEntries(porTipo), agentes: Object.fromEntries(agentes),
       ramas: Object.fromEntries(ramas), no_existen: Object.fromEntries(noExisten),
       archivos: Object.fromEntries(archivos), caminos: Object.fromEntries(caminos),

@@ -4,7 +4,7 @@ import { chipClassName } from "../_ui/Chip";
 import { EmptyState } from "../_ui/EmptyState";
 
 const TIPOS: [string, string][] = [
-  ["", "Todos"], ["agente_ia", "Agentes IA"], ["buscador", "Buscadores"], ["herramienta", "Herramientas"],
+  ["", "Todos"], ["agente_usuario", "Agentes de usuario"], ["rastreador_ia", "Rastreadores IA"], ["agente_ia", "Todo IA"], ["buscador", "Buscadores"], ["herramienta", "Herramientas"],
   ["navegador_automatizado", "Headless"], ["otro_bot", "Otros bots"], ["navegador", "Navegadores"], ["desconocido", "Desconocido"],
 ];
 const DIAS = [7, 30, 90];
@@ -55,6 +55,11 @@ export default async function LaberintoPage({ searchParams }: { searchParams: Pr
       <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
         {[["Peticiones", data.total], ["Visitantes distintos (por día)", data.visitantes], ["Rutas inexistentes", data.noExisten.length], ["Agentes identificados", data.agentes.length]].map(([label, value]) => <div key={label as string} className="rounded-2xl border border-zinc-200 bg-white p-4"><p className="text-[10px] uppercase tracking-wider text-zinc-500">{label}</p><p className="mt-1 text-2xl font-semibold text-zinc-950">{value}</p></div>)}
       </div>
+      <div className="mb-5 grid gap-3 sm:grid-cols-3">{[
+        ["Agentes de usuario", data.roles.agentesUsuario, "Una persona le pidió algo a una IA (ChatGPT-User, Claude-User…). Solo este tráfico puede revelar una intención."],
+        ["Rastreadores de IA", data.roles.rastreadoresIa, "Indexan o entrenan de forma sistemática (GPTBot, ClaudeBot, OAI-SearchBot…). No persiguen la intención de nadie."],
+        ["404 pedidos por IA", data.roles.n404Ia, "Rutas inexistentes que pidió algún agente o rastreador de IA."],
+      ].map(([label, value, hint]) => <div key={label as string} className="rounded-2xl border border-[#b89a72]/60 bg-white p-4"><p className="text-[10px] uppercase tracking-wider text-zinc-500">{label}</p><p className="mt-1 text-2xl font-semibold text-zinc-950">{value}</p><p className="mt-2 text-[10px] leading-snug text-zinc-500">{hint}</p></div>)}</div>
       <div className="grid gap-5 lg:grid-cols-2">
         <Tabla title="Rutas que buscaron y no existen (404)" hint="La señal más valiosa: lo que esperaban encontrar." rows={data.noExisten} />
         <Tabla title="Ramas más visitadas de la guía" rows={data.ramas} />

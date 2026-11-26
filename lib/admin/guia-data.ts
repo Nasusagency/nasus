@@ -1,5 +1,6 @@
 import "server-only";
 import { createServiceClient } from "@/lib/supabase/service";
+import { AGENTES_USUARIO, rolIA } from "@/lib/guia/classify";
 
 export type GuiaVisita = {
   ts: string; ruta: string; estado: number; origen: string; tipo_visitante: string;
@@ -32,7 +33,9 @@ export async function getGuiaDashboard({ days, tipo }: { days: number; tipo?: st
   let query = supabase.from("laberinto_visitas")
     .select("ts,ruta,estado,origen,tipo_visitante,agente,referencia,referer_host,ip_hash")
     .gte("ts", from).order("ts", { ascending: false }).limit(20000);
-  if (tipo) query = query.eq("tipo_visitante", tipo);
+  if (tipo === "agente_usuario") query = query.in("agente", [...AGENTES_USUARIO]);
+  else if (tipo === "rastreador_ia") query = query.eq("tipo_visitante", "agente_ia").not("agente", "in", `(${AGENTES_USUARIO.join(",")})`);
+  else if (tipo) query = query.eq("tipo_visitante", tipo);
   const { data, error } = await query;
   if (error) return { error: true as const };
   const rows = (data ?? []) as GuiaVisita[];
@@ -42,6 +45,11 @@ export async function getGuiaDashboard({ days, tipo }: { days: number; tipo?: st
     total: rows.length,
     visitantes: new Set(rows.map((r) => r.ip_hash).filter(Boolean)).size,
     porTipo: countBy(rows, (r) => r.tipo_visitante),
+    roles: {
+      agentesUsuario: rows.filter((r) => rolIA(r.tipo_visitante, r.agente) === "agente_usuario").length,
+      rastreadoresIa: rows.filter((r) => rolIA(r.tipo_visitante, r.agente) === "rastreador_ia").length,
+      n404Ia: rows.filter((r) => r.estado === 404 && rolIA(r.tipo_visitante, r.agente) !== null).length,
+    },
     agentes: countBy(rows, (r) => r.agente),
     ramas: countBy(guia.filter((r) => r.estado === 200), (r) => r.ruta),
     noExisten: countBy(rows.filter((r) => r.estado === 404), (r) => r.ruta),

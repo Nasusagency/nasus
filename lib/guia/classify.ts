@@ -23,7 +23,6 @@ const AI: [RegExp, string][] = [
   [/Perplexity-User/i, "Perplexity-User"],
   [/PerplexityBot/i, "PerplexityBot"],
   [/Google-CloudVertexBot/i, "Google-CloudVertexBot"],
-  [/GoogleOther/i, "GoogleOther"],
   [/Gemini/i, "Gemini"],
   [/meta-externalagent/i, "meta-externalagent"],
   [/meta-externalfetcher/i, "meta-externalfetcher"],
@@ -41,6 +40,7 @@ const AI: [RegExp, string][] = [
 ];
 
 const SEARCH: [RegExp, string][] = [
+  [/GoogleOther/i, "GoogleOther"], // investigación interna de Google: buscador, no agente de IA
   [/Googlebot/i, "Googlebot"],
   [/bingbot/i, "Bingbot"],
   [/Applebot/i, "Applebot"],
@@ -100,4 +100,22 @@ export function classifyVisitor(userAgent: string | null): { tipo: TipoVisitante
   if (/bot|crawl|spider|scrape|fetch/i.test(ua)) return { tipo: "otro_bot", agente: ua.slice(0, 40) };
   if (/^Mozilla\/5\.0/.test(ua) && /(Chrome|Safari|Firefox|Edg)\//.test(ua)) return { tipo: "navegador", agente: null };
   return { tipo: "desconocido", agente: null };
+}
+
+/**
+ * Rol del visitante de IA, que es lo que importa para el estudio:
+ *  - agente_usuario: entra porque una PERSONA le pidió algo a una IA (ChatGPT-User, Claude-User…).
+ *    Es el único tráfico cuya ruta y 404 pueden revelar una intención.
+ *  - rastreador_ia: indexa o entrena de forma sistemática (GPTBot, ClaudeBot, OAI-SearchBot…); no persigue
+ *    la intención de nadie.
+ */
+export const AGENTES_USUARIO = [
+  "ChatGPT-User", "Claude-User", "Perplexity-User", "MistralAI-User", "DuckAssistBot", "meta-externalfetcher", "Gemini",
+] as const;
+
+export type RolIA = "agente_usuario" | "rastreador_ia";
+
+export function rolIA(tipo: string, agente: string | null): RolIA | null {
+  if (tipo !== "agente_ia" || agente === "GoogleOther") return null; // GoogleOther: filas viejas aún marcadas como IA
+  return agente && (AGENTES_USUARIO as readonly string[]).includes(agente) ? "agente_usuario" : "rastreador_ia";
 }
