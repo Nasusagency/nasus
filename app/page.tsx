@@ -1064,10 +1064,18 @@ export default function LandingPage() {
                 href="https://www.mercadopago.com.mx/partners/developers/es"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-4 inline-flex items-center gap-2 border border-zinc-800 px-3 py-1.5 font-mono text-[11px] text-zinc-500 transition-colors hover:border-[#c4a882] hover:text-zinc-300"
+                className="mt-4 inline-block transition-opacity hover:opacity-90"
+                aria-label="Desarrollador certificado en Mercado Pago Checkout Pro"
               >
-                <span className="h-1.5 w-1.5 rounded-full bg-[#c4a882]" aria-hidden="true" />
-                Desarrollador certificado · Mercado Pago Checkout Pro
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/insignia-checkout-pro.svg"
+                  alt="Certificado Checkout Pro, Mercado Pago Developers"
+                  width={138}
+                  height={100}
+                  className="h-20 w-auto"
+                  loading="lazy"
+                />
               </a>
             </div>
             <div className="flex flex-col gap-3">
