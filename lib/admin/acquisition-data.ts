@@ -15,12 +15,38 @@ export type AdminLead = {
 
 const since = (days: number) => new Date(Date.now() - Math.max(1, Math.min(days, 365)) * 86400000).toISOString();
 
+
+export type PlatformSummary = {
+  platform: string; currency: string; spend: number | null; impressions: number | null; adClicks: number | null;
+  visits: number; whatsappClicks: number; leads: number; campaigns: number;
+  cpc: number | null; costPerVisit: number | null; costPerLead: number | null;
+};
+
+const addKnown = (a: number | null, b: number | null) => a === null && b === null ? null : (a ?? 0) + (b ?? 0);
+const ratio = (num: number | null, den: number) => num === null || den <= 0 ? null : Math.round((num / den) * 100) / 100;
+
+/** Una fila por plataforma (y moneda): lo que gastó y lo que trajo al sitio. Con ceros reales, no ocultos. */
+type PerformanceLike = { platform: string; currency: string; spend: number | null; impressions: number | null; adClicks: number | null; visits?: number; whatsappClicks?: number; leads?: number };
+
+export function summarizeByPlatform(performance: PerformanceLike[]): PlatformSummary[] {
+  const map = new Map<string, PlatformSummary>();
+  for (const p of performance) {
+    const key = `${p.platform}::${p.currency}`;
+    const row = map.get(key) ?? { platform: p.platform, currency: p.currency, spend: null, impressions: null, adClicks: null, visits: 0, whatsappClicks: 0, leads: 0, campaigns: 0, cpc: null, costPerVisit: null, costPerLead: null };
+    row.spend = addKnown(row.spend, p.spend); row.impressions = addKnown(row.impressions, p.impressions); row.adClicks = addKnown(row.adClicks, p.adClicks);
+    row.visits += p.visits ?? 0; row.whatsappClicks += p.whatsappClicks ?? 0; row.leads += p.leads ?? 0; row.campaigns += 1;
+    map.set(key, row);
+  }
+  return [...map.values()].map(r => ({ ...r, cpc: ratio(r.spend, r.adClicks ?? 0), costPerVisit: ratio(r.spend, r.visits), costPerLead: ratio(r.spend, r.leads) }))
+    .sort((a, b) => (b.spend ?? -1) - (a.spend ?? -1));
+}
+
 export async function getAcquisitionDashboard(filters: DashboardFilters) {
   const supabase = createServiceClient();
-  const empty = { configured: false, visits: 0, whatsappClicks: 0, conversations: 0, leads: 0, qualified: 0, highIntent: 0, campaigns: [] as string[], recentLeads: [] as AdminLead[], allLeads: [] as AdminLead[], impressions: null as NullableNumber, adClicks: null as NullableNumber, spend: null as NullableNumber, currency: null as string | null, campaignPerformance: [] as any[], manualMetricRows: [] as any[], adsSyncStatuses: defaultAdsSyncStatuses() };
+  const empty = { configured: false, visits: 0, whatsappClicks: 0, conversations: 0, leads: 0, qualified: 0, highIntent: 0, campaigns: [] as string[], recentLeads: [] as AdminLead[], allLeads: [] as AdminLead[], impressions: null as NullableNumber, adClicks: null as NullableNumber, spend: null as NullableNumber, currency: null as string | null, campaignPerformance: [] as any[], platformSummary: [] as PlatformSummary[], manualMetricRows: [] as any[], adsSyncStatuses: defaultAdsSyncStatuses() };
   if (!supabase) return empty;
   const from = since(filters.days);
-  const [eventsResult, leadsResult, messagesResult, metricsResult, syncStatusesResult] = await Promise.all([
+  const [eventsResult, leadsResult, messagesResult, metricsResult, syncStatusesResult, aliasResult] = await Promise.all([
     supabase.from("acquisition_events").select("event_type,session_id,source,campaign").gte("created_at", from).limit(10000),
     (filters.archived
       ? supabase.from("whatsapp_leads").select("id,numero,nombre_contacto,nombre_empresa,sector,lifecycle,stage,high_intent_detected_at,problema_descrito,servicio_probable,resumen,requiere_humano,ultima_interaccion,acquisition_event_id,archived_at,acquisition_events(source,medium,campaign)").not("archived_at", "is", null)
@@ -29,13 +55,20 @@ export async function getAcquisitionDashboard(filters: DashboardFilters) {
     supabase.from("whatsapp_mensajes").select("conversation_id,numero").eq("direccion", "entrante").gte("created_at", from).limit(10000),
     supabase.from("acquisition_campaign_metrics").select("id,platform,campaign,metric_date,impressions,ad_clicks,spend,currency,daily_budget,total_budget,source_type").gte("metric_date", from.slice(0, 10)).order("metric_date", { ascending: false }).limit(5000),
     supabase.from("acquisition_ads_sync_status").select("platform,status,last_success_at,last_attempt_at,last_error_code").in("platform", ["google", "meta", "chatgpt"]),
+    // Id de campaña de la plataforma -> nombre sincronizado (sin filtro de fechas: el alias no caduca).
+    supabase.from("acquisition_campaign_metrics").select("platform,campaign,external_campaign_id").not("external_campaign_id", "is", null).limit(2000),
   ]);
   if (eventsResult.error || leadsResult.error || messagesResult.error || metricsResult.error) return empty;
-  const allEvents = eventsResult.data ?? [];
+  // Google manda su número de campaña en la URL ({campaignid}) y la API devuelve el nombre: se unen
+  // para que gasto, visitas y leads de una misma campaña caigan en una sola tarjeta.
+  const campaignAlias = new Map<string, string>();
+  ((aliasResult.data ?? []) as Array<{ platform: string; campaign: string; external_campaign_id: string | null }>).forEach((row) => { if (row.external_campaign_id) campaignAlias.set(`${row.platform}::${row.external_campaign_id}`, row.campaign); });
+  const canon = (platform: string | null | undefined, name: string | null | undefined) => name ? (campaignAlias.get(`${platform ?? ""}::${name}`) ?? name) : name;
+  const allEvents = (eventsResult.data ?? []).map((e) => ({ ...e, campaign: canon(e.source, e.campaign) }));
   const events = allEvents.filter((e) => (!filters.source || e.source === filters.source) && (!filters.campaign || e.campaign === filters.campaign));
   const leads: AdminLead[] = (leadsResult.data ?? []).map((row: any) => {
     const attribution = Array.isArray(row.acquisition_events) ? row.acquisition_events[0] : row.acquisition_events;
-    return { ...row, source: attribution?.source ?? null, medium: attribution?.medium ?? null, campaign: attribution?.campaign ?? null };
+    return { ...row, source: attribution?.source ?? null, medium: attribution?.medium ?? null, campaign: canon(attribution?.source, attribution?.campaign) ?? null };
   }).filter((lead) => (!filters.source || lead.source === filters.source) && (!filters.campaign || lead.campaign === filters.campaign));
   const attributedNumbers = new Set(leads.map((lead) => lead.numero));
   const conversations = new Set((messagesResult.data ?? []).filter((m) => !filters.source && !filters.campaign || attributedNumbers.has(m.numero)).map((m) => m.conversation_id)).size;
@@ -82,6 +115,7 @@ export async function getAcquisitionDashboard(filters: DashboardFilters) {
     spend: currencies.size <= 1 ? sumKnown(metricRows.map(r => r.spend === null ? null : Number(r.spend))) : null,
     currency: currencies.size === 1 ? [...currencies][0] : null,
     campaignPerformance,
+    platformSummary: summarizeByPlatform(campaignPerformance),
     adsSyncStatuses,
   };
 }

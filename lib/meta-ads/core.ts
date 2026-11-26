@@ -101,6 +101,7 @@ export function toSyncedMetricRows(metrics: MetaDailyMetric[], currency: string)
     spend: metric.spend,
     currency,
     source_type: "synced" as const,
+    external_campaign_id: metric.campaignId,
   }));
 }
 
