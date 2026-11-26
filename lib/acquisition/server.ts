@@ -50,6 +50,20 @@ export async function recordAcquisitionEvent(input: AcquisitionEventInput) {
  * Meta no manda el nombre de la campaña en el mensaje: se usa el titular del anuncio
  * como campaña legible y el id del anuncio como `content`. Nada de esto es PII.
  */
+/** Nombre de la campaña a la que pertenece un anuncio (Graph API). Timeout corto: corre dentro del webhook. */
+async function metaCampaignNameForAd(adId: string | null): Promise<string | null> {
+  const token = process.env.META_ADS_ACCESS_TOKEN?.trim();
+  if (!token || !adId || !/^\d{5,25}$/.test(adId)) return null;
+  const version = process.env.META_GRAPH_VERSION?.match(/^v\d{2}\.\d$/)?.[0] ?? "v23.0";
+  const response = await fetch(`https://graph.facebook.com/${version}/${adId}?fields=campaign%7Bname%7D`, {
+    headers: { authorization: `Bearer ${token}` },
+    signal: AbortSignal.timeout(2_500),
+  });
+  if (!response.ok) return null;
+  const body = (await response.json()) as { campaign?: { name?: unknown } };
+  return typeof body.campaign?.name === "string" ? body.campaign.name : null;
+}
+
 export async function recordMetaAdReferral(referral: {
   adId: string | null; sourceType: string | null; sourceUrl: string | null; headline: string | null; ctwaClid: string | null;
 }): Promise<string | null> {
@@ -57,13 +71,16 @@ export async function recordMetaAdReferral(referral: {
   if (!supabase) return null;
   const attributionId = shortId();
   const clean = (value: string | null, max: number) => value?.trim().slice(0, max) || null;
+  // Si Meta Ads está conectado, el nombre de la campaña real (el mismo que usa la sincronización
+  // de gasto) permite unir leads y costo. Best-effort: sin token o con error, se usa el titular.
+  const campaignName = await metaCampaignNameForAd(referral.adId).catch(() => null);
   const { error } = await supabase.from("acquisition_events").insert({
     event_type: "whatsapp_click",
     attribution_id: attributionId,
     session_id: clean(`ctwa:${referral.ctwaClid ?? referral.adId ?? attributionId}`, 80),
     source: "meta",
     medium: "paid_social",
-    campaign: clean(referral.headline, 160) ?? (referral.adId ? `anuncio ${referral.adId}`.slice(0, 160) : "anuncio de meta"),
+    campaign: clean(campaignName, 160) ?? clean(referral.headline, 160) ?? (referral.adId ? `anuncio ${referral.adId}`.slice(0, 160) : "anuncio de meta"),
     content: clean(referral.adId, 160),
     term: null,
     landing_path: "/whatsapp-ad",

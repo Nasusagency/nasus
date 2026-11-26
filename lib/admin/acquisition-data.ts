@@ -28,7 +28,7 @@ export async function getAcquisitionDashboard(filters: DashboardFilters) {
     ).gte("ultima_interaccion", from).order("ultima_interaccion", { ascending: false }).limit(1000),
     supabase.from("whatsapp_mensajes").select("conversation_id,numero").eq("direccion", "entrante").gte("created_at", from).limit(10000),
     supabase.from("acquisition_campaign_metrics").select("id,platform,campaign,metric_date,impressions,ad_clicks,spend,currency,daily_budget,total_budget,source_type").gte("metric_date", from.slice(0, 10)).order("metric_date", { ascending: false }).limit(5000),
-    supabase.from("acquisition_ads_sync_status").select("platform,status,last_success_at,last_attempt_at,last_error_code").in("platform", ["google", "chatgpt"]),
+    supabase.from("acquisition_ads_sync_status").select("platform,status,last_success_at,last_attempt_at,last_error_code").in("platform", ["google", "meta", "chatgpt"]),
   ]);
   if (eventsResult.error || leadsResult.error || messagesResult.error || metricsResult.error) return empty;
   const allEvents = eventsResult.data ?? [];
