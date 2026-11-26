@@ -1060,6 +1060,15 @@ export default function LandingPage() {
               <p className="text-zinc-600 text-xs mt-3 max-w-xs">
                 Software, IA y automatización conectados a tu operación.
               </p>
+              <a
+                href="https://www.mercadopago.com.mx/partners/developers/es"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-4 inline-flex items-center gap-2 border border-zinc-800 px-3 py-1.5 font-mono text-[11px] text-zinc-500 transition-colors hover:border-[#c4a882] hover:text-zinc-300"
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-[#c4a882]" aria-hidden="true" />
+                Desarrollador certificado · Mercado Pago Checkout Pro
+              </a>
             </div>
             <div className="flex flex-col gap-3">
               <a
